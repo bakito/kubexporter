@@ -12,6 +12,7 @@ require (
 	github.com/mitchellh/copystructure v1.0.0 // indirect
 	github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5
 	github.com/onsi/gomega v1.10.1 // indirect
+	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v5 v5.3.0
 	k8s.io/apimachinery v0.19.4
 	k8s.io/client-go v0.19.4

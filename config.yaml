@@ -1,7 +1,8 @@
 summary: true
 progress: true
-zip: true
+archive: true
 namespace:
+worker: 1
 excluded:
   kinds:
     - Binding

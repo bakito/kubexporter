@@ -1,4 +1,4 @@
-package main
+package types
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ var (
 	invalidFileChars = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
 )
 
-type groupResource struct {
+type GroupResource struct {
 	APIGroup        string
 	APIGroupVersion string
 	APIResource     metav1.APIResource
@@ -31,7 +31,7 @@ type groupResource struct {
 	ExportDuration  time.Duration
 }
 
-func (r groupResource) Report(withError bool) []string {
+func (r GroupResource) Report(withError bool) []string {
 	row := []string{
 		r.APIGroup,
 		r.APIVersion,
@@ -47,7 +47,7 @@ func (r groupResource) Report(withError bool) []string {
 	return row
 }
 
-func (r groupResource) GroupKind() string {
+func (r GroupResource) GroupKind() string {
 	if r.APIGroup != "" {
 		return fmt.Sprintf("%s.%s", r.APIGroup, r.APIResource.Kind)
 	}
@@ -58,12 +58,13 @@ type Config struct {
 	Excluded         Excluded `yaml:"excluded"`
 	excludedSet      set
 	FileNameTemplate string `yaml:"fileNameTemplate"`
-	OutputFormat     string `yaml:"format"`
+	OutputFormat     string `yaml:"outputFormat"`
 	Target           string `yaml:"target"`
 	Summary          bool   `yaml:"summary"`
 	Progress         bool   `yaml:"progress"`
-	Zip              bool   `yaml:"zip"`
 	Namespace        string `yaml:"namespace"`
+	Worker           int    `yaml:"worker"`
+	Archive          bool   `yaml:"archive"`
 }
 
 type Excluded struct {
@@ -72,14 +73,14 @@ type Excluded struct {
 	KindFields map[string][][]string `yaml:"kindFields"`
 }
 
-func (c *Config) IsExcluded(gr groupResource) bool {
+func (c *Config) IsExcluded(gr *GroupResource) bool {
 	if c.excludedSet == nil {
 		c.excludedSet = newSet(c.Excluded.Kinds...)
 	}
 	return c.excludedSet.contains(gr.GroupKind())
 }
 
-func (c *Config) FileName(res groupResource, us *unstructured.Unstructured) (string, error) {
+func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (string, error) {
 	t, err := template.New("base").Funcs(sprig.TxtFuncMap()).Parse(c.FileNameTemplate)
 	if err != nil {
 		return "", err
@@ -108,8 +109,11 @@ func (c *Config) Validate() error {
 	if c.OutputFormat != "json" && c.OutputFormat != "yaml" {
 		return fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
 	}
-	if _, err := c.FileName(groupResource{}, &unstructured.Unstructured{}); err != nil {
+	if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}); err != nil {
 		return fmt.Errorf("error parsing template [%s]", c.FileNameTemplate)
+	}
+	if c.Worker <= 0 {
+		return fmt.Errorf("worker must be > 0")
 	}
 
 	return nil
@@ -126,7 +130,7 @@ func (c *Config) Marshal(us *unstructured.Unstructured) ([]byte, error) {
 
 }
 
-func (e *Excluded) FilterFields(res groupResource, us unstructured.Unstructured) {
+func (e *Excluded) FilterFields(res *GroupResource, us unstructured.Unstructured) {
 	for _, f := range e.Fields {
 		unstructured.RemoveNestedField(us.Object, f...)
 	}
