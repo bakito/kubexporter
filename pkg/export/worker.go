@@ -23,6 +23,7 @@ type worker struct {
 	client           dynamic.Interface
 	mapper           meta.RESTMapper
 	errors           int
+	queryFinished    bool
 }
 
 // end worker
@@ -55,9 +56,16 @@ func (w *worker) list(ctx context.Context, group, version, kind string) (*unstru
 func (w *worker) preDecorator() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
 		if s.Completed {
-			return fmt.Sprintf("worker: %2d:", w.id)
+			return fmt.Sprintf("👷 %2d:", w.id)
 		}
-		return fmt.Sprintf("worker: %2d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
+		if w.queryFinished && s.Total == 0 {
+			return fmt.Sprintf("\U0001F971 %2d: idle", w.id)
+		}
+		if !w.queryFinished {
+			return fmt.Sprintf("🔍 %2d: %s", w.id, w.currentKind)
+
+		}
+		return fmt.Sprintf("👷 %2d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
 	})
 }
 

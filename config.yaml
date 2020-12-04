@@ -60,5 +60,5 @@ excluded:
   kindFields:
     Service:
       - [ spec, clusterIP ]
-    image.openshift.io.ImageStream:
+    "image.openshift.io.ImageStream":
       - [ annotations, "openshift.io/image.dockerRepositoryCheck" ]

@@ -2,7 +2,6 @@ package export
 
 import (
 	"context"
-	"fmt"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
@@ -52,7 +51,7 @@ type Exporter interface {
 
 func (e *exporter) Export() error {
 	start := time.Now()
-	defer func() { fmt.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
+	defer func() { e.config.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -133,26 +132,26 @@ func (e *exporter) Export() error {
 }
 
 func (e *exporter) writeIntro(cfg *rest.Config) {
-	fmt.Println("Starting export ...")
-	fmt.Printf("  %s cluster %q\n", check, cfg.Host)
+	e.config.Printf("Starting export ...\n")
+	e.config.Printf("  %s cluster %q\n", check, cfg.Host)
 	if e.config.Namespace == "" {
-		fmt.Printf("  %s all namespaces 🏘️\n", check)
+		e.config.Printf("  %s all namespaces 🏘️\n", check)
 	} else {
-		fmt.Printf("  %s namespace %q 🏠\n", check, e.config.Namespace)
+		e.config.Printf("  %s namespace %q 🏠\n", check, e.config.Namespace)
 	}
-	fmt.Printf("  %s target %q 📁\n", check, e.config.Target)
-	fmt.Printf("  %s format %q 📜\n", check, e.config.OutputFormat)
+	e.config.Printf("  %s target %q 📁\n", check, e.config.Target)
+	e.config.Printf("  %s format %q 📜\n", check, e.config.OutputFormat)
 	if e.config.Worker > 1 {
-		fmt.Printf("  %s worker %s\n", check, strings.Repeat("👷‍️", e.config.Worker))
+		e.config.Printf("  %s worker %s\n", check, strings.Repeat("👷‍️", e.config.Worker))
 	}
 	if e.config.Summary {
-		fmt.Printf("  %s summary 📊\n", check)
+		e.config.Printf("  %s summary 📊\n", check)
 	}
 	if e.config.AsLists {
-		fmt.Printf("  %s as lists 📦\n", check)
+		e.config.Printf("  %s as lists 📦\n", check)
 	}
 	if e.config.Archive {
-		fmt.Printf("  %s compress as archive 🗜️\n", check)
+		e.config.Printf("  %s compress as archive 🗜️\n", check)
 	}
 }
 
@@ -225,8 +224,8 @@ func (e *exporter) purgeTarget() error {
 		return nil
 	}
 
-	fmt.Printf("Deleting target %q\n", e.config.Target)
-	fmt.Printf("  %s done 🚮\n", check)
+	e.config.Printf("Deleting target %q\n", e.config.Target)
+	e.config.Printf("  %s done 🚮\n", check)
 	return os.RemoveAll(e.config.Target)
 
 }
@@ -246,14 +245,16 @@ func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dyna
 		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
 	}
 
-	w.recBar = prog.AddBar(1,
-		mpb.PrependDecorators(
-			w.preDecorator(),
-		),
-		mpb.AppendDecorators(
-			w.postDecorator(),
-		),
-	)
+	if prog != nil {
+		w.recBar = prog.AddBar(1,
+			mpb.PrependDecorators(
+				w.preDecorator(),
+			),
+			mpb.AppendDecorators(
+				w.postDecorator(),
+			),
+		)
+	}
 	return w
 }
 
@@ -261,7 +262,7 @@ func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 
 	return func(res *types.GroupResource) {
 		defer wg.Done()
-
+		w.queryFinished = false
 		ctx := context.TODO()
 		w.currentKind = res.GroupKind()
 		w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
@@ -274,6 +275,7 @@ func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 		ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
 
 		res.QueryDuration = time.Now().Sub(start)
+		w.queryFinished = true
 		start = time.Now()
 
 		if err != nil {

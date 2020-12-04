@@ -91,6 +91,7 @@ type Config struct {
 	Namespace            string `yaml:"namespace"`
 	Worker               int    `yaml:"worker"`
 	Archive              bool   `yaml:"archive"`
+	Silent               bool   `yaml:"silent"`
 }
 
 // Excluded exclusion params
@@ -162,6 +163,11 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("worker must be > 0")
 	}
 
+	if c.Silent {
+		c.Summary = false
+		c.Progress = false
+		c.Progress = false
+	}
 	return nil
 }
 
@@ -178,7 +184,12 @@ func (c *Config) Marshal(us interface{}) ([]byte, error) {
 		return out.Bytes(), err
 	}
 	return nil, fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
+}
 
+func (c *Config) Printf(format string, a ...interface{}) {
+	if !c.Silent {
+		fmt.Printf(format, a...)
+	}
 }
 
 // FilterFields filter fields for a given resource
