@@ -212,14 +212,10 @@ func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dyna
 
 	w.recBar = prog.AddBar(1,
 		mpb.PrependDecorators(
-			w.decorator(),
+			w.preDecorator(),
 		),
 		mpb.AppendDecorators(
-			decor.CurrentNoUnit(""),
-			decor.Name("/"),
-			decor.TotalNoUnit(""),
-			decor.Name(" "),
-			decor.Percentage(),
+			w.postDecorator(),
 		),
 	)
 	return w

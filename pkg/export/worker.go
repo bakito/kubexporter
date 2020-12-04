@@ -52,8 +52,23 @@ func (w *worker) list(ctx context.Context, group, version, kind string) (*unstru
 	return dr.List(ctx, metav1.ListOptions{})
 }
 
-func (w *worker) decorator() decor.Decorator {
+func (w *worker) preDecorator() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
+		if s.Completed {
+			return fmt.Sprintf("worker: %2d:", w.id)
+		}
 		return fmt.Sprintf("worker: %2d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
+	})
+}
+
+func (w *worker) postDecorator() decor.Decorator {
+	return decor.Any(func(s decor.Statistics) string {
+		if s.Completed {
+			return "done"
+		}
+		return fmt.Sprintf("%s / %s %s",
+			decor.CurrentNoUnit("").Decor(s),
+			decor.TotalNoUnit("").Decor(s),
+			decor.Percentage().Decor(s))
 	})
 }
