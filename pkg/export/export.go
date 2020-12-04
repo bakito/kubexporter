@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"fmt"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
@@ -51,7 +52,7 @@ type Exporter interface {
 
 func (e *exporter) Export() error {
 	start := time.Now()
-	defer func() { e.config.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
+	defer func() { e.printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -132,26 +133,26 @@ func (e *exporter) Export() error {
 }
 
 func (e *exporter) writeIntro(cfg *rest.Config) {
-	e.config.Printf("Starting export ...\n")
-	e.config.Printf("  %s cluster %q\n", check, cfg.Host)
+	e.printf("Starting export ...\n")
+	e.printf("  cluster %q\n", cfg.Host)
 	if e.config.Namespace == "" {
-		e.config.Printf("  %s all namespaces 🏘️\n", check)
+		e.printf("  all namespaces 🏘️\n")
 	} else {
-		e.config.Printf("  %s namespace %q 🏠\n", check, e.config.Namespace)
+		e.printf("  namespace %q 🏠\n", e.config.Namespace)
 	}
-	e.config.Printf("  %s target %q 📁\n", check, e.config.Target)
-	e.config.Printf("  %s format %q 📜\n", check, e.config.OutputFormat)
+	e.printf("  target %q 📁\n", e.config.Target)
+	e.printf("  format %q 📜\n", e.config.OutputFormat)
 	if e.config.Worker > 1 {
-		e.config.Printf("  %s worker %s\n", check, strings.Repeat("👷‍️", e.config.Worker))
+		e.printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
 	}
 	if e.config.Summary {
-		e.config.Printf("  %s summary 📊\n", check)
+		e.printf("  summary 📊\n")
 	}
 	if e.config.AsLists {
-		e.config.Printf("  %s as lists 📦\n", check)
+		e.printf("  as lists 📦\n")
 	}
 	if e.config.Archive {
-		e.config.Printf("  %s compress as archive 🗜️\n", check)
+		e.printf("  compress as archive 🗜️\n")
 	}
 }
 
@@ -219,13 +220,21 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.Render()
 }
 
+func (e *exporter) printf(format string, a ...interface{}) {
+	e.config.Printf(format, a...)
+}
+
+func (e *exporter) checkf(format string, a ...interface{}) {
+	e.printf(fmt.Sprintf("  %s %s", check, format), a...)
+}
+
 func (e *exporter) purgeTarget() error {
 	if _, err := os.Stat(e.config.Target); os.IsNotExist(err) {
 		return nil
 	}
 
-	e.config.Printf("Deleting target %q\n", e.config.Target)
-	e.config.Printf("  %s done 🚮\n", check)
+	e.printf("Deleting target %q\n", e.config.Target)
+	e.checkf("done 🚮\n")
 	return os.RemoveAll(e.config.Target)
 
 }

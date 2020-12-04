@@ -72,7 +72,7 @@ func (w *worker) preDecorator() decor.Decorator {
 func (w *worker) postDecorator() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
 		if s.Completed {
-			return "done"
+			return check
 		}
 		return fmt.Sprintf("%s / %s %s",
 			decor.CurrentNoUnit("").Decor(s),

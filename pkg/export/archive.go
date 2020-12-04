@@ -18,7 +18,7 @@ func (e *exporter) tarGz() error {
 		name = fmt.Sprintf("%s-%s.tar.gz", e.config.Target, time.Now().Format("2006-01-02"))
 	}
 	name = filepath.Join(e.config.Target, name)
-	e.config.Printf("\nCreating archive ...\n")
+	e.printf("\nCreating archive ...\n")
 	// set up the output file
 	file, err := os.Create(name)
 	if err != nil {
@@ -53,7 +53,7 @@ func (e *exporter) tarGz() error {
 	if err != nil {
 		return err
 	}
-	e.config.Printf("  %s created️ %q 🗜️\n", check, name)
+	e.checkf("created️ %q 🗜️\n", name)
 	return nil
 }
 
