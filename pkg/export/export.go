@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
@@ -252,30 +253,10 @@ func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 			if w.recBar != nil {
 				w.recBar.SetTotal(int64(len(ul.Items)), false)
 			}
-			for _, u := range ul.Items {
-				w.config.Excluded.FilterFields(res, u)
-
-				us := &u
-				b, err := w.config.Marshal(us)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-				filename, err := w.config.FileName(res, us)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-
-				_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-				err = ioutil.WriteFile(filename, b, 0664)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-				if w.recBar != nil {
-					w.recBar.Increment()
-				}
+			if w.config.AsLists {
+				w.exportLists(res, ul)
+			} else {
+				w.exportSingleResources(res, ul)
 			}
 		}
 		if ul != nil {
@@ -287,5 +268,76 @@ func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 			w.mainBar.Increment()
 		}
 		out <- res
+	}
+}
+
+func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+
+	clone := ul.DeepCopy()
+	clone.Items = nil
+	unstructured.RemoveNestedField(clone.Object, "metadata")
+
+	perNs := make(map[string]*unstructured.UnstructuredList)
+	for _, u := range ul.Items {
+		w.config.Excluded.FilterFields(res, u)
+
+		if _, ok := perNs[u.GetNamespace()]; !ok {
+			ul := &unstructured.UnstructuredList{}
+			clone.DeepCopyInto(ul)
+			perNs[u.GetNamespace()] = ul
+		}
+		perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
+	}
+
+	for ns, usl := range perNs {
+		filename, err := w.config.ListFileName(res, ns)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
+		b, err := w.config.Marshal(usl)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
+		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		err = ioutil.WriteFile(filename, b, 0664)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+		if w.recBar != nil {
+			w.recBar.IncrBy(len(usl.Items))
+		}
+	}
+}
+
+func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+	for _, u := range ul.Items {
+		w.config.Excluded.FilterFields(res, u)
+
+		us := &u
+		b, err := w.config.Marshal(us)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+		filename, err := w.config.FileName(res, us)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
+		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		err = ioutil.WriteFile(filename, b, 0664)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+		if w.recBar != nil {
+			w.recBar.Increment()
+		}
 	}
 }

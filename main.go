@@ -14,10 +14,11 @@ import (
 )
 
 const (
-	defaultFileNamePattern = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
-	defaultFormat          = "yaml"
-	defaultTarget          = "exports"
-	na                     = "N/A"
+	defaultFileNamePattern     = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
+	defaultListFileNamePattern = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Extension}}`
+	defaultFormat              = "yaml"
+	defaultTarget              = "exports"
+	na                         = "N/A"
 )
 
 func main() {
@@ -45,12 +46,13 @@ func main() {
 	defer func() { fmt.Printf("Total Duration: %s\n", time.Now().Sub(start).String()) }()
 
 	conf := &types.Config{
-		FileNameTemplate: defaultFileNamePattern,
-		OutputFormat:     defaultFormat,
-		Target:           defaultTarget,
-		Summary:          false,
-		Progress:         true,
-		Worker:           1,
+		FileNameTemplate:     defaultFileNamePattern,
+		ListFileNameTemplate: defaultListFileNamePattern,
+		OutputFormat:         defaultFormat,
+		Target:               defaultTarget,
+		Summary:              false,
+		Progress:             true,
+		Worker:               1,
 	}
 	if configFile != "" {
 		b, err := ioutil.ReadFile(configFile)

@@ -2,6 +2,9 @@ summary: false
 progress: true
 archive: true
 namespace:
+outputFormat: yaml
+asLists: true
+clearTarget: true
 worker: 1
 excluded:
   kinds:
