@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"fmt"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
@@ -41,6 +42,14 @@ type Exporter interface {
 }
 
 func (e *exporter) Export() error {
+
+	if e.config.ClearTarget {
+		if err := e.purgeTarget(); err != nil {
+			return err
+		}
+	}
+	fmt.Printf("Start export to target: '%s' with namespace: '%s'\n", e.config.Target, e.config.Namespace)
+
 	kubeconfig := filepath.Join(
 		os.Getenv("HOME"), ".kube", "config",
 	)
@@ -174,6 +183,15 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	}
 	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
 	table.Render()
+}
+
+func (e *exporter) purgeTarget() error {
+	if _, err := os.Stat(e.config.Target); os.IsNotExist(err) {
+		return nil
+	}
+	fmt.Printf("Deleting target '%s'\n", e.config.Target)
+	return os.RemoveAll(e.config.Target)
+
 }
 
 type exporter struct {

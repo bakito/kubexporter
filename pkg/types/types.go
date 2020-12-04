@@ -78,6 +78,7 @@ type Config struct {
 	FileNameTemplate string `yaml:"fileNameTemplate"`
 	OutputFormat     string `yaml:"outputFormat"`
 	Target           string `yaml:"target"`
+	ClearTarget      bool   `yaml:"clearTarget"`
 	Summary          bool   `yaml:"summary"`
 	Progress         bool   `yaml:"progress"`
 	Namespace        string `yaml:"namespace"`

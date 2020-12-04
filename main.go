@@ -26,11 +26,13 @@ func main() {
 	var namespace string
 	var outputFormat string
 	var ver bool
+	var rmTarget bool
 	flag.StringVar(&configFile, "config", "", "config file")
 	flag.StringVar(&namespace, "namespace", na, "set the workspace")
-	flag.StringVar(&outputFormat, "outputFormat", na, "set the output format (yaml / json)")
+	flag.StringVar(&outputFormat, "output-format", na, "set the output format (yaml / json)")
 	flag.IntVar(&worker, "worker", -1, "set the number of workers")
 	flag.BoolVar(&ver, "version", false, "get the version")
+	flag.BoolVar(&rmTarget, "rm-target", false, "delete the target dir before executing")
 	flag.Parse()
 	silenceKlog()
 
@@ -69,6 +71,9 @@ func main() {
 	}
 	if worker > 0 {
 		conf.Worker = worker
+	}
+	if rmTarget {
+		conf.ClearTarget = rmTarget
 	}
 
 	ex, err := export.NewExporter(conf)
