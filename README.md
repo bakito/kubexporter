@@ -14,6 +14,8 @@ The configuration allows customization on which resources and which fields to ex
 ```bash
 kubexporter --config config.yaml
 ```
+![kubexporter](doc/kubexporter.gif)
+
 
 ### Config
 
