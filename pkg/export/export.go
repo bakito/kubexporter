@@ -10,18 +10,27 @@ import (
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+)
+
+const (
+	colorReset = "\033[0m"
+	colorGreen = "\033[32m"
+	check      = colorGreen + "✓" + colorReset
 )
 
 // NewExporter create a new exporter
@@ -42,7 +51,8 @@ type Exporter interface {
 }
 
 func (e *exporter) Export() error {
-
+	start := time.Now()
+	defer func() { fmt.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -57,7 +67,7 @@ func (e *exporter) Export() error {
 		return err
 	}
 
-	fmt.Printf("Start export from %q with namespace: %q to target: %q\n", cfg.Host, e.config.Namespace, e.config.Target)
+	e.writeIntro(cfg)
 
 	dcl, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
@@ -120,6 +130,30 @@ func (e *exporter) Export() error {
 		err = e.tarGz()
 	}
 	return err
+}
+
+func (e *exporter) writeIntro(cfg *rest.Config) {
+	fmt.Println("Starting export ...")
+	fmt.Printf("  %s cluster %q\n", check, cfg.Host)
+	if e.config.Namespace == "" {
+		fmt.Printf("  %s all namespaces 🏘️\n", check)
+	} else {
+		fmt.Printf("  %s namespace %q 🏠\n", check, e.config.Namespace)
+	}
+	fmt.Printf("  %s target %q 📁\n", check, e.config.Target)
+	fmt.Printf("  %s format %q 📜\n", check, e.config.OutputFormat)
+	if e.config.Worker > 1 {
+		fmt.Printf("  %s worker %s\n", check, strings.Repeat("👷‍️", e.config.Worker))
+	}
+	if e.config.Summary {
+		fmt.Printf("  %s summary 📊\n", check)
+	}
+	if e.config.AsLists {
+		fmt.Printf("  %s as lists 📦\n", check)
+	}
+	if e.config.Archive {
+		fmt.Printf("  %s compress as archive 🗜️\n", check)
+	}
 }
 
 func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.GroupResource, error) {
@@ -190,7 +224,9 @@ func (e *exporter) purgeTarget() error {
 	if _, err := os.Stat(e.config.Target); os.IsNotExist(err) {
 		return nil
 	}
-	fmt.Printf("Deleting target '%s'\n", e.config.Target)
+
+	fmt.Printf("Deleting target %q\n", e.config.Target)
+	fmt.Printf("  %s done 🚮\n", check)
 	return os.RemoveAll(e.config.Target)
 
 }
@@ -252,30 +288,10 @@ func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 			if w.recBar != nil {
 				w.recBar.SetTotal(int64(len(ul.Items)), false)
 			}
-			for _, u := range ul.Items {
-				w.config.Excluded.FilterFields(res, u)
-
-				us := &u
-				b, err := w.config.Marshal(us)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-				filename, err := w.config.FileName(res, us)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-
-				_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-				err = ioutil.WriteFile(filename, b, 0664)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-				if w.recBar != nil {
-					w.recBar.Increment()
-				}
+			if w.config.AsLists {
+				w.exportLists(res, ul)
+			} else {
+				w.exportSingleResources(res, ul)
 			}
 		}
 		if ul != nil {
@@ -287,5 +303,76 @@ func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 			w.mainBar.Increment()
 		}
 		out <- res
+	}
+}
+
+func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+
+	clone := ul.DeepCopy()
+	clone.Items = nil
+	unstructured.RemoveNestedField(clone.Object, "metadata")
+
+	perNs := make(map[string]*unstructured.UnstructuredList)
+	for _, u := range ul.Items {
+		w.config.Excluded.FilterFields(res, u)
+
+		if _, ok := perNs[u.GetNamespace()]; !ok {
+			ul := &unstructured.UnstructuredList{}
+			clone.DeepCopyInto(ul)
+			perNs[u.GetNamespace()] = ul
+		}
+		perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
+	}
+
+	for ns, usl := range perNs {
+		filename, err := w.config.ListFileName(res, ns)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
+		b, err := w.config.Marshal(usl)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
+		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		err = ioutil.WriteFile(filename, b, 0664)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+		if w.recBar != nil {
+			w.recBar.IncrBy(len(usl.Items))
+		}
+	}
+}
+
+func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+	for _, u := range ul.Items {
+		w.config.Excluded.FilterFields(res, u)
+
+		us := &u
+		b, err := w.config.Marshal(us)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+		filename, err := w.config.FileName(res, us)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
+		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		err = ioutil.WriteFile(filename, b, 0664)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+		if w.recBar != nil {
+			w.recBar.Increment()
+		}
 	}
 }

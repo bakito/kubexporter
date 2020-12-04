@@ -58,6 +58,11 @@ func (r GroupResource) GroupKind() string {
 	return r.APIResource.Kind
 }
 
+// Kind get the kind
+func (r GroupResource) Kind() string {
+	return r.APIResource.Kind
+}
+
 // Sort sort GroupResource
 func Sort(resources []*GroupResource) func(int, int) bool {
 	return func(i, j int) bool {
@@ -73,17 +78,19 @@ func Sort(resources []*GroupResource) func(int, int) bool {
 
 // Config export config
 type Config struct {
-	Excluded         Excluded `yaml:"excluded"`
-	excludedSet      set
-	FileNameTemplate string `yaml:"fileNameTemplate"`
-	OutputFormat     string `yaml:"outputFormat"`
-	Target           string `yaml:"target"`
-	ClearTarget      bool   `yaml:"clearTarget"`
-	Summary          bool   `yaml:"summary"`
-	Progress         bool   `yaml:"progress"`
-	Namespace        string `yaml:"namespace"`
-	Worker           int    `yaml:"worker"`
-	Archive          bool   `yaml:"archive"`
+	Excluded             Excluded `yaml:"excluded"`
+	excludedSet          set
+	FileNameTemplate     string `yaml:"fileNameTemplate"`
+	ListFileNameTemplate string `yaml:"listFileNameTemplate"`
+	OutputFormat         string `yaml:"outputFormat"`
+	AsLists              bool   `yaml:"asLists"`
+	Target               string `yaml:"target"`
+	ClearTarget          bool   `yaml:"clearTarget"`
+	Summary              bool   `yaml:"summary"`
+	Progress             bool   `yaml:"progress"`
+	Namespace            string `yaml:"namespace"`
+	Worker               int    `yaml:"worker"`
+	Archive              bool   `yaml:"archive"`
 }
 
 // Excluded exclusion params
@@ -103,16 +110,25 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 
 // FileName generate export file name
 func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (string, error) {
-	t, err := template.New("base").Funcs(sprig.TxtFuncMap()).Parse(c.FileNameTemplate)
+	return c.fileName(res, us.GetNamespace(), c.FileNameTemplate)
+}
+
+// ListFileName generate export list file name
+func (c *Config) ListFileName(res *GroupResource, namespace string) (string, error) {
+	return c.fileName(res, namespace, c.ListFileNameTemplate)
+}
+
+func (c *Config) fileName(res *GroupResource, namespace string, templ string) (string, error) {
+	t, err := template.New("base").Funcs(sprig.TxtFuncMap()).Parse(templ)
 	if err != nil {
 		return "", err
 	}
 
 	var tpl bytes.Buffer
 	err = t.Execute(&tpl, map[string]string{
-		"Namespace": us.GetNamespace(),
-		"Name":      us.GetName(),
-		"Kind":      us.GetKind(),
+		"Namespace": namespace,
+		"Name":      res.APIGroup,
+		"Kind":      res.Kind(),
 		"Group":     res.APIGroup,
 		"Extension": c.OutputFormat},
 	)
@@ -132,8 +148,15 @@ func (c *Config) Validate() error {
 	if c.OutputFormat != "json" && c.OutputFormat != "yaml" {
 		return fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
 	}
-	if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}); err != nil {
+	if c.FileNameTemplate == "" {
+		return fmt.Errorf("file name template must not be empty [%s]", c.FileNameTemplate)
+	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}); err != nil {
 		return fmt.Errorf("error parsing template [%s]", c.FileNameTemplate)
+	}
+	if c.ListFileNameTemplate == "" {
+		return fmt.Errorf("list file name template must not be empty [%s]", c.ListFileNameTemplate)
+	} else if _, err := c.ListFileName(&GroupResource{}, ""); err != nil {
+		return fmt.Errorf("error parsing list template [%s]", c.ListFileNameTemplate)
 	}
 	if c.Worker <= 0 {
 		return fmt.Errorf("worker must be > 0")
@@ -143,7 +166,7 @@ func (c *Config) Validate() error {
 }
 
 // Marshal marshal the unstructured with the correct format
-func (c *Config) Marshal(us *unstructured.Unstructured) ([]byte, error) {
+func (c *Config) Marshal(us interface{}) ([]byte, error) {
 	switch c.OutputFormat {
 	case "yaml":
 		return yaml.Marshal(us)
