@@ -23,6 +23,7 @@ import (
 	"time"
 )
 
+// NewExporter create a new exporter
 func NewExporter(config *types.Config) (Exporter, error) {
 	err := config.Validate()
 	if err != nil {
@@ -34,12 +35,12 @@ func NewExporter(config *types.Config) (Exporter, error) {
 	}, nil
 }
 
+// Exporter interface
 type Exporter interface {
 	Export() error
 }
 
 func (e *exporter) Export() error {
-
 	kubeconfig := filepath.Join(
 		os.Getenv("HOME"), ".kube", "config",
 	)
@@ -87,7 +88,7 @@ func (e *exporter) Export() error {
 		return err
 	}
 
-	var workers []*Worker
+	var workers []*worker
 	for i := 0; i < e.config.Worker; i++ {
 		workers = append(workers, newWorker(i, e.config, mapper, client, prog, mainBar))
 	}
@@ -112,7 +113,6 @@ func (e *exporter) Export() error {
 }
 
 func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.GroupResource, error) {
-
 	lists, err := dcl.ServerPreferredResources()
 	if err != nil {
 		return nil, err
@@ -157,18 +157,22 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 		header = append(header, "Error")
 	}
 	table.SetHeader(header)
-	now := time.Now()
-	queryDuration := now
-	exportDuration := now
-	var instances int
+	start := time.Now()
+	qd := start
+	ed := start
+	var inst int
 
 	for _, r := range resources {
 		table.Append(r.Report(workerErrors > 0))
-		queryDuration = queryDuration.Add(r.QueryDuration)
-		exportDuration = exportDuration.Add(r.ExportDuration)
-		instances += r.Instances
+		qd = qd.Add(r.QueryDuration)
+		ed = ed.Add(r.ExportDuration)
+		inst += r.Instances
 	}
-	table.Append([]string{"TOTAL", "", "", "", strconv.Itoa(instances), queryDuration.Sub(now).String(), exportDuration.Sub(now).String()})
+	total := "TOTAL"
+	if e.config.Worker > 1 {
+		total = "CUMULATED " + total
+	}
+	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
 	table.Render()
 }
 
@@ -176,9 +180,9 @@ type exporter struct {
 	config *types.Config
 }
 
-func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) *Worker {
+func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) *worker {
 
-	w := &Worker{
+	w := &worker{
 		id:               id + 1,
 		mainBar:          mainBar,
 		config:           config,
@@ -202,7 +206,7 @@ func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dyna
 	return w
 }
 
-func (w *Worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
+func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
 
 	return func(res *types.GroupResource) {
 		defer wg.Done()
@@ -216,7 +220,7 @@ func (w *Worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) fun
 			w.recBar.SetTotal(0, false)
 		}
 		start := time.Now()
-		ul, err := w.List(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
+		ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
 
 		res.QueryDuration = time.Now().Sub(start)
 		start = time.Now()

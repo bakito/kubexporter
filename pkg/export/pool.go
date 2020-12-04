@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-func runExport(workers []*Worker, resources []*types.GroupResource) (int, error) {
+func runExport(workers []*worker, resources []*types.GroupResource) (int, error) {
 	var wg sync.WaitGroup
 
 	poolSize := len(resources)
@@ -35,7 +35,7 @@ func runExport(workers []*Worker, resources []*types.GroupResource) (int, error)
 	pool.Stop()
 	workerErrors := 0
 	for _, w := range workers {
-		workerErrors += w.Stop()
+		workerErrors += w.stop()
 	}
 	return workerErrors, nil
 }

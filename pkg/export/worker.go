@@ -11,10 +11,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"time"
 )
 
-type Worker struct {
+type worker struct {
 	id               int
 	config           *types.Config
 	mainBar          *mpb.Bar
@@ -27,14 +26,15 @@ type Worker struct {
 }
 
 // end worker
-func (w *Worker) Stop() int {
+func (w *worker) stop() int {
 	if w.recBar != nil {
 		w.recBar.SetTotal(100, true)
 	}
 	return w.errors
 }
 
-func (w *Worker) List(ctx context.Context, group, version, kind string) (*unstructured.UnstructuredList, error) {
+// list resources
+func (w *worker) list(ctx context.Context, group, version, kind string) (*unstructured.UnstructuredList, error) {
 
 	mapping, err := w.mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
 	if err != nil {
@@ -52,13 +52,8 @@ func (w *Worker) List(ctx context.Context, group, version, kind string) (*unstru
 	return dr.List(ctx, metav1.ListOptions{})
 }
 
-func (w *Worker) StartNewKind(gr *types.GroupResource) {
-	w.currentKind = gr.GroupKind()
-	w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
-}
-
-func (w *Worker) decorator() decor.Decorator {
+func (w *worker) decorator() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
-		return fmt.Sprintf("Worker: %d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
+		return fmt.Sprintf("worker: %2d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
 	})
 }
