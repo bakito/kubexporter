@@ -91,7 +91,7 @@ type Config struct {
 	Namespace            string `yaml:"namespace"`
 	Worker               int    `yaml:"worker"`
 	Archive              bool   `yaml:"archive"`
-	Silent               bool   `yaml:"silent"`
+	Quiet                bool   `yaml:"quiet"`
 }
 
 // Excluded exclusion params
@@ -163,7 +163,7 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("worker must be > 0")
 	}
 
-	if c.Silent {
+	if c.Quiet {
 		c.Summary = false
 		c.Progress = false
 		c.Progress = false
@@ -187,7 +187,7 @@ func (c *Config) Marshal(us interface{}) ([]byte, error) {
 }
 
 func (c *Config) Printf(format string, a ...interface{}) {
-	if !c.Silent {
+	if !c.Quiet {
 		fmt.Printf(format, a...)
 	}
 }
