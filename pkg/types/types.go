@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
@@ -20,6 +21,7 @@ var (
 	invalidFileChars = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
 )
 
+// GroupResource group resource information
 type GroupResource struct {
 	APIGroup        string
 	APIGroupVersion string
@@ -31,6 +33,7 @@ type GroupResource struct {
 	ExportDuration  time.Duration
 }
 
+// Report generate report rows
 func (r GroupResource) Report(withError bool) []string {
 	row := []string{
 		r.APIGroup,
@@ -47,6 +50,7 @@ func (r GroupResource) Report(withError bool) []string {
 	return row
 }
 
+// GroupKind get concatenated group and kind
 func (r GroupResource) GroupKind() string {
 	if r.APIGroup != "" {
 		return fmt.Sprintf("%s.%s", r.APIGroup, r.APIResource.Kind)
@@ -54,6 +58,20 @@ func (r GroupResource) GroupKind() string {
 	return r.APIResource.Kind
 }
 
+// Sort sort GroupResource
+func Sort(resources []*GroupResource) func(int, int) bool {
+	return func(i, j int) bool {
+		ret := strings.Compare(resources[i].APIGroup, resources[j].APIGroup)
+		if ret > 0 {
+			return false
+		} else if ret == 0 {
+			return strings.Compare(resources[i].APIResource.Kind, resources[j].APIResource.Kind) < 0
+		}
+		return true
+	}
+}
+
+// Config export config
 type Config struct {
 	Excluded         Excluded `yaml:"excluded"`
 	excludedSet      set
@@ -67,12 +85,14 @@ type Config struct {
 	Archive          bool   `yaml:"archive"`
 }
 
+// Excluded exclusion params
 type Excluded struct {
 	Kinds      []string              `yaml:"kinds"`
 	Fields     [][]string            `yaml:"fields"`
 	KindFields map[string][][]string `yaml:"kindFields"`
 }
 
+// IsExcluded check if the group resource is excluded
 func (c *Config) IsExcluded(gr *GroupResource) bool {
 	if c.excludedSet == nil {
 		c.excludedSet = newSet(c.Excluded.Kinds...)
@@ -80,6 +100,7 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 	return c.excludedSet.contains(gr.GroupKind())
 }
 
+// FileName generate export file name
 func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (string, error) {
 	t, err := template.New("base").Funcs(sprig.TxtFuncMap()).Parse(c.FileNameTemplate)
 	if err != nil {
@@ -105,6 +126,7 @@ func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (st
 	return filepath.Join(pathElements...), err
 }
 
+// Validate validate the config
 func (c *Config) Validate() error {
 	if c.OutputFormat != "json" && c.OutputFormat != "yaml" {
 		return fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
@@ -119,17 +141,23 @@ func (c *Config) Validate() error {
 	return nil
 }
 
+// Marshal marshal the unstructured with the correct format
 func (c *Config) Marshal(us *unstructured.Unstructured) ([]byte, error) {
 	switch c.OutputFormat {
 	case "yaml":
 		return yaml.Marshal(us)
 	case "json":
-		return json.Marshal(us)
+		var out bytes.Buffer
+		enc := json.NewEncoder(&out)
+		enc.SetIndent("", "  ")
+		err := enc.Encode(us)
+		return out.Bytes(), err
 	}
 	return nil, fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
 
 }
 
+// FilterFields filter fields for a given resource
 func (e *Excluded) FilterFields(res *GroupResource, us unstructured.Unstructured) {
 	for _, f := range e.Fields {
 		unstructured.RemoveNestedField(us.Object, f...)

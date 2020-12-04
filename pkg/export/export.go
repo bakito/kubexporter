@@ -19,7 +19,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
@@ -54,45 +53,12 @@ func (e *exporter) Export() error {
 		return err
 	}
 
-	lists, err := dcl.ServerPreferredResources()
+	resources, err := e.listResources(dcl)
 	if err != nil {
 		return err
 	}
 
-	var resources []*types.GroupResource
-
-	for _, list := range lists {
-		if len(list.APIResources) == 0 {
-			continue
-		}
-		gv, err := schema.ParseGroupVersion(list.GroupVersion)
-		if err != nil {
-			continue
-		}
-		for _, resource := range list.APIResources {
-			r := &types.GroupResource{
-				APIGroup:        gv.Group,
-				APIVersion:      gv.Version,
-				APIGroupVersion: gv.String(),
-				APIResource:     resource,
-			}
-			if len(resource.Verbs) == 0 || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
-				continue
-			}
-
-			resources = append(resources, r)
-		}
-	}
-
-	sort.Slice(resources, func(i, j int) bool {
-		ret := strings.Compare(resources[i].APIGroup, resources[j].APIGroup)
-		if ret > 0 {
-			return false
-		} else if ret == 0 {
-			return strings.Compare(resources[i].APIResource.Kind, resources[j].APIResource.Kind) < 0
-		}
-		return true
-	})
+	sort.SliceStable(resources, types.Sort(resources))
 
 	var prog *mpb.Progress
 
@@ -143,6 +109,40 @@ func (e *exporter) Export() error {
 		err = e.tarGz()
 	}
 	return err
+}
+
+func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.GroupResource, error) {
+
+	lists, err := dcl.ServerPreferredResources()
+	if err != nil {
+		return nil, err
+	}
+
+	var resources []*types.GroupResource
+
+	for _, list := range lists {
+		if len(list.APIResources) == 0 {
+			continue
+		}
+		gv, err := schema.ParseGroupVersion(list.GroupVersion)
+		if err != nil {
+			continue
+		}
+		for _, resource := range list.APIResources {
+			r := &types.GroupResource{
+				APIGroup:        gv.Group,
+				APIVersion:      gv.Version,
+				APIGroupVersion: gv.String(),
+				APIResource:     resource,
+			}
+			if len(resource.Verbs) == 0 || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
+				continue
+			}
+
+			resources = append(resources, r)
+		}
+	}
+	return resources, nil
 }
 
 func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResource) {

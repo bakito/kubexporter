@@ -17,21 +17,24 @@ const (
 	defaultFileNamePattern = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
 	defaultFormat          = "yaml"
 	defaultTarget          = "exports"
+	na                     = "N/A"
 )
 
 func main() {
 	var configFile string
 	var worker int
 	var namespace string
-	var vers bool
+	var outputFormat string
+	var ver bool
 	flag.StringVar(&configFile, "config", "", "config file")
-	flag.StringVar(&namespace, "namespace", "N/A", "set the workspace")
+	flag.StringVar(&namespace, "namespace", na, "set the workspace")
+	flag.StringVar(&outputFormat, "outputFormat", na, "set the output format (yaml / json)")
 	flag.IntVar(&worker, "worker", -1, "set the number of workers")
-	flag.BoolVar(&vers, "version", false, "get the version")
+	flag.BoolVar(&ver, "version", false, "get the version")
 	flag.Parse()
 	silenceKlog()
 
-	if vers {
+	if ver {
 		fmt.Printf("kubexporter version: %s\n", version.Version)
 		return
 	}
@@ -58,8 +61,11 @@ func main() {
 		}
 	}
 
-	if namespace != "N/A" {
+	if namespace != na {
 		conf.Namespace = namespace
+	}
+	if outputFormat != na {
+		conf.OutputFormat = outputFormat
 	}
 	if worker > 0 {
 		conf.Worker = worker
