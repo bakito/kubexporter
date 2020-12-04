@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/sprig"
+	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"path/filepath"
@@ -27,6 +28,7 @@ type Config struct {
 	Worker               int    `yaml:"worker"`
 	Archive              bool   `yaml:"archive"`
 	Quiet                bool   `yaml:"quiet"`
+	log                  log.YALI
 }
 
 // Excluded exclusion params
@@ -121,10 +123,11 @@ func (c *Config) Marshal(us interface{}) ([]byte, error) {
 	return nil, fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
 }
 
-func (c *Config) Printf(format string, a ...interface{}) {
-	if !c.Quiet {
-		fmt.Printf(format, a...)
+func (c *Config) Logger() log.YALI {
+	if c.log == nil {
+		c.log = log.New(c.Quiet)
 	}
+	return c.log
 }
 
 type set map[string]bool

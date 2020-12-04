@@ -1,16 +1,12 @@
 package export
 
 import (
-	"context"
-	"fmt"
+	"github.com/bakito/kubexporter/pkg/export/worker"
+	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
-	"io/ioutil"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
@@ -23,14 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
-)
-
-const (
-	colorReset = "\033[0m"
-	colorGreen = "\033[32m"
-	check      = colorGreen + "✓" + colorReset
 )
 
 // NewExporter create a new exporter
@@ -42,6 +31,7 @@ func NewExporter(config *types.Config) (Exporter, error) {
 
 	return &exporter{
 		config: config,
+		l:      config.Logger(),
 	}, nil
 }
 
@@ -52,7 +42,7 @@ type Exporter interface {
 
 func (e *exporter) Export() error {
 	start := time.Now()
-	defer func() { e.printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
+	defer func() { e.l.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -108,12 +98,12 @@ func (e *exporter) Export() error {
 		return err
 	}
 
-	var workers []*worker
+	var workers []worker.Worker
 	for i := 0; i < e.config.Worker; i++ {
-		workers = append(workers, newWorker(i, e.config, mapper, client, prog, mainBar))
+		workers = append(workers, worker.New(i, e.config, mapper, client, prog, mainBar))
 	}
 
-	workerErrors, err := runExport(workers, resources)
+	workerErrors, err := worker.RunExport(workers, resources)
 	if err != nil {
 		return err
 	}
@@ -133,26 +123,26 @@ func (e *exporter) Export() error {
 }
 
 func (e *exporter) writeIntro(cfg *rest.Config) {
-	e.printf("Starting export ...\n")
-	e.printf("  cluster %q\n", cfg.Host)
+	e.l.Printf("Starting export ...\n")
+	e.l.Printf("  cluster %q\n", cfg.Host)
 	if e.config.Namespace == "" {
-		e.printf("  all namespaces 🏘️\n")
+		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
-		e.printf("  namespace %q 🏠\n", e.config.Namespace)
+		e.l.Printf("  namespace %q 🏠\n", e.config.Namespace)
 	}
-	e.printf("  target %q 📁\n", e.config.Target)
-	e.printf("  format %q 📜\n", e.config.OutputFormat)
+	e.l.Printf("  target %q 📁\n", e.config.Target)
+	e.l.Printf("  format %q 📜\n", e.config.OutputFormat)
 	if e.config.Worker > 1 {
-		e.printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
+		e.l.Printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
 	}
 	if e.config.Summary {
-		e.printf("  summary 📊\n")
+		e.l.Printf("  summary 📊\n")
 	}
 	if e.config.AsLists {
-		e.printf("  as lists 📦\n")
+		e.l.Printf("  as lists 📦\n")
 	}
 	if e.config.Archive {
-		e.printf("  compress as archive 🗜️\n")
+		e.l.Printf("  compress as archive 🗜️\n")
 	}
 }
 
@@ -219,171 +209,18 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
 	table.Render()
 }
-
-func (e *exporter) printf(format string, a ...interface{}) {
-	e.config.Printf(format, a...)
-}
-
-func (e *exporter) checkf(format string, a ...interface{}) {
-	e.printf(fmt.Sprintf("  %s %s", check, format), a...)
-}
-
 func (e *exporter) purgeTarget() error {
 	if _, err := os.Stat(e.config.Target); os.IsNotExist(err) {
 		return nil
 	}
 
-	e.printf("Deleting target %q\n", e.config.Target)
-	e.checkf("done 🚮\n")
+	e.l.Printf("Deleting target %q\n", e.config.Target)
+	e.l.Checkf("done 🚮\n")
 	return os.RemoveAll(e.config.Target)
 
 }
 
 type exporter struct {
 	config *types.Config
-}
-
-func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) *worker {
-
-	w := &worker{
-		id:               id + 1,
-		mainBar:          mainBar,
-		config:           config,
-		mapper:           mapper,
-		client:           client,
-		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-	}
-
-	if prog != nil {
-		w.recBar = prog.AddBar(1,
-			mpb.PrependDecorators(
-				w.preDecorator(),
-			),
-			mpb.AppendDecorators(
-				w.postDecorator(),
-			),
-		)
-	}
-	return w
-}
-
-func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
-
-	return func(res *types.GroupResource) {
-		defer wg.Done()
-		w.queryFinished = false
-		ctx := context.TODO()
-		w.currentKind = res.GroupKind()
-		w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
-
-		if w.recBar != nil {
-			w.recBar.SetCurrent(0)
-			w.recBar.SetTotal(0, false)
-		}
-		start := time.Now()
-		ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
-
-		res.QueryDuration = time.Now().Sub(start)
-		w.queryFinished = true
-		start = time.Now()
-
-		if err != nil {
-			if errors.IsNotFound(err) {
-				res.Error = "Not Found"
-			} else if errors.IsMethodNotSupported(err) {
-				res.Error = "Not Allowed"
-			} else {
-				res.Error = "Error:" + err.Error()
-			}
-		} else {
-			if w.recBar != nil {
-				w.recBar.SetTotal(int64(len(ul.Items)), false)
-			}
-			if w.config.AsLists {
-				w.exportLists(res, ul)
-			} else {
-				w.exportSingleResources(res, ul)
-			}
-		}
-		if ul != nil {
-			res.Instances = len(ul.Items)
-		}
-		res.ExportDuration = time.Now().Sub(start)
-
-		if w.mainBar != nil {
-			w.mainBar.Increment()
-		}
-		out <- res
-	}
-}
-
-func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) {
-
-	clone := ul.DeepCopy()
-	clone.Items = nil
-	unstructured.RemoveNestedField(clone.Object, "metadata")
-
-	perNs := make(map[string]*unstructured.UnstructuredList)
-	for _, u := range ul.Items {
-		w.config.Excluded.FilterFields(res, u)
-
-		if _, ok := perNs[u.GetNamespace()]; !ok {
-			ul := &unstructured.UnstructuredList{}
-			clone.DeepCopyInto(ul)
-			perNs[u.GetNamespace()] = ul
-		}
-		perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
-	}
-
-	for ns, usl := range perNs {
-		filename, err := w.config.ListFileName(res, ns)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		b, err := w.config.Marshal(usl)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-		err = ioutil.WriteFile(filename, b, 0664)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		if w.recBar != nil {
-			w.recBar.IncrBy(len(usl.Items))
-		}
-	}
-}
-
-func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) {
-	for _, u := range ul.Items {
-		w.config.Excluded.FilterFields(res, u)
-
-		us := &u
-		b, err := w.config.Marshal(us)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		filename, err := w.config.FileName(res, us)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-		err = ioutil.WriteFile(filename, b, 0664)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		if w.recBar != nil {
-			w.recBar.Increment()
-		}
-	}
+	l      log.YALI
 }
