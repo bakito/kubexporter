@@ -39,6 +39,29 @@ type worker struct {
 	queryFinished    bool
 }
 
+func New(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) Worker {
+	w := &worker{
+		id:               id + 1,
+		mainBar:          mainBar,
+		config:           config,
+		mapper:           mapper,
+		client:           client,
+		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
+	}
+
+	if prog != nil {
+		w.recBar = prog.AddBar(1,
+			mpb.PrependDecorators(
+				w.preDecorator(),
+			),
+			mpb.AppendDecorators(
+				w.postDecorator(),
+			),
+		)
+	}
+	return w
+}
+
 // Stop end worker
 func (w *worker) Stop() int {
 	if w.recBar != nil {
@@ -94,30 +117,6 @@ func (w *worker) postDecorator() decor.Decorator {
 	})
 }
 
-func New(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) Worker {
-
-	w := &worker{
-		id:               id + 1,
-		mainBar:          mainBar,
-		config:           config,
-		mapper:           mapper,
-		client:           client,
-		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-	}
-
-	if prog != nil {
-		w.recBar = prog.AddBar(1,
-			mpb.PrependDecorators(
-				w.preDecorator(),
-			),
-			mpb.AppendDecorators(
-				w.postDecorator(),
-			),
-		)
-	}
-	return w
-}
-
 // GenerateWork generate the work function
 func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
 
@@ -170,7 +169,9 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 }
 
 func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) {
-
+	if res == nil || ul == nil {
+		return
+	}
 	clone := ul.DeepCopy()
 	clone.Items = nil
 	unstructured.RemoveNestedField(clone.Object, "metadata")
@@ -213,6 +214,9 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 }
 
 func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+	if res == nil || ul == nil {
+		return
+	}
 	for _, u := range ul.Items {
 		w.config.Excluded.FilterFields(res, u)
 

@@ -16,13 +16,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	defaultFileNamePattern     = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
-	defaultListFileNamePattern = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Extension}}`
-	defaultFormat              = "yaml"
-	defaultTarget              = "exports"
-)
-
 var (
 	cfgFile string
 	config  *types.Config
@@ -60,7 +53,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kubexporter.yaml)")
 	rootCmd.Flags().StringP("namespace", "n", "", "If present, the namespace scope for this export")
-	rootCmd.Flags().StringP("output-format", "f", defaultFormat, "Set the output format [yaml(default), json]")
+	rootCmd.Flags().StringP("output-format", "f", types.DefaultFormat, "Set the output format [yaml(default), json]")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
 	rootCmd.Flags().BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
@@ -70,7 +63,7 @@ func init() {
 	_ = viper.BindPFlag("namespace", rootCmd.Flags().Lookup("namespace"))
 	viper.SetDefault("namespace", "")
 	_ = viper.BindPFlag("outputFormat", rootCmd.Flags().Lookup("output-format"))
-	viper.SetDefault("outputFormat", defaultFormat)
+	viper.SetDefault("outputFormat", types.DefaultFormat)
 	_ = viper.BindPFlag("worker", rootCmd.Flags().Lookup("worker"))
 	viper.SetDefault("worker", 1)
 	_ = viper.BindPFlag("clearTarget", rootCmd.Flags().Lookup("clear-target"))
@@ -82,9 +75,9 @@ func init() {
 	_ = viper.BindPFlag("asLists", rootCmd.Flags().Lookup("as-lists"))
 	viper.SetDefault("asLists", false)
 	viper.SetDefault("progress", true)
-	viper.SetDefault("fileNameTemplate", defaultFileNamePattern)
-	viper.SetDefault("listFileNameTemplate", defaultListFileNamePattern)
-	viper.SetDefault("target", defaultTarget)
+	viper.SetDefault("fileNameTemplate", types.DefaultFileNameTemplate)
+	viper.SetDefault("listFileNameTemplate", types.DefaultListFileNameTemplate)
+	viper.SetDefault("target", types.DefaultTarget)
 	viper.SetDefault("archive", true)
 
 	// silence klog log output

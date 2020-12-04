@@ -12,6 +12,17 @@ import (
 	"text/template"
 )
 
+const (
+	// DefaultFileNameTemplate default file name template
+	DefaultFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
+	// DefaultListFileNameTemplate default list file name template
+	DefaultListFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Extension}}`
+	// DefaultFormat default output format
+	DefaultFormat = "yaml"
+	// DefaultTarget default export target dir
+	DefaultTarget = "exports"
+)
+
 // Config export config
 type Config struct {
 	Excluded             Excluded `yaml:"excluded"`

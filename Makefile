@@ -12,7 +12,7 @@ tidy:
 	go mod tidy
 
 # Run tests
-test: tidy fmt vet
+test: mocks tidy fmt vet
 	go test ./...  -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
@@ -24,8 +24,15 @@ release: tools
 test-release: tools
 	goreleaser --skip-publish --snapshot --rm-dist
 
+# generate mocks
+mocks: tools
+	mockgen -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
+	mockgen -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 
 tools:
 ifeq (, $(shell which goreleaser))
  $(shell go get github.com/goreleaser/goreleaser)
+endif
+ifeq (, $(shell which mockgen))
+ $(shell go get github.com/golang/mock/mockgen@v1.4.3)
 endif
