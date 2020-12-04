@@ -48,15 +48,16 @@ func (e *exporter) Export() error {
 			return err
 		}
 	}
-	fmt.Printf("Start export to target: '%s' with namespace: '%s'\n", e.config.Target, e.config.Namespace)
 
-	kubeconfig := filepath.Join(
+	kubeCfg := filepath.Join(
 		os.Getenv("HOME"), ".kube", "config",
 	)
-	cfg, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	cfg, err := clientcmd.BuildConfigFromFlags("", kubeCfg)
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("Start export from %q with namespace: %q to target: %q\n", cfg.Host, e.config.Namespace, e.config.Target)
 
 	dcl, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
