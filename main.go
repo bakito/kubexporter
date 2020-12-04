@@ -2,8 +2,10 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"github.com/bakito/kubexporter/pkg/export"
 	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/version"
 	"github.com/ghodss/yaml"
 	"io/ioutil"
 	"k8s.io/klog/v2"
@@ -18,12 +20,24 @@ const (
 )
 
 func main() {
-	start := time.Now()
-	defer func() { println(time.Now().Sub(start).String()) }()
 	var configFile string
+	var worker int
+	var namespace string
+	var vers bool
 	flag.StringVar(&configFile, "config", "", "config file")
+	flag.StringVar(&namespace, "namespace", "N/A", "set the workspace")
+	flag.IntVar(&worker, "worker", -1, "set the number of workers")
+	flag.BoolVar(&vers, "version", false, "get the version")
 	flag.Parse()
 	silenceKlog()
+
+	if vers {
+		fmt.Printf("kubexporter version: %s\n", version.Version)
+		return
+	}
+
+	start := time.Now()
+	defer func() { fmt.Printf("Total Duration: %s\n", time.Now().Sub(start).String()) }()
 
 	conf := &types.Config{
 		FileNameTemplate: defaultFileNamePattern,
@@ -42,6 +56,13 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
+	}
+
+	if namespace != "N/A" {
+		conf.Namespace = namespace
+	}
+	if worker > 0 {
+		conf.Worker = worker
 	}
 
 	ex, err := export.NewExporter(conf)

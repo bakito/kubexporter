@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -135,29 +136,40 @@ func (e *exporter) Export() error {
 	}
 
 	if e.config.Summary {
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeaderLine(false)
-		table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-		table.SetCenterSeparator("")
-		table.SetColumnSeparator("")
-		table.SetRowSeparator("")
-		header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
-		if workerErrors > 0 {
-			header = append(header, "Error")
-		}
-		table.SetHeader(header)
-		for _, r := range resources {
-			table.Append(r.Report(workerErrors > 0))
-		}
-		table.Render()
+		e.printSummary(workerErrors, resources)
 	}
 
 	if e.config.Archive {
-		if err := e.tarGz(); err != nil {
-			return err
-		}
+		err = e.tarGz()
 	}
-	return nil
+	return err
+}
+
+func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResource) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeaderLine(false)
+	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
+	if workerErrors > 0 {
+		header = append(header, "Error")
+	}
+	table.SetHeader(header)
+	now := time.Now()
+	queryDuration := now
+	exportDuration := now
+	var instances int
+
+	for _, r := range resources {
+		table.Append(r.Report(workerErrors > 0))
+		queryDuration = queryDuration.Add(r.QueryDuration)
+		exportDuration = exportDuration.Add(r.ExportDuration)
+		instances += r.Instances
+	}
+	table.Append([]string{"TOTAL", "", "", "", strconv.Itoa(instances), queryDuration.Sub(now).String(), exportDuration.Sub(now).String()})
+	table.Render()
 }
 
 type exporter struct {
