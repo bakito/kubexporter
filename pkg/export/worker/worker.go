@@ -139,6 +139,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		start = time.Now()
 
 		if err != nil {
+			w.errors++
 			if errors.IsNotFound(err) {
 				res.Error = "Not Found"
 			} else if errors.IsMethodNotSupported(err) {

@@ -7,6 +7,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
@@ -169,7 +170,7 @@ func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.Group
 				APIGroupVersion: gv.String(),
 				APIResource:     resource,
 			}
-			if len(resource.Verbs) == 0 || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
+			if !allowsList(resource) || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
 				continue
 			}
 
@@ -177,6 +178,15 @@ func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.Group
 		}
 	}
 	return resources, nil
+}
+
+func allowsList(r v1.APIResource) bool {
+	for _, v := range r.Verbs {
+		if v == "list" {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResource) {
