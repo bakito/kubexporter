@@ -7,7 +7,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
@@ -180,7 +180,7 @@ func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.Group
 	return resources, nil
 }
 
-func allowsList(r v1.APIResource) bool {
+func allowsList(r metav1.APIResource) bool {
 	for _, v := range r.Verbs {
 		if v == "list" {
 			return true

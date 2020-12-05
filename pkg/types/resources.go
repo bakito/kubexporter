@@ -2,17 +2,11 @@ package types
 
 import (
 	"fmt"
-	"regexp"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strconv"
 	"strings"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-)
-
-var (
-	invalidFileChars = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
 )
 
 // GroupResource group resource information

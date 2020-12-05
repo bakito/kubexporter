@@ -3,7 +3,7 @@ progress: true
 archive: true
 namespace:
 outputFormat: yaml
-asLists: true
+asLists: false
 clearTarget: true
 worker: 1
 excluded:
@@ -21,19 +21,6 @@ excluded:
     - RoleBindingRestriction
     - Secret
     - apps.ReplicaSet
-    - authentication.k8s.io.TokenReview
-    - authorization.k8s.io.LocalResourceAccessReview
-    - authorization.k8s.io.LocalSubjectAccessReview
-    - authorization.k8s.io.ResourceAccessReview
-    - authorization.k8s.io.SelfSubjectAccessReview
-    - authorization.k8s.io.SelfSubjectRulesReview
-    - authorization.k8s.io.SubjectAccessReview
-    - authorization.openshift.io.LocalResourceAccessReview
-    - authorization.openshift.io.LocalSubjectAccessReview
-    - authorization.openshift.io.ResourceAccessReview
-    - authorization.openshift.io.SelfSubjectRulesReview
-    - authorization.openshift.io.SubjectAccessReview
-    - authorization.openshift.io.SubjectRulesReview
     - batch.Job
     - build.openshift.io.Build
     - events.k8s.io.Event

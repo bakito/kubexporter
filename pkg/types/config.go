@@ -8,7 +8,10 @@ import (
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"text/template"
 )
 
@@ -24,7 +27,8 @@ const (
 )
 
 var (
-	// DefaultExcludedFields the default fied to be excluded
+	invalidFileChars = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
+	// DefaultExcludedFields the default field to be excluded
 	DefaultExcludedFields = [][]string{
 		{"status"},
 		{"metadata", "uid"},
@@ -88,17 +92,21 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 	return c.excludedSet.contains(gr.GroupKind())
 }
 
+func (c *Config) LastTargetPath() string {
+	return filepath.Base(c.Target)
+}
+
 // FileName generate export file name
 func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (string, error) {
-	return c.fileName(res, us.GetNamespace(), c.FileNameTemplate)
+	return c.fileName(res, us.GetNamespace(), us.GetName(), c.FileNameTemplate)
 }
 
 // ListFileName generate export list file name
 func (c *Config) ListFileName(res *GroupResource, namespace string) (string, error) {
-	return c.fileName(res, namespace, c.ListFileNameTemplate)
+	return c.fileName(res, namespace, "", c.ListFileNameTemplate)
 }
 
-func (c *Config) fileName(res *GroupResource, namespace string, templ string) (string, error) {
+func (c *Config) fileName(res *GroupResource, namespace string, name string, templ string) (string, error) {
 	t, err := template.New("base").Funcs(sprig.TxtFuncMap()).Parse(templ)
 	if err != nil {
 		return "", err
@@ -107,20 +115,18 @@ func (c *Config) fileName(res *GroupResource, namespace string, templ string) (s
 	var tpl bytes.Buffer
 	err = t.Execute(&tpl, map[string]string{
 		"Namespace": namespace,
-		"Name":      res.APIGroup,
+		"Name":      name,
 		"Kind":      res.Kind(),
 		"Group":     res.APIGroup,
 		"Extension": c.OutputFormat},
 	)
 
 	path := tpl.String()
-
-	pathElements := []string{invalidFileChars.ReplaceAllString(c.Target, "_")}
-	for _, e := range filepath.SplitList(filepath.Dir(path)) {
+	var pathElements []string
+	for _, e := range strings.Split(filepath.Clean(filepath.Join(c.Target, path)), string(os.PathSeparator)) {
 		pathElements = append(pathElements, invalidFileChars.ReplaceAllString(e, "_"))
 	}
-	pathElements = append(pathElements, invalidFileChars.ReplaceAllString(filepath.Base(path), "_"))
-	return filepath.Join(pathElements...), err
+	return fmt.Sprintf("%c%s", os.PathSeparator, filepath.Join(pathElements...)), err
 }
 
 // Validate validate the config
@@ -141,6 +147,12 @@ func (c *Config) Validate() error {
 	if c.Worker <= 0 {
 		return fmt.Errorf("worker must be > 0")
 	}
+
+	abs, err := filepath.Abs(c.Target)
+	if err != nil {
+		return err
+	}
+	c.Target = abs
 
 	if c.Quiet {
 		c.Summary = false
