@@ -40,21 +40,23 @@ var (
 type Config struct {
 	Excluded             Excluded `yaml:"excluded"`
 	Included             Included `yaml:"included"`
-	excludedSet          set
-	includedSet          set
-	FileNameTemplate     string `yaml:"fileNameTemplate"`
-	ListFileNameTemplate string `yaml:"listFileNameTemplate"`
-	OutputFormat         string `yaml:"outputFormat"`
-	AsLists              bool   `yaml:"asLists"`
-	Target               string `yaml:"target"`
-	ClearTarget          bool   `yaml:"clearTarget"`
-	Summary              bool   `yaml:"summary"`
-	Progress             bool   `yaml:"progress"`
-	Namespace            string `yaml:"namespace"`
-	Worker               int    `yaml:"worker"`
-	Archive              bool   `yaml:"archive"`
-	Quiet                bool   `yaml:"quiet"`
-	log                  log.YALI
+	FileNameTemplate     string   `yaml:"fileNameTemplate"`
+	ListFileNameTemplate string   `yaml:"listFileNameTemplate"`
+	OutputFormat         string   `yaml:"outputFormat"`
+	AsLists              bool     `yaml:"asLists"`
+	Target               string   `yaml:"target"`
+	ClearTarget          bool     `yaml:"clearTarget"`
+	Summary              bool     `yaml:"summary"`
+	Progress             bool     `yaml:"progress"`
+	Namespace            string   `yaml:"namespace"`
+	Worker               int      `yaml:"worker"`
+	Archive              bool     `yaml:"archive"`
+	Quiet                bool     `yaml:"quiet"`
+	Verbose              bool     `yaml:"verbose"`
+
+	excludedSet set
+	includedSet set
+	log         log.YALI
 }
 
 // Excluded exclusion params

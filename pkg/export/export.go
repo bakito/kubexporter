@@ -197,7 +197,7 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
 	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
-	if workerErrors > 0 {
+	if e.config.Verbose && workerErrors > 0 {
 		header = append(header, "Error")
 	}
 	table.SetHeader(header)
@@ -207,7 +207,7 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	var inst int
 
 	for _, r := range resources {
-		table.Append(r.Report(workerErrors > 0))
+		table.Append(r.Report(e.config.Verbose && workerErrors > 0))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
 		inst += r.Instances

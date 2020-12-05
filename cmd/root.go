@@ -77,6 +77,9 @@ func readConfig(cmd *cobra.Command) (*types.Config, error) {
 		case "quiet":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Quiet = b
+		case "verbose":
+			b, _ := cmd.Flags().GetBool(f.Name)
+			config.Verbose = b
 		case "summary":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Summary = b
@@ -111,6 +114,7 @@ func init() {
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
 	rootCmd.Flags().BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
+	rootCmd.Flags().BoolP("verbose", "v", false, "If enabled, errors during export are listed in summary")
 	rootCmd.Flags().BoolP("summary", "s", false, "If enabled, a summary is printed")
 	rootCmd.Flags().BoolP("as-lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
 	rootCmd.Flags().StringSliceP("include-kinds", "i", []string{}, "Export only included kinds, if included kinds are defined, excluded will be ignored")
