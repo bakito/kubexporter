@@ -92,10 +92,6 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 	return c.excludedSet.contains(gr.GroupKind())
 }
 
-func (c *Config) LastTargetPath() string {
-	return filepath.Base(c.Target)
-}
-
 // FileName generate export file name
 func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (string, error) {
 	return c.fileName(res, us.GetNamespace(), us.GetName(), c.FileNameTemplate)
