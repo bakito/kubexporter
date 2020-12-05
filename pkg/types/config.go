@@ -23,10 +23,25 @@ const (
 	DefaultTarget = "exports"
 )
 
+var (
+	// DefaultExcludedFields the default fied to be excluded
+	DefaultExcludedFields = [][]string{
+		{"status"},
+		{"metadata", "uid"},
+		{"metadata", "selfLink"},
+		{"metadata", "resourceVersion"},
+		{"metadata", "creationTimestamp"},
+		{"metadata", "generation"},
+		{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+	}
+)
+
 // Config export config
 type Config struct {
 	Excluded             Excluded `yaml:"excluded"`
+	Included             Included `yaml:"included"`
 	excludedSet          set
+	includedSet          set
 	FileNameTemplate     string `yaml:"fileNameTemplate"`
 	ListFileNameTemplate string `yaml:"listFileNameTemplate"`
 	OutputFormat         string `yaml:"outputFormat"`
@@ -49,11 +64,25 @@ type Excluded struct {
 	KindFields map[string][][]string `yaml:"kindFields"`
 }
 
+// Included inclusion params
+type Included struct {
+	Kinds []string `yaml:"kinds"`
+}
+
 // IsExcluded check if the group resource is excluded
 func (c *Config) IsExcluded(gr *GroupResource) bool {
+	if len(c.Included.Kinds) > 0 {
+		if c.includedSet == nil {
+			c.includedSet = newSet(c.Included.Kinds...)
+		}
+
+		return !c.includedSet.contains(gr.GroupKind())
+	}
+
 	if c.excludedSet == nil {
 		c.excludedSet = newSet(c.Excluded.Kinds...)
 	}
+
 	return c.excludedSet.contains(gr.GroupKind())
 }
 
