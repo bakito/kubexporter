@@ -12,7 +12,25 @@ The configuration allows customization on which resources and which fields to ex
 ## Usage
 
 ```bash
-kubexporter --config config.yaml
+Usage:
+  kubexporter [flags]
+
+Flags:
+  -l, --as-lists                If enabled, all resources are exported as lists instead of individual files
+  -c, --clear-target            If enabled, the target dir is deleted before running the new export
+      --config string           config file (default is $HOME/.kubexporter.yaml)
+  -e, --exclude-kinds strings   Do not export excluded kinds
+  -h, --help                    help for kubexporter
+  -i, --include-kinds strings   Export only included kinds, if included kinds are defined, excluded will be ignored
+  -n, --namespace string        If present, the namespace scope for this export
+  -f, --output-format string    Set the output format [yaml(default), json] (default "yaml")
+  -q, --quiet                   If enabled, output is prevented
+  -s, --summary                 If enabled, a summary is printed
+  -t, --target string           Set the target directory (default exports)
+  -v, --verbose                 If enabled, errors during export are listed in summary
+      --version                 version for kubexporter
+  -w, --worker int              The number of worker to use for the export (default 1)
+
 ```
 ![kubexporter](doc/kubexporter.gif)
 
@@ -22,6 +40,8 @@ kubexporter --config config.yaml
 KubExporter exports by default all resources and allows to exclude unwanted resources.
 The benefit is that new custom resource definitions are automatically considered in the export.
 
+
+
 Example configuration
 
 ```yaml
@@ -30,6 +50,9 @@ progress: true # print progress
 archive: true # create an archive
 namespace: # define a single namespace (default all)
 worker: 1 # define the number of parallel worker
+outputFormat: yaml # yaml (default) or json
+asLists: false # export as lists
+clearTarget: true # clear the target directory before exporting
 excluded:
   kinds: # list all kinds to be excluded
     - Binding
@@ -45,19 +68,6 @@ excluded:
     - RoleBindingRestriction
     - Secret
     - apps.ReplicaSet
-    - authentication.k8s.io.TokenReview
-    - authorization.k8s.io.LocalResourceAccessReview
-    - authorization.k8s.io.LocalSubjectAccessReview
-    - authorization.k8s.io.ResourceAccessReview
-    - authorization.k8s.io.SelfSubjectAccessReview
-    - authorization.k8s.io.SelfSubjectRulesReview
-    - authorization.k8s.io.SubjectAccessReview
-    - authorization.openshift.io.LocalResourceAccessReview
-    - authorization.openshift.io.LocalSubjectAccessReview
-    - authorization.openshift.io.ResourceAccessReview
-    - authorization.openshift.io.SelfSubjectRulesReview
-    - authorization.openshift.io.SubjectAccessReview
-    - authorization.openshift.io.SubjectRulesReview
     - batch.Job
     - build.openshift.io.Build
     - events.k8s.io.Event
@@ -86,5 +96,6 @@ excluded:
       - [ spec, clusterIP ]
     image.openshift.io.ImageStream:
       - [ annotations, "openshift.io/image.dockerRepositoryCheck" ]
-
+included:
+  kinds: [] # if only certain resources should be exported the included list can be used. If defined all other resources will be excluded.
 ```

@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"strconv"
 	"strings"
 	"time"
@@ -61,17 +60,5 @@ func Sort(resources []*GroupResource) func(int, int) bool {
 			return strings.Compare(resources[i].APIResource.Kind, resources[j].APIResource.Kind) < 0
 		}
 		return true
-	}
-}
-
-// FilterFields filter fields for a given resource
-func (e *Excluded) FilterFields(res *GroupResource, us unstructured.Unstructured) {
-	for _, f := range e.Fields {
-		unstructured.RemoveNestedField(us.Object, f...)
-	}
-	if e.KindFields != nil && e.KindFields[res.GroupKind()] != nil {
-		for _, f := range e.KindFields[res.GroupKind()] {
-			unstructured.RemoveNestedField(us.Object, f...)
-		}
 	}
 }

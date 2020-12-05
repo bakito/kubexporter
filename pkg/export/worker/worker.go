@@ -179,7 +179,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 
 	perNs := make(map[string]*unstructured.UnstructuredList)
 	for _, u := range ul.Items {
-		w.config.Excluded.FilterFields(res, u)
+		w.config.FilterFields(res, u)
 
 		if _, ok := perNs[u.GetNamespace()]; !ok {
 			ul := &unstructured.UnstructuredList{}
@@ -202,6 +202,8 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 			continue
 		}
 
+		filename = filepath.Join(w.config.Target, filename)
+
 		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 		err = ioutil.WriteFile(filename, b, 0664)
 		if err != nil {
@@ -219,7 +221,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 		return
 	}
 	for _, u := range ul.Items {
-		w.config.Excluded.FilterFields(res, u)
+		w.config.FilterFields(res, u)
 
 		us := &u
 		b, err := w.config.Marshal(us)
@@ -232,6 +234,8 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			res.Error = err.Error()
 			continue
 		}
+
+		filename = filepath.Join(w.config.Target, filename)
 
 		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 		err = ioutil.WriteFile(filename, b, 0664)

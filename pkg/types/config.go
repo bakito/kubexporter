@@ -75,6 +75,19 @@ type Included struct {
 	Kinds []string `yaml:"kinds"`
 }
 
+// FilterFields filter fields for a given resource
+func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) {
+	for _, f := range c.Excluded.Fields {
+		unstructured.RemoveNestedField(us.Object, f...)
+	}
+	gk := res.GroupKind()
+	if c.Excluded.KindFields != nil && c.Excluded.KindFields[gk] != nil {
+		for _, f := range c.Excluded.KindFields[gk] {
+			unstructured.RemoveNestedField(us.Object, f...)
+		}
+	}
+}
+
 // IsExcluded check if the group resource is excluded
 func (c *Config) IsExcluded(gr *GroupResource) bool {
 	if len(c.Included.Kinds) > 0 {
@@ -119,26 +132,27 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 
 	path := tpl.String()
 	var pathElements []string
-	for _, e := range strings.Split(filepath.Clean(filepath.Join(c.Target, path)), string(os.PathSeparator)) {
+	for _, e := range strings.Split(filepath.Clean(filepath.Join(path)), string(os.PathSeparator)) {
 		pathElements = append(pathElements, invalidFileChars.ReplaceAllString(e, "_"))
 	}
-	return fmt.Sprintf("%c%s", os.PathSeparator, filepath.Join(pathElements...)), err
+	return filepath.Join(pathElements...), err
 }
 
 // Validate validate the config
 func (c *Config) Validate() error {
+	c.OutputFormat = strings.ToLower(c.OutputFormat)
 	if c.OutputFormat != "json" && c.OutputFormat != "yaml" {
 		return fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
 	}
 	if c.FileNameTemplate == "" {
-		return fmt.Errorf("file name template must not be empty [%s]", c.FileNameTemplate)
+		return fmt.Errorf("file name template must not be empty")
 	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}); err != nil {
-		return fmt.Errorf("error parsing template [%s]", c.FileNameTemplate)
+		return fmt.Errorf("error parsing file name template [%s]", c.FileNameTemplate)
 	}
 	if c.ListFileNameTemplate == "" {
-		return fmt.Errorf("list file name template must not be empty [%s]", c.ListFileNameTemplate)
+		return fmt.Errorf("list file name template must not be empty")
 	} else if _, err := c.ListFileName(&GroupResource{}, ""); err != nil {
-		return fmt.Errorf("error parsing list template [%s]", c.ListFileNameTemplate)
+		return fmt.Errorf("error parsing list file name template [%s]", c.ListFileNameTemplate)
 	}
 	if c.Worker <= 0 {
 		return fmt.Errorf("worker must be > 0")
@@ -152,7 +166,6 @@ func (c *Config) Validate() error {
 
 	if c.Quiet {
 		c.Summary = false
-		c.Progress = false
 		c.Progress = false
 	}
 	return nil
