@@ -1,26 +1,25 @@
 package export
 
 import (
-	"context"
-	"fmt"
+	"github.com/bakito/kubexporter/pkg/export/worker"
+	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
-	"io/ioutil"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
-	"sync"
+	"strings"
 	"time"
 )
 
@@ -33,6 +32,7 @@ func NewExporter(config *types.Config) (Exporter, error) {
 
 	return &exporter{
 		config: config,
+		l:      config.Logger(),
 	}, nil
 }
 
@@ -42,7 +42,8 @@ type Exporter interface {
 }
 
 func (e *exporter) Export() error {
-
+	start := time.Now()
+	defer func() { e.l.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -57,7 +58,7 @@ func (e *exporter) Export() error {
 		return err
 	}
 
-	fmt.Printf("Start export from %q with namespace: %q to target: %q\n", cfg.Host, e.config.Namespace, e.config.Target)
+	e.writeIntro(cfg)
 
 	dcl, err := discovery.NewDiscoveryClientForConfig(cfg)
 	if err != nil {
@@ -98,12 +99,12 @@ func (e *exporter) Export() error {
 		return err
 	}
 
-	var workers []*worker
+	var workers []worker.Worker
 	for i := 0; i < e.config.Worker; i++ {
-		workers = append(workers, newWorker(i, e.config, mapper, client, prog, mainBar))
+		workers = append(workers, worker.New(i, e.config, mapper, client, prog, mainBar))
 	}
 
-	workerErrors, err := runExport(workers, resources)
+	workerErrors, err := worker.RunExport(workers, resources)
 	if err != nil {
 		return err
 	}
@@ -120,6 +121,30 @@ func (e *exporter) Export() error {
 		err = e.tarGz()
 	}
 	return err
+}
+
+func (e *exporter) writeIntro(cfg *rest.Config) {
+	e.l.Printf("Starting export ...\n")
+	e.l.Printf("  cluster %q\n", cfg.Host)
+	if e.config.Namespace == "" {
+		e.l.Printf("  all namespaces 🏘️\n")
+	} else {
+		e.l.Printf("  namespace %q 🏠\n", e.config.Namespace)
+	}
+	e.l.Printf("  target %q 📁\n", e.config.Target)
+	e.l.Printf("  format %q 📜\n", e.config.OutputFormat)
+	if e.config.Worker > 1 {
+		e.l.Printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
+	}
+	if e.config.Summary {
+		e.l.Printf("  summary 📊\n")
+	}
+	if e.config.AsLists {
+		e.l.Printf("  as lists 📦\n")
+	}
+	if e.config.Archive {
+		e.l.Printf("  compress as archive 🗜️\n")
+	}
 }
 
 func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.GroupResource, error) {
@@ -145,7 +170,7 @@ func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.Group
 				APIGroupVersion: gv.String(),
 				APIResource:     resource,
 			}
-			if len(resource.Verbs) == 0 || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
+			if !allowsList(resource) || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
 				continue
 			}
 
@@ -153,6 +178,15 @@ func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.Group
 		}
 	}
 	return resources, nil
+}
+
+func allowsList(r metav1.APIResource) bool {
+	for _, v := range r.Verbs {
+		if v == "list" {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResource) {
@@ -163,7 +197,7 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
 	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
-	if workerErrors > 0 {
+	if e.config.Verbose && workerErrors > 0 {
 		header = append(header, "Error")
 	}
 	table.SetHeader(header)
@@ -173,7 +207,7 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	var inst int
 
 	for _, r := range resources {
-		table.Append(r.Report(workerErrors > 0))
+		table.Append(r.Report(e.config.Verbose && workerErrors > 0))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
 		inst += r.Instances
@@ -185,107 +219,18 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
 	table.Render()
 }
-
 func (e *exporter) purgeTarget() error {
 	if _, err := os.Stat(e.config.Target); os.IsNotExist(err) {
 		return nil
 	}
-	fmt.Printf("Deleting target '%s'\n", e.config.Target)
+
+	e.l.Printf("Deleting target %q\n", e.config.Target)
+	e.l.Checkf("done 🚮\n")
 	return os.RemoveAll(e.config.Target)
 
 }
 
 type exporter struct {
 	config *types.Config
-}
-
-func newWorker(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) *worker {
-
-	w := &worker{
-		id:               id + 1,
-		mainBar:          mainBar,
-		config:           config,
-		mapper:           mapper,
-		client:           client,
-		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-	}
-
-	w.recBar = prog.AddBar(1,
-		mpb.PrependDecorators(
-			w.preDecorator(),
-		),
-		mpb.AppendDecorators(
-			w.postDecorator(),
-		),
-	)
-	return w
-}
-
-func (w *worker) function(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
-
-	return func(res *types.GroupResource) {
-		defer wg.Done()
-
-		ctx := context.TODO()
-		w.currentKind = res.GroupKind()
-		w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
-
-		if w.recBar != nil {
-			w.recBar.SetCurrent(0)
-			w.recBar.SetTotal(0, false)
-		}
-		start := time.Now()
-		ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
-
-		res.QueryDuration = time.Now().Sub(start)
-		start = time.Now()
-
-		if err != nil {
-			if errors.IsNotFound(err) {
-				res.Error = "Not Found"
-			} else if errors.IsMethodNotSupported(err) {
-				res.Error = "Not Allowed"
-			} else {
-				res.Error = "Error:" + err.Error()
-			}
-		} else {
-			if w.recBar != nil {
-				w.recBar.SetTotal(int64(len(ul.Items)), false)
-			}
-			for _, u := range ul.Items {
-				w.config.Excluded.FilterFields(res, u)
-
-				us := &u
-				b, err := w.config.Marshal(us)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-				filename, err := w.config.FileName(res, us)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-
-				_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-				err = ioutil.WriteFile(filename, b, 0664)
-				if err != nil {
-					res.Error = err.Error()
-					continue
-				}
-				if w.recBar != nil {
-					w.recBar.Increment()
-				}
-			}
-		}
-		if ul != nil {
-			res.Instances = len(ul.Items)
-		}
-		res.ExportDuration = time.Now().Sub(start)
-
-		if w.mainBar != nil {
-			w.mainBar.Increment()
-		}
-		out <- res
-	}
+	l      log.YALI
 }

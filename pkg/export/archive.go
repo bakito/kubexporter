@@ -13,12 +13,12 @@ import (
 func (e *exporter) tarGz() error {
 	var name string
 	if e.config.Namespace != "" {
-		name = fmt.Sprintf("%s-%s-%s.tar.gz", e.config.Target, e.config.Namespace, time.Now().Format("2006-01-02"))
+		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format("2006-01-02"))
 	} else {
-		name = fmt.Sprintf("%s-%s.tar.gz", e.config.Target, time.Now().Format("2006-01-02"))
+		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format("2006-01-02"))
 	}
 	name = filepath.Join(e.config.Target, name)
-	fmt.Printf("\ncreating archive\n")
+	e.l.Printf("\nCreating archive ...\n")
 	// set up the output file
 	file, err := os.Create(name)
 	if err != nil {
@@ -53,7 +53,7 @@ func (e *exporter) tarGz() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("created archive %s\n", name)
+	e.l.Checkf("created️ %q 🗜️\n", name)
 	return nil
 }
 
