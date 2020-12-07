@@ -37,6 +37,7 @@ func NewExporter(config *types.Config) (Exporter, error) {
 		config:     config,
 		restConfig: rc,
 		l:          config.Logger(),
+		stats:      &worker.Stats{},
 	}, nil
 }
 
@@ -46,8 +47,9 @@ type Exporter interface {
 }
 
 func (e *exporter) Export() error {
-	start := time.Now()
-	defer func() { e.l.Printf("\nTotal Duration: %s ⌛\n", time.Now().Sub(start).String()) }()
+	e.start = time.Now()
+
+	defer e.printStats()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -105,17 +107,18 @@ func (e *exporter) Export() error {
 		workers = append(workers, worker.New(i, e.config, mapper, client, prog, mainBar))
 	}
 
-	workerErrors, err := worker.RunExport(workers, resources)
+	s, err := worker.RunExport(workers, resources)
 	if err != nil {
 		return err
 	}
+	e.stats.Add(s)
 
 	if prog != nil {
 		prog.Wait()
 	}
 
 	if e.config.Summary {
-		e.printSummary(workerErrors, resources)
+		e.printSummary(resources)
 	}
 
 	if e.config.Archive {
@@ -190,7 +193,7 @@ func allowsList(r metav1.APIResource) bool {
 	return false
 }
 
-func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResource) {
+func (e *exporter) printSummary(resources []*types.GroupResource) {
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeaderLine(false)
 	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -198,7 +201,7 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
 	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
-	if e.config.Verbose && workerErrors > 0 {
+	if e.config.Verbose && e.stats.HasErrors() {
 		header = append(header, "Error")
 	}
 	table.SetHeader(header)
@@ -208,7 +211,7 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	var inst int
 
 	for _, r := range resources {
-		table.Append(r.Report(e.config.Verbose && workerErrors > 0))
+		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors()))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
 		inst += r.Instances
@@ -220,6 +223,21 @@ func (e *exporter) printSummary(workerErrors int, resources []*types.GroupResour
 	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
 	table.Render()
 }
+
+func (e *exporter) printStats() {
+	if e.archive != "" {
+		e.l.Checkf("Archive    🗜️  %s\n", e.archive)
+	}
+	e.stats.Errors = 1
+	e.l.Checkf("Kinds      📜%12d\n", e.stats.Kinds)
+	e.l.Checkf("Resources  🗃 ️%12d\n", e.stats.Resources)
+	e.l.Checkf("Namespaces 🏘️ %12d\n", e.stats.Namespaces())
+	e.l.Checkf("Errors     ⚠️ %12d\n", e.stats.Errors)
+	if e.stats.HasErrors() {
+	}
+	e.l.Checkf("Duration   ⌛ %s\n", time.Now().Sub(e.start).String())
+}
+
 func (e *exporter) purgeTarget() error {
 	if _, err := os.Stat(e.config.Target); os.IsNotExist(err) {
 		return nil
@@ -232,7 +250,10 @@ func (e *exporter) purgeTarget() error {
 }
 
 type exporter struct {
+	start      time.Time
 	l          log.YALI
 	config     *types.Config
 	restConfig *rest.Config
+	stats      *worker.Stats
+	archive    string
 }

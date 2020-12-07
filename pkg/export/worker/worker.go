@@ -23,7 +23,7 @@ import (
 // Worker interface
 type Worker interface {
 	GenerateWork(s *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource)
-	Stop() int
+	Stop() Stats
 }
 
 type worker struct {
@@ -35,10 +35,48 @@ type worker struct {
 	elapsedDecorator decor.Decorator
 	client           dynamic.Interface
 	mapper           meta.RESTMapper
-	errors           int
 	queryFinished    bool
+	stats            Stats
 }
 
+// Stats worker stats
+type Stats struct {
+	Errors     int
+	namespaces map[string]bool
+	Kinds      int
+	Resources  int
+}
+
+// Add stats
+func (s *Stats) Add(o *Stats) {
+	if o != nil {
+		s.Kinds += o.Kinds
+		s.Resources += o.Resources
+		s.Errors += o.Errors
+		for ns := range o.namespaces {
+			s.addNamespace(ns)
+		}
+	}
+}
+
+func (s *Stats) addNamespace(ns string) {
+	if s.namespaces == nil {
+		s.namespaces = make(map[string]bool)
+	}
+	s.namespaces[ns] = true
+}
+
+// Namespace get the number of namespaces
+func (s *Stats) Namespaces() int {
+	return len(s.namespaces)
+}
+
+// HasErrors true if errors >0
+func (s *Stats) HasErrors() bool {
+	return s.Errors > 0
+}
+
+// New create a new worker
 func New(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) Worker {
 	w := &worker{
 		id:               id + 1,
@@ -63,11 +101,11 @@ func New(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.In
 }
 
 // Stop end worker
-func (w *worker) Stop() int {
+func (w *worker) Stop() Stats {
 	if w.recBar != nil {
 		w.recBar.SetTotal(100, true)
 	}
-	return w.errors
+	return w.stats
 }
 
 // list resources
@@ -122,6 +160,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 
 	return func(res *types.GroupResource) {
 		defer wg.Done()
+		w.stats.Kinds++
 		w.queryFinished = false
 		ctx := context.TODO()
 		w.currentKind = res.GroupKind()
@@ -139,7 +178,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		start = time.Now()
 
 		if err != nil {
-			w.errors++
+			w.stats.Errors++
 			if errors.IsNotFound(err) {
 				res.Error = "Not Found"
 			} else if errors.IsMethodNotSupported(err) {
@@ -148,6 +187,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 				res.Error = "Error:" + err.Error()
 			}
 		} else {
+			w.stats.Resources += len(ul.Items)
 			if w.recBar != nil {
 				w.recBar.SetTotal(int64(len(ul.Items)), false)
 			}
@@ -190,6 +230,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 	}
 
 	for ns, usl := range perNs {
+		w.stats.addNamespace(ns)
 		filename, err := w.config.ListFileName(res, ns)
 		if err != nil {
 			res.Error = err.Error()
@@ -223,6 +264,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 		return
 	}
 	for _, u := range ul.Items {
+		w.stats.addNamespace(u.GetNamespace())
 		w.config.FilterFields(res, u)
 		us := &u
 

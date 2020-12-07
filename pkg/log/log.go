@@ -17,6 +17,7 @@ type YALI interface {
 	Checkf(format string, a ...interface{})
 }
 
+// New logger
 func New(quiet bool) YALI {
 	return &log{
 		quiet: quiet,

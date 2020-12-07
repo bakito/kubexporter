@@ -7,7 +7,7 @@ import (
 )
 
 // RunExport run the export wit the given workers
-func RunExport(workers []Worker, resources []*types.GroupResource) (int, error) {
+func RunExport(workers []Worker, resources []*types.GroupResource) (*Stats, error) {
 	var wg sync.WaitGroup
 
 	poolSize := len(resources)
@@ -18,7 +18,7 @@ func RunExport(workers []Worker, resources []*types.GroupResource) (int, error) 
 
 	for _, w := range workers {
 		if err := pool.AddWorker(w.GenerateWork(&wg, out)); err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 
@@ -26,7 +26,7 @@ func RunExport(workers []Worker, resources []*types.GroupResource) (int, error) 
 
 	for _, res := range resources {
 		if err := pool.Delegate(res); err != nil {
-			return 0, err
+			return nil, err
 		}
 	}
 
@@ -34,9 +34,10 @@ func RunExport(workers []Worker, resources []*types.GroupResource) (int, error) 
 	wg.Wait()
 	close(out)
 	pool.Stop()
-	workerErrors := 0
+	st := &Stats{}
 	for _, w := range workers {
-		workerErrors += w.Stop()
+		s := w.Stop()
+		st.Add(&s)
 	}
-	return workerErrors, nil
+	return st, nil
 }

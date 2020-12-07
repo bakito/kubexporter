@@ -217,6 +217,7 @@ func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
 	return p.PrintObj(ro.(runtime.Object), out)
 }
 
+// Logger get the loggerf
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
 		c.log = log.New(c.Quiet)
@@ -224,7 +225,7 @@ func (c *Config) Logger() log.YALI {
 	return c.log
 }
 
-// get the current output format
+// OutputFormat get the current output format
 func (c *Config) OutputFormat() string {
 	if c.printFlags != nil && c.printFlags.OutputFormat != nil {
 		return *c.printFlags.OutputFormat
@@ -232,7 +233,7 @@ func (c *Config) OutputFormat() string {
 	return ""
 }
 
-// get the current rest config
+// RestConfig get the current rest config
 func (c *Config) RestConfig() (*rest.Config, error) {
 	// try to find a cube config
 	cfg, err := cmdutil.NewFactory(c.configFlags).ToRESTConfig()
