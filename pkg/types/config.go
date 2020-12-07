@@ -214,13 +214,14 @@ func (c *Config) OutputFormat() string {
 
 // get the current rest config
 func (c *Config) RestConfig() (*rest.Config, error) {
-	// try in cluster first
-	cfg, err := rest.InClusterConfig()
+	// try to find a cube config
+	cfg, err := cmdutil.NewFactory(c.configFlags).ToRESTConfig()
 	if err == nil {
 		return cfg, nil
 	}
 
-	return cmdutil.NewFactory(c.configFlags).ToRESTConfig()
+	// try in cluster config
+	return rest.InClusterConfig()
 }
 
 type set map[string]bool

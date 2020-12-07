@@ -2,7 +2,6 @@ summary: true
 progress: true
 archive: true
 namespace:
-outputFormat: yaml
 asLists: false
 clearTarget: true
 worker: 1

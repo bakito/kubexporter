@@ -66,7 +66,6 @@ progress: true # print progress
 archive: true # create an archive
 namespace: # define a single namespace (default all)
 worker: 1 # define the number of parallel worker
-outputFormat: yaml # yaml (default) or json
 asLists: false # export as lists
 clearTarget: true # clear the target directory before exporting
 excluded:
