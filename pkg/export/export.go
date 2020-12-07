@@ -225,7 +225,7 @@ func (e *exporter) purgeTarget() error {
 	}
 
 	e.l.Printf("Deleting target %q\n", e.config.Target)
-	e.l.Checkf("done 🚮\n")
+	defer e.l.Checkf("done 🚮\n")
 	return os.RemoveAll(e.config.Target)
 
 }

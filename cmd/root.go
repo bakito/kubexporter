@@ -68,6 +68,8 @@ func readConfig(cmd *cobra.Command) (*types.Config, error) {
 			config.Namespace = f.Value.String()
 		case "output-format":
 			config.OutputFormat = f.Value.String()
+		case "target":
+			config.Target = f.Value.String()
 		case "worker":
 			i, _ := cmd.Flags().GetInt(f.Name)
 			config.Worker = i
@@ -83,7 +85,7 @@ func readConfig(cmd *cobra.Command) (*types.Config, error) {
 		case "summary":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Summary = b
-		case "as-list":
+		case "as-lists":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.AsLists = b
 		case "include-kinds":
@@ -111,6 +113,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kubexporter.yaml)")
 	rootCmd.Flags().StringP("namespace", "n", "", "If present, the namespace scope for this export")
 	rootCmd.Flags().StringP("output-format", "f", types.DefaultFormat, "Set the output format [yaml(default), json]")
+	rootCmd.Flags().StringP("target", "t", "", "Set the target directory (default exports)")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
 	rootCmd.Flags().BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
