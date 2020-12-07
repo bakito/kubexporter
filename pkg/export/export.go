@@ -9,13 +9,11 @@ import (
 	"github.com/vbauerster/mpb/v5/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"os"
 	"sort"
 	"strconv"
@@ -30,9 +28,15 @@ func NewExporter(config *types.Config) (Exporter, error) {
 		return nil, err
 	}
 
+	rc, err := config.RestConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	return &exporter{
-		config: config,
-		l:      config.Logger(),
+		config:     config,
+		restConfig: rc,
+		l:          config.Logger(),
 	}, nil
 }
 
@@ -50,14 +54,9 @@ func (e *exporter) Export() error {
 		}
 	}
 
-	cfg, err := e.getRestConfig()
-	if err != nil {
-		return err
-	}
+	e.writeIntro()
 
-	e.writeIntro(cfg)
-
-	dcl, err := discovery.NewDiscoveryClientForConfig(cfg)
+	dcl, err := discovery.NewDiscoveryClientForConfig(e.restConfig)
 	if err != nil {
 		return err
 	}
@@ -91,7 +90,7 @@ func (e *exporter) Export() error {
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dcl))
-	client, err := dynamic.NewForConfig(cfg)
+	client, err := dynamic.NewForConfig(e.restConfig)
 	if err != nil {
 		return err
 	}
@@ -120,28 +119,16 @@ func (e *exporter) Export() error {
 	return err
 }
 
-func (e *exporter) getRestConfig() (*rest.Config, error) {
-	// try in cluster first
-	cfg, err := rest.InClusterConfig()
-	if err == nil {
-		return cfg, nil
-	}
-	flags := genericclioptions.NewConfigFlags(true)
-	f := cmdutil.NewFactory(flags)
-
-	return f.ToRESTConfig()
-}
-
-func (e *exporter) writeIntro(cfg *rest.Config) {
+func (e *exporter) writeIntro() {
 	e.l.Printf("Starting export ...\n")
-	e.l.Printf("  cluster %q\n", cfg.Host)
+	e.l.Printf("  cluster %q\n", e.restConfig.Host)
 	if e.config.Namespace == "" {
 		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
 		e.l.Printf("  namespace %q 🏠\n", e.config.Namespace)
 	}
 	e.l.Printf("  target %q 📁\n", e.config.Target)
-	e.l.Printf("  format %q 📜\n", e.config.OutputFormat)
+	e.l.Printf("  format %q 📜\n", e.config.OutputFormat())
 	if e.config.Worker > 1 {
 		e.l.Printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
 	}
@@ -240,6 +227,7 @@ func (e *exporter) purgeTarget() error {
 }
 
 type exporter struct {
-	config *types.Config
-	l      log.YALI
+	l          log.YALI
+	config     *types.Config
+	restConfig *rest.Config
 }

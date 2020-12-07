@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	amtypes "k8s.io/apimachinery/pkg/types"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/utils/pointer"
 	"os"
 	"path/filepath"
 )
@@ -35,16 +37,11 @@ var _ = Describe("Worker", func() {
 		Ω(err).ShouldNot(HaveOccurred())
 		mockCtrl = gm.NewController(GinkgoT())
 		mockClient = mockdynamic.NewMockInterface(mockCtrl)
-		config = &types.Config{
-			FileNameTemplate:     types.DefaultFileNameTemplate,
-			ListFileNameTemplate: types.DefaultListFileNameTemplate,
-			OutputFormat:         types.DefaultFormat,
-			Quiet:                true,
-			Target:               tmpDir,
-			Excluded: types.Excluded{
-				Fields: types.DefaultExcludedFields,
-			},
-		}
+		config = types.NewConfig(nil, &genericclioptions.PrintFlags{
+			OutputFormat:       pointer.StringPtr(types.DefaultFormat),
+			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
+		})
+		config.Target = tmpDir
 		res = &types.GroupResource{
 			APIGroup:        "",
 			APIVersion:      "v1",
@@ -76,8 +73,7 @@ var _ = Describe("Worker", func() {
 		}
 	})
 	AfterEach(func() {
-		err := os.RemoveAll(tmpDir)
-		Ω(err).ShouldNot(HaveOccurred())
+		_ = os.RemoveAll(tmpDir)
 	})
 
 	Context("exportLists", func() {
