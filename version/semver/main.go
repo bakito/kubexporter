@@ -32,8 +32,10 @@ func main() {
 		panic(err)
 	}
 	if strings.HasPrefix(text, "v") {
-		v = semver.New(version)
+		text = text[1:]
 	}
+
+	v = semver.New(strings.TrimSpace(text))
 	if _, err = fmt.Fprintf(os.Stderr, "Using Version: v%v\n", v); err != nil {
 		panic(err)
 	}
