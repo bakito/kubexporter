@@ -9,7 +9,6 @@ import (
 	"github.com/vbauerster/mpb/v5/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
@@ -23,15 +22,20 @@ import (
 )
 
 // NewExporter create a new exporter
-func NewExporter(config *types.Config, restConfig *rest.Config, flags *genericclioptions.PrintFlags) (Exporter, error) {
+func NewExporter(config *types.Config) (Exporter, error) {
 	err := config.Validate()
+	if err != nil {
+		return nil, err
+	}
+
+	rc, err := config.RestConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	return &exporter{
 		config:     config,
-		restConfig: restConfig,
+		restConfig: rc,
 		l:          config.Logger(),
 	}, nil
 }

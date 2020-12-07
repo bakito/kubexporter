@@ -18,7 +18,7 @@ Usage:
 Flags:
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
-      --cache-dir string               Default cache directory (default "C:\\develop\\home\\.kube\\cache")
+      --cache-dir string               Default cache directory (default "${HOME}/.kube/cache")
       --certificate-authority string   Path to a cert file for the certificate authority
   -c, --clear-target                   If enabled, the target dir is deleted before running the new export
       --client-certificate string      Path to a client certificate file for TLS

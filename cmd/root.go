@@ -19,8 +19,9 @@ import (
 )
 
 var (
-	cfgFile    string
-	printFlags *genericclioptions.PrintFlags
+	cfgFile     string
+	configFlags *genericclioptions.ConfigFlags
+	printFlags  *genericclioptions.PrintFlags
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -30,17 +31,12 @@ var rootCmd = &cobra.Command{
 	Short:   "easily export kubernetes resources",
 	RunE: func(cmd *cobra.Command, args []string) error {
 
-		restConfig, err := getRestConfig()
+		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {
 			return err
 		}
 
-		config, err := readConfig(cmd, restConfig, printFlags)
-		if err != nil {
-			return err
-		}
-
-		ex, err := export.NewExporter(config, restConfig, printFlags)
+		ex, err := export.NewExporter(config)
 		if err != nil {
 			return err
 		}
@@ -49,8 +45,8 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func readConfig(cmd *cobra.Command, restConfig *rest.Config, printFlags *genericclioptions.PrintFlags) (*types.Config, error) {
-	config := types.NewConfig(restConfig, printFlags)
+func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, printFlags *genericclioptions.PrintFlags) (*types.Config, error) {
+	config := types.NewConfig(configFlags, printFlags)
 
 	if cfgFile != "" {
 		b, err := ioutil.ReadFile(cfgFile)
@@ -100,16 +96,13 @@ func readConfig(cmd *cobra.Command, restConfig *rest.Config, printFlags *generic
 	return config, nil
 }
 
-func getRestConfig() (*rest.Config, error) {
+func getRestConfig(configFlags *genericclioptions.ConfigFlags) (*rest.Config, error) {
 	// try in cluster first
 	cfg, err := rest.InClusterConfig()
 	if err == nil {
 		return cfg, nil
 	}
-	flags := genericclioptions.NewConfigFlags(true)
-	f := cmdutil.NewFactory(flags)
-
-	return f.ToRESTConfig()
+	return cmdutil.NewFactory(configFlags).ToRESTConfig()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -122,7 +115,7 @@ func Execute() {
 
 func init() {
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kubexporter.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 	rootCmd.Flags().StringP("target", "t", "", "Set the target directory (default exports)")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
 	rootCmd.Flags().BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
@@ -134,8 +127,8 @@ func init() {
 	rootCmd.Flags().StringSliceP("include-kinds", "i", []string{}, "Export only included kinds, if included kinds are defined, excluded will be ignored")
 	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")
 
-	cf := genericclioptions.NewConfigFlags(true)
-	cf.AddFlags(rootCmd.Flags())
+	configFlags = genericclioptions.NewConfigFlags(true)
+	configFlags.AddFlags(rootCmd.Flags())
 
 	printFlags = &genericclioptions.PrintFlags{
 		OutputFormat:       pointer.StringPtr(types.DefaultFormat),

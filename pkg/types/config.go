@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -43,7 +44,7 @@ var (
 )
 
 // NewConfig create a new config
-func NewConfig(restConfig *rest.Config, printFlags *genericclioptions.PrintFlags) *Config {
+func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericclioptions.PrintFlags) *Config {
 	return &Config{
 		FileNameTemplate:     DefaultFileNameTemplate,
 		ListFileNameTemplate: DefaultListFileNameTemplate,
@@ -54,8 +55,8 @@ func NewConfig(restConfig *rest.Config, printFlags *genericclioptions.PrintFlags
 		Excluded: Excluded{
 			Fields: DefaultExcludedFields,
 		},
-		restConfig: restConfig,
-		printFlags: printFlags,
+		configFlags: configFlags,
+		printFlags:  printFlags,
 	}
 }
 
@@ -79,7 +80,7 @@ type Config struct {
 	excludedSet set
 	includedSet set
 	log         log.YALI
-	restConfig  *rest.Config
+	configFlags *genericclioptions.ConfigFlags
 	printFlags  *genericclioptions.PrintFlags
 }
 
@@ -209,6 +210,17 @@ func (c *Config) OutputFormat() string {
 		return *c.printFlags.OutputFormat
 	}
 	return ""
+}
+
+// get the current rest config
+func (c *Config) RestConfig() (*rest.Config, error) {
+	// try in cluster first
+	cfg, err := rest.InClusterConfig()
+	if err == nil {
+		return cfg, nil
+	}
+
+	return cmdutil.NewFactory(c.configFlags).ToRESTConfig()
 }
 
 type set map[string]bool
