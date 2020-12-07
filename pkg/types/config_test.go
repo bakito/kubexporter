@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"os"
 )
 
 var _ = Describe("Config", func() {
@@ -54,6 +55,7 @@ var _ = Describe("Config", func() {
 	Context("FileName / ListFileName", func() {
 		var (
 			res *types.GroupResource
+			sep = string(os.PathSeparator)
 		)
 		BeforeEach(func() {
 			res = &types.GroupResource{
@@ -81,21 +83,21 @@ var _ = Describe("Config", func() {
 			})
 
 			It("should generate a file name with group", func() {
-				Ω(config.FileName(res, us)).Should(Equal("namespace/group.kind.name.yaml"))
+				Ω(config.FileName(res, us)).Should(Equal("namespace" + sep + "group.kind.name.yaml"))
 			})
 			It("should generate a file name without group", func() {
 				res.APIGroup = ""
-				Ω(config.FileName(res, us)).Should(Equal("namespace/kind.name.yaml"))
+				Ω(config.FileName(res, us)).Should(Equal("namespace" + sep + "kind.name.yaml"))
 			})
 		})
 
 		Context("FileName", func() {
 			It("should generate a file name with group", func() {
-				Ω(config.ListFileName(res, "namespace")).Should(Equal("namespace/group.kind.yaml"))
+				Ω(config.ListFileName(res, "namespace")).Should(Equal("namespace" + sep + "group.kind.yaml"))
 			})
 			It("should generate a file name without group", func() {
 				res.APIGroup = ""
-				Ω(config.ListFileName(res, "namespace")).Should(Equal("namespace/kind.yaml"))
+				Ω(config.ListFileName(res, "namespace")).Should(Equal("namespace" + sep + "kind.yaml"))
 			})
 		})
 	})
