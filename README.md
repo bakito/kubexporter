@@ -84,20 +84,8 @@ excluded:
     - Secret
     - apps.ReplicaSet
     - batch.Job
-    - build.openshift.io.Build
     - events.k8s.io.Event
     - extensions.ReplicaSet
-    - image.openshift.io.Image
-    - image.openshift.io.ImageSignature
-    - image.openshift.io.ImageStreamImage
-    - image.openshift.io.ImageStreamImage
-    - image.openshift.io.ImageStreamImport
-    - image.openshift.io.ImageStreamMapping
-    - image.openshift.io.ImageStreamTag
-    - security.openshift.io.PodSecurityPolicyReview
-    - security.openshift.io.PodSecurityPolicySelfSubjectReview
-    - security.openshift.io.PodSecurityPolicySubjectReview
-    - user.openshift.io.UserIdentityMapping
   fields: # list fields that should be removed for all resources before exported
     - [ status ]
     - [ metadata, uid ]
@@ -109,8 +97,4 @@ excluded:
   kindFields: # kind specific excluded fields
     Service:
       - [ spec, clusterIP ]
-    image.openshift.io.ImageStream:
-      - [ annotations, "openshift.io/image.dockerRepositoryCheck" ]
-included:
-  kinds: [] # if only certain resources should be exported the included list can be used. If defined all other resources will be excluded.
 ```
