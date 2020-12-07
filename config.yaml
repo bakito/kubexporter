@@ -21,20 +21,8 @@ excluded:
     - Secret
     - apps.ReplicaSet
     - batch.Job
-    - build.openshift.io.Build
     - events.k8s.io.Event
     - extensions.ReplicaSet
-    - image.openshift.io.Image
-    - image.openshift.io.ImageSignature
-    - image.openshift.io.ImageStreamImage
-    - image.openshift.io.ImageStreamImage
-    - image.openshift.io.ImageStreamImport
-    - image.openshift.io.ImageStreamMapping
-    - image.openshift.io.ImageStreamTag
-    - security.openshift.io.PodSecurityPolicyReview
-    - security.openshift.io.PodSecurityPolicySelfSubjectReview
-    - security.openshift.io.PodSecurityPolicySubjectReview
-    - user.openshift.io.UserIdentityMapping
   fields:
     - [ status ]
     - [ metadata, uid ]
@@ -46,5 +34,3 @@ excluded:
   kindFields:
     Service:
       - [ spec, clusterIP ]
-    "image.openshift.io.ImageStream":
-      - [ annotations, "openshift.io/image.dockerRepositoryCheck" ]

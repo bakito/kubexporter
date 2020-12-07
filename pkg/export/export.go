@@ -66,6 +66,11 @@ func (e *exporter) Export() error {
 		return err
 	}
 
+	if len(resources) == 0 {
+		e.l.Printf("No resources found")
+		return nil
+	}
+
 	sort.SliceStable(resources, types.Sort(resources))
 
 	var prog *mpb.Progress

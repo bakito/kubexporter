@@ -159,6 +159,8 @@ var _ = Describe("Config", func() {
 				Fields: [][]string{
 					{"status"},
 					{"metadata", "uid"},
+					{"spec", "slice", "a"},
+					{"spec", "slice", "b", "bb"},
 				},
 				KindFields: map[string][][]string{
 					"group.kind2": {
@@ -174,9 +176,19 @@ var _ = Describe("Config", func() {
 						"uid":      "uid",
 						"revision": "revision",
 					},
-					"status": map[string]interface{}{
+					"spec": map[string]interface{}{
 						"foo": "bar",
+						"slice": []interface{}{
+							map[string]interface{}{
+								"a": "A",
+								"b": map[string]interface{}{
+									"ba": "BA",
+									"bb": "BB",
+								},
+							},
+						},
 					},
+					"status": "abc",
 				},
 			}
 		})
@@ -187,6 +199,20 @@ var _ = Describe("Config", func() {
 			Ω(us.Object["metadata"]).Should(HaveKey("revision"))
 			Ω(us.Object["metadata"]).ShouldNot(HaveKey("uid"))
 			Ω(us.Object).ShouldNot(HaveKey("status"))
+
+			// slice support
+			Ω(us.Object["spec"]).Should(HaveKey("foo"))
+			Ω(us.Object["spec"]).Should(HaveKey("slice"))
+			sl, _, err := unstructured.NestedSlice(us.Object, "spec", "slice")
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(sl).Should(HaveLen(1))
+			Ω(sl[0]).ShouldNot(HaveKey("a"))
+			Ω(sl[0]).Should(HaveKey("b"))
+			b, ok := sl[0].(map[string]interface{})["b"].(map[string]interface{})
+			Ω(ok).Should(BeTrue())
+			Ω(b).Should(HaveKey("ba"))
+			Ω(b).ShouldNot(HaveKey("bb"))
+
 		})
 		It("should filter default fields and kindFields", func() {
 			res.APIResource.Kind = "kind2"
@@ -199,7 +225,7 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("Marshal", func() {
+	Context("PrintObj", func() {
 		var (
 			data *unstructured.Unstructured
 		)
@@ -210,7 +236,7 @@ var _ = Describe("Config", func() {
 				"foo":  "bar",
 			})
 		})
-		It("should marshal as yaml", func() {
+		It("should print the object as yaml", func() {
 			var buf bytes.Buffer
 			pf.OutputFormat = pointer.StringPtr("yaml")
 			err := config.PrintObj(data, io.Writer(&buf))
@@ -219,7 +245,7 @@ var _ = Describe("Config", func() {
 kind: Pod
 `))
 		})
-		It("should marshal as json", func() {
+		It("should print the object as json", func() {
 			var buf bytes.Buffer
 			pf.OutputFormat = pointer.StringPtr("json")
 

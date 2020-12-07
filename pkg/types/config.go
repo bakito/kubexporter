@@ -99,14 +99,34 @@ type Included struct {
 // FilterFields filter fields for a given resource
 func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) {
 	for _, f := range c.Excluded.Fields {
-		unstructured.RemoveNestedField(us.Object, f...)
+		removeNestedField(us.Object, f...)
 	}
 	gk := res.GroupKind()
 	if c.Excluded.KindFields != nil && c.Excluded.KindFields[gk] != nil {
 		for _, f := range c.Excluded.KindFields[gk] {
-			unstructured.RemoveNestedField(us.Object, f...)
+			removeNestedField(us.Object, f...)
 		}
 	}
+}
+
+// removeNestedField removes the nested field from the obj.
+func removeNestedField(obj map[string]interface{}, fields ...string) {
+	m := obj
+	for i, field := range fields[:len(fields)-1] {
+		if x, ok := m[field].(map[string]interface{}); ok {
+			m = x
+		} else {
+			if x, ok := m[field].([]interface{}); ok {
+				for _, y := range x {
+					if yy, ok := y.(map[string]interface{}); ok {
+						removeNestedField(yy, fields[i+1:]...)
+					}
+				}
+			}
+			return
+		}
+	}
+	delete(m, fields[len(fields)-1])
 }
 
 // IsExcluded check if the group resource is excluded
