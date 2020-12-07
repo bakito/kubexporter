@@ -7,10 +7,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
 func (e *exporter) tarGz() error {
+	workDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
 	var name string
 	if e.config.Namespace != "" {
 		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format("2006-01-02"))
@@ -44,7 +50,7 @@ func (e *exporter) tarGz() error {
 		}
 		defer closeIgnoreError(file)()
 
-		if err := addFile(tw, path); err != nil {
+		if err := addFile(tw, workDir, path); err != nil {
 			return err
 		}
 		return err
@@ -57,16 +63,19 @@ func (e *exporter) tarGz() error {
 	return nil
 }
 
-func addFile(tw *tar.Writer, path string) error {
+func addFile(tw *tar.Writer, workDir, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}
+
+	fPath := strings.Replace(path, workDir, "", 1)
+
 	defer closeIgnoreError(file)()
 	if stat, err := file.Stat(); err == nil {
 		// now lets create the header as needed for this file within the tarball
 		header := new(tar.Header)
-		header.Name = path
+		header.Name = fPath
 		header.Size = stat.Size()
 		header.Mode = int64(stat.Mode())
 		header.ModTime = stat.ModTime()

@@ -86,7 +86,7 @@ excluded:
     - batch.Job
     - events.k8s.io.Event
     - extensions.ReplicaSet
-  fields: # list fields that should be removed for all resources before exported
+  fields: # list fields that should be removed for all resources before exported; slices are also traversed
     - [ status ]
     - [ metadata, uid ]
     - [ metadata, selfLink ]
