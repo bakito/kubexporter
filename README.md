@@ -26,7 +26,6 @@ Flags:
   -f, --output-format string    Set the output format [yaml(default), json] (default "yaml")
   -q, --quiet                   If enabled, output is prevented
   -s, --summary                 If enabled, a summary is printed
-  -t, --target string           Set the target directory (default exports)
   -v, --verbose                 If enabled, errors during export are listed in summary
       --version                 version for kubexporter
   -w, --worker int              The number of worker to use for the export (default 1)
