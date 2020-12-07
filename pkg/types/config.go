@@ -2,12 +2,14 @@ package types
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/bakito/kubexporter/pkg/log"
-	"github.com/ghodss/yaml"
+	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/rest"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -40,13 +42,29 @@ var (
 	}
 )
 
+// NewConfig create a new config
+func NewConfig(restConfig *rest.Config, printFlags *genericclioptions.PrintFlags) *Config {
+	return &Config{
+		FileNameTemplate:     DefaultFileNameTemplate,
+		ListFileNameTemplate: DefaultListFileNameTemplate,
+		Target:               DefaultTarget,
+		Summary:              false,
+		Progress:             true,
+		Worker:               1,
+		Excluded: Excluded{
+			Fields: DefaultExcludedFields,
+		},
+		restConfig: restConfig,
+		printFlags: printFlags,
+	}
+}
+
 // Config export config
 type Config struct {
 	Excluded             Excluded `yaml:"excluded"`
 	Included             Included `yaml:"included"`
 	FileNameTemplate     string   `yaml:"fileNameTemplate"`
 	ListFileNameTemplate string   `yaml:"listFileNameTemplate"`
-	OutputFormat         string   `yaml:"outputFormat"`
 	AsLists              bool     `yaml:"asLists"`
 	Target               string   `yaml:"target"`
 	ClearTarget          bool     `yaml:"clearTarget"`
@@ -61,6 +79,8 @@ type Config struct {
 	excludedSet set
 	includedSet set
 	log         log.YALI
+	restConfig  *rest.Config
+	printFlags  *genericclioptions.PrintFlags
 }
 
 // Excluded exclusion params
@@ -127,7 +147,7 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 		"Name":      name,
 		"Kind":      res.Kind(),
 		"Group":     res.APIGroup,
-		"Extension": c.OutputFormat},
+		"Extension": *c.printFlags.OutputFormat},
 	)
 
 	path := tpl.String()
@@ -140,10 +160,6 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 
 // Validate validate the config
 func (c *Config) Validate() error {
-	c.OutputFormat = strings.ToLower(c.OutputFormat)
-	if c.OutputFormat != "json" && c.OutputFormat != "yaml" {
-		return fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
-	}
 	if c.FileNameTemplate == "" {
 		return fmt.Errorf("file name template must not be empty")
 	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}); err != nil {
@@ -171,19 +187,13 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Marshal marshal the unstructured with the correct format
-func (c *Config) Marshal(us interface{}) ([]byte, error) {
-	switch c.OutputFormat {
-	case "yaml":
-		return yaml.Marshal(us)
-	case "json":
-		var out bytes.Buffer
-		enc := json.NewEncoder(&out)
-		enc.SetIndent("", "  ")
-		err := enc.Encode(us)
-		return out.Bytes(), err
+// PrintObj print the given object
+func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
+	p, err := c.printFlags.ToPrinter()
+	if err != nil {
+		return err
 	}
-	return nil, fmt.Errorf("unsupported output format [%s]", c.OutputFormat)
+	return p.PrintObj(ro.(runtime.Object), out)
 }
 
 func (c *Config) Logger() log.YALI {
@@ -191,6 +201,14 @@ func (c *Config) Logger() log.YALI {
 		c.log = log.New(c.Quiet)
 	}
 	return c.log
+}
+
+// get the current output format
+func (c *Config) OutputFormat() string {
+	if c.printFlags != nil && c.printFlags.OutputFormat != nil {
+		return *c.printFlags.OutputFormat
+	}
+	return ""
 }
 
 type set map[string]bool

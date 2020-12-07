@@ -7,7 +7,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
-	"io/ioutil"
+	"io"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -196,20 +196,22 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 			continue
 		}
 
-		b, err := w.config.Marshal(usl)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
 		filename = filepath.Join(w.config.Target, filename)
-
 		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-		err = ioutil.WriteFile(filename, b, 0664)
+
+		f, err := os.Create(filename)
 		if err != nil {
 			res.Error = err.Error()
 			continue
 		}
+		closeIgnoreError(f)
+
+		err = w.config.PrintObj(usl, f)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
 		if w.recBar != nil {
 			w.recBar.IncrBy(len(usl.Items))
 		}
@@ -222,13 +224,8 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	}
 	for _, u := range ul.Items {
 		w.config.FilterFields(res, u)
-
 		us := &u
-		b, err := w.config.Marshal(us)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
+
 		filename, err := w.config.FileName(res, us)
 		if err != nil {
 			res.Error = err.Error()
@@ -236,15 +233,29 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 		}
 
 		filename = filepath.Join(w.config.Target, filename)
-
 		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-		err = ioutil.WriteFile(filename, b, 0664)
+
+		f, err := os.Create(filename)
 		if err != nil {
 			res.Error = err.Error()
 			continue
 		}
+		closeIgnoreError(f)
+
+		err = w.config.PrintObj(us, f)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
+
 		if w.recBar != nil {
 			w.recBar.Increment()
 		}
+	}
+}
+
+func closeIgnoreError(f io.Closer) func() {
+	return func() {
+		_ = f.Close()
 	}
 }

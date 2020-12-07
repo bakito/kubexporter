@@ -35,7 +35,7 @@ func (e *exporter) tarGz() error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || filepath.Ext(info.Name()) != fmt.Sprintf(".%s", e.config.OutputFormat) {
+		if info.IsDir() || filepath.Ext(info.Name()) != fmt.Sprintf(".%s", e.config.OutputFormat()) {
 			return nil
 		}
 		file, err := os.Open(path)

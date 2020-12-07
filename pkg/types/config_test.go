@@ -1,27 +1,30 @@
 package types_test
 
 import (
+	"bytes"
 	"github.com/bakito/kubexporter/pkg/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/utils/pointer"
 	"os"
 )
 
 var _ = Describe("Config", func() {
 	var (
 		config *types.Config
+		pf     *genericclioptions.PrintFlags
 		res    *types.GroupResource
 	)
 	BeforeEach(func() {
-		config = &types.Config{
-			FileNameTemplate:     types.DefaultFileNameTemplate,
-			ListFileNameTemplate: types.DefaultListFileNameTemplate,
-			OutputFormat:         types.DefaultFormat,
-			Target:               "target",
-			Worker:               1,
+		pf = &genericclioptions.PrintFlags{
+			OutputFormat:       pointer.StringPtr(types.DefaultFormat),
+			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 		}
+		config = types.NewConfig(nil, pf)
 		res = &types.GroupResource{
 			APIGroup: "group",
 			APIResource: v1.APIResource{
@@ -112,12 +115,6 @@ var _ = Describe("Config", func() {
 			Ω(err).Should(HaveOccurred())
 			Ω(err.Error()).Should(Equal("worker must be > 0"))
 		})
-		It("should have invalid output format", func() {
-			config.OutputFormat = "foo"
-			err := config.Validate()
-			Ω(err).Should(HaveOccurred())
-			Ω(err.Error()).Should(Equal("unsupported output format [foo]"))
-		})
 		It("should have invalid file template", func() {
 			config.FileNameTemplate = ""
 			err := config.Validate()
@@ -204,32 +201,40 @@ var _ = Describe("Config", func() {
 
 	Context("Marshal", func() {
 		var (
-			data map[string]string
+			data *unstructured.Unstructured
 		)
 		BeforeEach(func() {
-			data = map[string]string{
-				"foo": "bar",
-			}
+			data = &unstructured.Unstructured{}
+			data.SetUnstructuredContent(map[string]interface{}{
+				"kind": "Pod",
+				"foo":  "bar",
+			})
 		})
 		It("should marshal as yaml", func() {
-			config.OutputFormat = "yaml"
-			b, err := config.Marshal(data)
+			var buf bytes.Buffer
+			pf.OutputFormat = pointer.StringPtr("yaml")
+			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(string(b)).Should(Equal(`foo: bar
+			Ω(buf.String()).Should(Equal(`foo: bar
+kind: Pod
 `))
 		})
 		It("should marshal as json", func() {
-			config.OutputFormat = "json"
-			b, err := config.Marshal(data)
+			var buf bytes.Buffer
+			pf.OutputFormat = pointer.StringPtr("json")
+
+			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(string(b)).Should(Equal(`{
-  "foo": "bar"
+			Ω(buf.String()).Should(Equal(`{
+    "foo": "bar",
+    "kind": "Pod"
 }
 `))
 		})
 		It("should fail with unsupported format", func() {
-			config.OutputFormat = "xyz"
-			_, err := config.Marshal(data)
+			var buf bytes.Buffer
+			pf.OutputFormat = pointer.StringPtr("xyz")
+			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).Should(HaveOccurred())
 		})
 	})
