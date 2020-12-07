@@ -85,7 +85,7 @@ func readConfig(cmd *cobra.Command) (*types.Config, error) {
 		case "summary":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Summary = b
-		case "as-list":
+		case "as-lists":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.AsLists = b
 		case "include-kinds":
