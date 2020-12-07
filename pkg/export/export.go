@@ -229,7 +229,6 @@ func (e *exporter) printStats() {
 	if e.archive != "" {
 		e.l.Checkf("Archive    🗜️  %s\n", e.archive)
 	}
-	e.stats.Errors = 1
 	e.l.Checkf("Kinds      📜%12d\n", e.stats.Kinds)
 	e.l.Checkf("Resources  🗃 ️%12d\n", e.stats.Resources)
 	e.l.Checkf("Namespaces 🏘️ %12d\n", e.stats.Namespaces())
