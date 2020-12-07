@@ -149,6 +149,7 @@ func (e *exporter) writeIntro() {
 	if e.config.Archive {
 		e.l.Printf("  compress as archive 🗜️\n")
 	}
+	e.config.Logger().Printf("\nExporting ...\n")
 }
 
 func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.GroupResource, error) {

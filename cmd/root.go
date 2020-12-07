@@ -80,6 +80,9 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		case "summary":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Summary = b
+		case "progress":
+			b, _ := cmd.Flags().GetBool(f.Name)
+			config.Progress = b
 		case "lists":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.AsLists = b

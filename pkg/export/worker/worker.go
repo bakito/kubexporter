@@ -202,6 +202,10 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		}
 		res.ExportDuration = time.Now().Sub(start)
 
+		if !w.config.Progress {
+			w.config.Logger().Checkf("%s\n", res.GroupKind())
+		}
+
 		if w.mainBar != nil {
 			w.mainBar.Increment()
 		}

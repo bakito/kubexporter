@@ -1,6 +1,10 @@
 package log
 
-import "fmt"
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
 
 const (
 	// ColorReset reset color
@@ -11,6 +15,10 @@ const (
 	Check = ColorGreen + "✓" + ColorReset
 )
 
+var (
+	nonAscii = regexp.MustCompile("[[:^ascii:]]")
+)
+
 // YALI yet another logger interface ;)
 type YALI interface {
 	Printf(format string, a ...interface{})
@@ -18,19 +26,27 @@ type YALI interface {
 }
 
 // New logger
-func New(quiet bool) YALI {
+func New(quiet, simple bool) YALI {
 	return &log{
-		quiet: quiet,
+		quiet:  quiet,
+		simple: simple,
 	}
 }
 
 type log struct {
-	quiet bool
+	quiet  bool
+	simple bool
 }
 
 // Printf print a message
 func (l *log) Printf(format string, a ...interface{}) {
 	if !l.quiet {
+		if l.simple {
+			format = strings.ReplaceAll(format, "✓", "-")
+			format = strings.ReplaceAll(format, ColorReset, "")
+			format = strings.ReplaceAll(format, ColorGreen, "")
+			format = nonAscii.ReplaceAllLiteralString(format, "")
+		}
 		fmt.Printf(format, a...)
 	}
 }

@@ -217,10 +217,10 @@ func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
 	return p.PrintObj(ro.(runtime.Object), out)
 }
 
-// Logger get the loggerf
+// Logger get the logger
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
-		c.log = log.New(c.Quiet)
+		c.log = log.New(c.Quiet, !c.Progress)
 	}
 	return c.log
 }
