@@ -24,6 +24,7 @@ Flags:
   -i, --include-kinds strings   Export only included kinds, if included kinds are defined, excluded will be ignored
   -n, --namespace string        If present, the namespace scope for this export
   -f, --output-format string    Set the output format [yaml(default), json] (default "yaml")
+  -p, --progress                If enabled, the progress bar is shown
   -q, --quiet                   If enabled, output is prevented
   -s, --summary                 If enabled, a summary is printed
   -t, --target string           Set the target directory (default exports)

@@ -119,6 +119,7 @@ func init() {
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
 	rootCmd.Flags().BoolP("verbose", "v", false, "If enabled, errors during export are listed in summary")
 	rootCmd.Flags().BoolP("summary", "s", false, "If enabled, a summary is printed")
+	rootCmd.Flags().BoolP("progress", "p", true, "If enabled, the progress bar is shown")
 	rootCmd.Flags().BoolP("as-lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
 	rootCmd.Flags().StringSliceP("include-kinds", "i", []string{}, "Export only included kinds, if included kinds are defined, excluded will be ignored")
 	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")

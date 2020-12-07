@@ -9,14 +9,14 @@ import (
 	"github.com/vbauerster/mpb/v5/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"k8s.io/client-go/tools/clientcmd"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"os"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -50,10 +50,7 @@ func (e *exporter) Export() error {
 		}
 	}
 
-	kubeCfg := filepath.Join(
-		os.Getenv("HOME"), ".kube", "config",
-	)
-	cfg, err := clientcmd.BuildConfigFromFlags("", kubeCfg)
+	cfg, err := e.getRestConfig()
 	if err != nil {
 		return err
 	}
@@ -121,6 +118,18 @@ func (e *exporter) Export() error {
 		err = e.tarGz()
 	}
 	return err
+}
+
+func (e *exporter) getRestConfig() (*rest.Config, error) {
+	// try in cluster first
+	cfg, err := rest.InClusterConfig()
+	if err == nil {
+		return cfg, nil
+	}
+	flags := genericclioptions.NewConfigFlags(true)
+	f := cmdutil.NewFactory(flags)
+
+	return f.ToRESTConfig()
 }
 
 func (e *exporter) writeIntro(cfg *rest.Config) {
