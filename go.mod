@@ -28,3 +28,5 @@ require (
 	k8s.io/kubectl v0.19.4
 	k8s.io/utils v0.0.0-20200729134348-d5654de09c73
 )
+// fix for darwin
+replace golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
