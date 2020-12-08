@@ -210,6 +210,10 @@ var _ = Describe("Config", func() {
 			Ω(us.Object["metadata"]).ShouldNot(HaveKey("uid"))
 			Ω(us.Object).ShouldNot(HaveKey("status"))
 
+		})
+		It("should filter slice fields", func() {
+			config.FilterFields(res, us)
+
 			// slice support
 			Ω(us.Object["spec"]).Should(HaveKey("foo"))
 			Ω(us.Object["spec"]).Should(HaveKey("slice"))
