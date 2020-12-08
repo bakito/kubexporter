@@ -139,14 +139,24 @@ var _ = Describe("Config", func() {
 			Ω(err).Should(HaveOccurred())
 			Ω(err.Error()).Should(Equal("error parsing list file name template [{{dsfa]"))
 		})
-		It("quiet should swithc progress and summary to false", func() {
+		It("quiet should switch progress and summary to false", func() {
 			config.Quiet = true
-			config.Progress = true
+			config.Progress = types.ProgressBar
 			config.Summary = true
 			err := config.Validate()
 			Ω(err).ShouldNot(HaveOccurred())
-			Ω(config.Progress).Should(BeFalse())
+			Ω(config.Progress).Should(Equal(types.ProgressNone))
 			Ω(config.Summary).Should(BeFalse())
+		})
+		It("should set progress default to bar", func() {
+			config.Progress = ""
+			err := config.Validate()
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(config.Progress).Should(Equal(types.ProgressBar))
+			config.Progress = "foo"
+			err = config.Validate()
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(config.Progress).Should(Equal(types.ProgressBar))
 		})
 	})
 
@@ -199,6 +209,10 @@ var _ = Describe("Config", func() {
 			Ω(us.Object["metadata"]).Should(HaveKey("revision"))
 			Ω(us.Object["metadata"]).ShouldNot(HaveKey("uid"))
 			Ω(us.Object).ShouldNot(HaveKey("status"))
+
+		})
+		It("should filter slice fields", func() {
+			config.FilterFields(res, us)
 
 			// slice support
 			Ω(us.Object["spec"]).Should(HaveKey("foo"))

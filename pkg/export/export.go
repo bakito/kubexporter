@@ -78,7 +78,7 @@ func (e *exporter) Export() error {
 	var prog *mpb.Progress
 
 	var mainBar *mpb.Bar
-	if e.config.Progress {
+	if e.config.Progress == types.ProgressBar {
 		prog = mpb.New()
 		mainBar = prog.AddBar(int64(len(resources)),
 			mpb.PrependDecorators(
@@ -138,7 +138,11 @@ func (e *exporter) writeIntro() {
 	e.l.Printf("  target %q 📁\n", e.config.Target)
 	e.l.Printf("  format %q 📜\n", e.config.OutputFormat())
 	if e.config.Worker > 1 {
-		e.l.Printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
+		if e.config.Progress == types.ProgressBar {
+			e.l.Printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
+		} else {
+			e.l.Printf("  worker %d\n", e.config.Worker)
+		}
 	}
 	if e.config.Summary {
 		e.l.Printf("  summary 📊\n")
@@ -232,8 +236,8 @@ func (e *exporter) printStats() {
 	e.l.Checkf("Kinds      📜%12d\n", e.stats.Kinds)
 	e.l.Checkf("Resources  🗃 ️%12d\n", e.stats.Resources)
 	e.l.Checkf("Namespaces 🏘️ %12d\n", e.stats.Namespaces())
-	e.l.Checkf("Errors     ⚠️ %12d\n", e.stats.Errors)
 	if e.stats.HasErrors() {
+		e.l.Checkf("Errors     ⚠️ %12d\n", e.stats.Errors)
 	}
 	e.l.Checkf("Duration   ⌛ %s\n", time.Now().Sub(e.start).String())
 }

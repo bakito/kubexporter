@@ -27,6 +27,13 @@ const (
 	DefaultFormat = "yaml"
 	// DefaultTarget default export target dir
 	DefaultTarget = "exports"
+
+	// ProgressBar progress bar mode
+	ProgressBar = Progress("bar")
+	// ProgressSimple simple progress mode
+	ProgressSimple = Progress("simple")
+	// ProgressNone no progress
+	ProgressNone = Progress("none")
 )
 
 var (
@@ -50,7 +57,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		ListFileNameTemplate: DefaultListFileNameTemplate,
 		Target:               DefaultTarget,
 		Summary:              false,
-		Progress:             true,
+		Progress:             ProgressBar,
 		Worker:               1,
 		Excluded: Excluded{
 			Fields: DefaultExcludedFields,
@@ -70,7 +77,7 @@ type Config struct {
 	Target               string   `yaml:"target"`
 	ClearTarget          bool     `yaml:"clearTarget"`
 	Summary              bool     `yaml:"summary"`
-	Progress             bool     `yaml:"progress"`
+	Progress             Progress `yaml:"progress"`
 	Namespace            string   `yaml:"namespace"`
 	Worker               int      `yaml:"worker"`
 	Archive              bool     `yaml:"archive"`
@@ -83,6 +90,9 @@ type Config struct {
 	configFlags *genericclioptions.ConfigFlags
 	printFlags  *genericclioptions.PrintFlags
 }
+
+// Progress
+type Progress string
 
 // Excluded exclusion params
 type Excluded struct {
@@ -203,7 +213,11 @@ func (c *Config) Validate() error {
 
 	if c.Quiet {
 		c.Summary = false
-		c.Progress = false
+		c.Progress = ProgressNone
+	}
+
+	if c.Progress != ProgressSimple && c.Progress != ProgressNone {
+		c.Progress = ProgressBar
 	}
 	return nil
 }
@@ -220,7 +234,7 @@ func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
 // Logger get the logger
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
-		c.log = log.New(c.Quiet, !c.Progress)
+		c.log = log.New(c.Quiet, c.Progress == ProgressSimple)
 	}
 	return c.log
 }
