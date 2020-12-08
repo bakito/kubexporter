@@ -66,7 +66,7 @@ func (s *Stats) addNamespace(ns string) {
 	s.namespaces[ns] = true
 }
 
-// Namespace get the number of namespaces
+// Namespaces get the number of namespaces
 func (s *Stats) Namespaces() int {
 	return len(s.namespaces)
 }
@@ -202,7 +202,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		}
 		res.ExportDuration = time.Now().Sub(start)
 
-		if !w.config.Progress {
+		if w.config.Progress == types.ProgressSimple {
 			w.config.Logger().Checkf("%s\n", res.GroupKind())
 		}
 

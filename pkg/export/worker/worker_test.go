@@ -63,7 +63,7 @@ var _ = Describe("Worker", func() {
 			},
 		}
 
-		ulc, err := runtime.DefaultUnstructuredConverter.ToUnstructured(dl)
+		ulc, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(dl)
 		ul = &unstructured.UnstructuredList{}
 		ul.SetUnstructuredContent(ulc)
 

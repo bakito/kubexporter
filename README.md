@@ -14,7 +14,7 @@ The configuration allows customization on which resources and which fields to ex
 ```bash
 Usage:
   kubexporter [flags]
-
+  
 Flags:
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
@@ -24,7 +24,7 @@ Flags:
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
-      --config string                  config file (default is $HOME/.kubexporter.yaml)
+      --config string                  config file
       --context string                 The name of the kubeconfig context to use
   -e, --exclude-kinds strings          Do not export excluded kinds
   -h, --help                           help for kubexporter
@@ -46,7 +46,6 @@ Flags:
   -v, --verbose                        If enabled, errors during export are listed in summary
       --version                        version for kubexporter
   -w, --worker int                     The number of worker to use for the export (default 1)
-
 ```
 ![kubexporter](doc/kubexporter.gif)
 
