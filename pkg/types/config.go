@@ -157,8 +157,13 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 }
 
 // FileName generate export file name
-func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured) (string, error) {
-	return c.fileName(res, us.GetNamespace(), us.GetName(), c.FileNameTemplate)
+func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured, index int) (string, error) {
+	name := us.GetName()
+	if index > 0 {
+		// if index > 0 -> same name with different cases -> we add an index
+		name = fmt.Sprintf("%s_%d", us.GetName(), index)
+	}
+	return c.fileName(res, us.GetNamespace(), name, c.FileNameTemplate)
 }
 
 // ListFileName generate export list file name
@@ -193,7 +198,7 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 func (c *Config) Validate() error {
 	if c.FileNameTemplate == "" {
 		return fmt.Errorf("file name template must not be empty")
-	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}); err != nil {
+	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}, 0); err != nil {
 		return fmt.Errorf("error parsing file name template [%s]", c.FileNameTemplate)
 	}
 	if c.ListFileNameTemplate == "" {

@@ -86,11 +86,14 @@ var _ = Describe("Config", func() {
 			})
 
 			It("should generate a file name with group", func() {
-				Ω(config.FileName(res, us)).Should(Equal("namespace" + sep + "group.kind.name.yaml"))
+				Ω(config.FileName(res, us, 0)).Should(Equal("namespace" + sep + "group.kind.name.yaml"))
+			})
+			It("should generate a file name with group and index", func() {
+				Ω(config.FileName(res, us, 1)).Should(Equal("namespace" + sep + "group.kind.name_1.yaml"))
 			})
 			It("should generate a file name without group", func() {
 				res.APIGroup = ""
-				Ω(config.FileName(res, us)).Should(Equal("namespace" + sep + "kind.name.yaml"))
+				Ω(config.FileName(res, us, 0)).Should(Equal("namespace" + sep + "kind.name.yaml"))
 			})
 		})
 

@@ -16,6 +16,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -267,16 +268,22 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	if res == nil || ul == nil {
 		return
 	}
+	names := make(map[string]int)
 	for _, u := range ul.Items {
 		w.stats.addNamespace(u.GetNamespace())
 		w.config.FilterFields(res, u)
 		us := &u
 
-		filename, err := w.config.FileName(res, us)
+		namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
+		nameCnt := names[namespaceName]
+
+		filename, err := w.config.FileName(res, us, nameCnt)
 		if err != nil {
 			res.Error = err.Error()
 			continue
 		}
+
+		names[namespaceName] = nameCnt + 1
 
 		filename = filepath.Join(w.config.Target, filename)
 		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)

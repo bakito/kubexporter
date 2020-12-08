@@ -4,7 +4,7 @@ archive: true
 namespace:
 asLists: false
 clearTarget: true
-worker: 1
+worker: 5
 excluded:
   kinds:
     - Binding
