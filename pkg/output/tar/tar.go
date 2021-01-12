@@ -1,7 +1,7 @@
-package export
+package tar
 
 import (
-	"archive/tar"
+	at "archive/tar"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -9,22 +9,44 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/bakito/kubexporter/pkg/log"
+	"github.com/bakito/kubexporter/pkg/output"
 )
 
-func (e *exporter) tarGz() error {
+func New(target string, namespace string, outputFormat string) output.Output {
+	return &tar{
+		target:       target,
+		namespace:    namespace,
+		outputFormat: outputFormat,
+	}
+}
+
+type tar struct {
+	archive      string
+	target       string
+	namespace    string
+	outputFormat string
+}
+
+func (t *tar) PrintStats(log log.YALI) {
+	log.Checkf("Archive    🗜️  %s\n", t.archive)
+}
+
+func (t *tar) Do(log log.YALI) error {
 	workDir, err := os.Getwd()
 	if err != nil {
 		return err
 	}
 
 	var name string
-	if e.config.Namespace != "" {
-		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format("2006-01-02"))
+	if t.namespace != "" {
+		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(t.target), t.namespace, time.Now().Format("2006-01-02"))
 	} else {
-		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format("2006-01-02"))
+		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(t.target), time.Now().Format("2006-01-02"))
 	}
-	name = filepath.Join(e.config.Target, name)
-	e.l.Printf("\n    Creating archive ...\n")
+	name = filepath.Join(t.target, name)
+	log.Printf("\n    Creating archive ...\n")
 	// set up the output file
 	file, err := os.Create(name)
 	if err != nil {
@@ -34,14 +56,14 @@ func (e *exporter) tarGz() error {
 	// set up the gzip writer
 	gw := gzip.NewWriter(file)
 	defer closeIgnoreError(gw)()
-	tw := tar.NewWriter(gw)
+	tw := at.NewWriter(gw)
 	defer closeIgnoreError(tw)()
 
 	walker := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || filepath.Ext(info.Name()) != fmt.Sprintf(".%s", e.config.OutputFormat()) {
+		if info.IsDir() || filepath.Ext(info.Name()) != fmt.Sprintf(".%s", t.outputFormat) {
 			return nil
 		}
 		file, err := os.Open(path)
@@ -55,11 +77,11 @@ func (e *exporter) tarGz() error {
 		}
 		return err
 	}
-	e.archive = name
-	return filepath.Walk(e.config.Target, walker)
+	t.archive = name
+	return filepath.Walk(t.target, walker)
 }
 
-func addFile(tw *tar.Writer, workDir, path string) error {
+func addFile(tw *at.Writer, workDir, path string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return err
@@ -70,7 +92,7 @@ func addFile(tw *tar.Writer, workDir, path string) error {
 	defer closeIgnoreError(file)()
 	if stat, err := file.Stat(); err == nil {
 		// now lets create the header as needed for this file within the tarball
-		header := new(tar.Header)
+		header := new(at.Header)
 		header.Name = fPath
 		header.Size = stat.Size()
 		header.Mode = int64(stat.Mode())

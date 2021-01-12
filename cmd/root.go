@@ -59,6 +59,8 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		}
 	}
 
+	defer config.Prepare()
+
 	cmd.Flags().Visit(func(f *pflag.Flag) {
 		switch f.Name {
 		case "namespace":
@@ -68,9 +70,6 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		case "worker":
 			i, _ := cmd.Flags().GetInt(f.Name)
 			config.Worker = i
-		case "clear-target":
-			b, _ := cmd.Flags().GetBool(f.Name)
-			config.ClearTarget = b
 		case "quiet":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Quiet = b
@@ -94,6 +93,8 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		}
 		return
 	})
+
+
 
 	return config, nil
 }
@@ -120,7 +121,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 	rootCmd.Flags().StringP("target", "t", "", "Set the target directory (default exports)")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
-	rootCmd.Flags().BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
 	rootCmd.Flags().BoolP("verbose", "v", false, "If enabled, errors during export are listed in summary")
 	rootCmd.Flags().Bool("summary", false, "If enabled, a summary is printed")

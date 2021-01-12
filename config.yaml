@@ -1,10 +1,10 @@
 summary: true
 progress: true
-archive: true
 namespace:
 asLists: false
-clearTarget: true
 worker: 5
+output:
+  archive: true
 excluded:
   kinds:
     - Binding

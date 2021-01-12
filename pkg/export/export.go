@@ -50,10 +50,8 @@ func (e *exporter) Export() error {
 	e.start = time.Now()
 
 	defer e.printStats()
-	if e.config.ClearTarget {
-		if err := e.purgeTarget(); err != nil {
-			return err
-		}
+	if err := e.purgeTarget(); err != nil {
+		return err
 	}
 
 	e.writeIntro()
@@ -121,8 +119,10 @@ func (e *exporter) Export() error {
 		e.printSummary(resources)
 	}
 
-	if e.config.Archive {
-		err = e.tarGz()
+	for _, output := range e.config.Outputs {
+		if err := output.Do(e.l); err != nil {
+			return err
+		}
 	}
 	return err
 }
@@ -150,7 +150,7 @@ func (e *exporter) writeIntro() {
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
 	}
-	if e.config.Archive {
+	if e.config.Output.Archive {
 		e.l.Printf("  compress as archive 🗜️\n")
 	}
 	e.config.Logger().Printf("\nExporting ...\n")
@@ -230,8 +230,8 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 }
 
 func (e *exporter) printStats() {
-	if e.archive != "" {
-		e.l.Checkf("Archive    🗜️  %s\n", e.archive)
+	for _, output := range e.config.Outputs {
+		output.PrintStats(e.l)
 	}
 	e.l.Checkf("Kinds      📜%12d\n", e.stats.Kinds)
 	e.l.Checkf("Resources  🗃 ️%12d\n", e.stats.Resources)
@@ -259,5 +259,4 @@ type exporter struct {
 	config     *types.Config
 	restConfig *rest.Config
 	stats      *worker.Stats
-	archive    string
 }

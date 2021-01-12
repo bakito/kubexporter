@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"github.com/Masterminds/sprig"
 	"github.com/bakito/kubexporter/pkg/log"
+	"github.com/bakito/kubexporter/pkg/output"
+	"github.com/bakito/kubexporter/pkg/output/git"
+	"github.com/bakito/kubexporter/pkg/output/tar"
 	"io"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -75,20 +78,26 @@ type Config struct {
 	ListFileNameTemplate string   `yaml:"listFileNameTemplate"`
 	AsLists              bool     `yaml:"asLists"`
 	Target               string   `yaml:"target"`
-	ClearTarget          bool     `yaml:"clearTarget"`
 	Summary              bool     `yaml:"summary"`
 	Progress             Progress `yaml:"progress"`
 	Namespace            string   `yaml:"namespace"`
 	Worker               int      `yaml:"worker"`
-	Archive              bool     `yaml:"archive"`
 	Quiet                bool     `yaml:"quiet"`
 	Verbose              bool     `yaml:"verbose"`
+	Output               Output   `yaml:"output"`
 
 	excludedSet set
 	includedSet set
 	log         log.YALI
 	configFlags *genericclioptions.ConfigFlags
 	printFlags  *genericclioptions.PrintFlags
+
+	Outputs []output.Output `yaml:"-"`
+}
+
+type Output struct {
+	Archive bool     `yaml:"archive"`
+	Git     *git.Git `yaml:"git,omitempty"`
 }
 
 // Progress
@@ -262,6 +271,13 @@ func (c *Config) RestConfig() (*rest.Config, error) {
 
 	// try in cluster config
 	return rest.InClusterConfig()
+}
+
+// Prepare the config outputs
+func (c *Config) Prepare() {
+	if c.Output.Archive {
+		c.Outputs = append(c.Outputs, tar.New(c.Target, c.Namespace, c.OutputFormat()))
+	}
 }
 
 type set map[string]bool
