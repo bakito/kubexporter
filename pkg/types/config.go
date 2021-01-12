@@ -278,6 +278,9 @@ func (c *Config) Prepare() {
 	if c.Output.Archive {
 		c.Outputs = append(c.Outputs, tar.New(c.Target, c.Namespace, c.OutputFormat()))
 	}
+	if c.Output.Git != nil {
+		c.Outputs = append(c.Outputs, git.New(*c.Output.Git))
+	}
 }
 
 type set map[string]bool

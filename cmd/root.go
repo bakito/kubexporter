@@ -94,8 +94,6 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		return
 	})
 
-
-
 	return config, nil
 }
 
