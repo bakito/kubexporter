@@ -9,6 +9,18 @@ KubExporter allows you to export resources from kubernetes as yaml/json files.
 
 The configuration allows customization on which resources and which fields to exclude.
 
+## Install
+
+Downlad the latest binary from https://github.com/bakito/kubexporter/releases.
+
+### Use as kubectl plugin
+
+Rename the binary to kubectl-exporter.
+```bash
+kubectl exporter ...
+```
+
+
 ## Usage
 
 ```bash
