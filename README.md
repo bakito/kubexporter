@@ -59,8 +59,8 @@ Flags:
       --version                        version for kubexporter
   -w, --worker int                     The number of worker to use for the export (default 1)
 ```
-![kubexporter](doc/kubexporter.gif)
 
+[![asciicast](https://asciinema.org/a/J793zgHiRBgDTgWbKjHrsM8YL.svg)](https://asciinema.org/a/J793zgHiRBgDTgWbKjHrsM8YL)
 
 ### Config
 
