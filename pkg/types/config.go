@@ -91,7 +91,7 @@ type Config struct {
 	printFlags  *genericclioptions.PrintFlags
 }
 
-// Progress
+// Progress type
 type Progress string
 
 // Excluded exclusion params
