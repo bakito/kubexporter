@@ -1,9 +1,10 @@
 package worker
 
 import (
-	"github.com/bakito/kubexporter/pkg/types"
-	"github.com/vardius/worker-pool/v2"
 	"sync"
+
+	"github.com/bakito/kubexporter/pkg/types"
+	workerpool "github.com/vardius/worker-pool/v2"
 )
 
 // RunExport run the export wit the given workers

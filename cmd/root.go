@@ -3,19 +3,18 @@ package cmd
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/bakito/kubexporter/pkg/export"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"io/ioutil"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"k8s.io/utils/pointer"
-	"os"
 )
 
 var (
@@ -92,19 +91,9 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 			sl, _ := cmd.Flags().GetStringSlice(f.Name)
 			config.Excluded.Kinds = sl
 		}
-		return
 	})
 
 	return config, nil
-}
-
-func getRestConfig(configFlags *genericclioptions.ConfigFlags) (*rest.Config, error) {
-	// try in cluster first
-	cfg, err := rest.InClusterConfig()
-	if err == nil {
-		return cfg, nil
-	}
-	return cmdutil.NewFactory(configFlags).ToRESTConfig()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

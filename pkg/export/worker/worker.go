@@ -3,22 +3,23 @@ package worker
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
-	"io"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"time"
 )
 
 // Worker interface
@@ -174,7 +175,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		start := time.Now()
 		ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
 
-		res.QueryDuration = time.Now().Sub(start)
+		res.QueryDuration = time.Since(start)
 		w.queryFinished = true
 		start = time.Now()
 
@@ -201,7 +202,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		if ul != nil {
 			res.Instances = len(ul.Items)
 		}
-		res.ExportDuration = time.Now().Sub(start)
+		res.ExportDuration = time.Since(start)
 
 		if w.config.Progress == types.ProgressSimple {
 			w.config.Logger().Checkf("%s\n", res.GroupKind())

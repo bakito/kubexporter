@@ -2,10 +2,11 @@ package types
 
 import (
 	"fmt"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"strconv"
 	"strings"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // GroupResource group resource information

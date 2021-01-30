@@ -2,15 +2,16 @@ package types_test
 
 import (
 	"bytes"
+	"io"
+	"os"
+
 	"github.com/bakito/kubexporter/pkg/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/pointer"
-	"os"
 )
 
 var _ = Describe("Config", func() {

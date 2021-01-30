@@ -3,19 +3,20 @@ package types
 import (
 	"bytes"
 	"fmt"
-	"github.com/Masterminds/sprig"
-	"github.com/bakito/kubexporter/pkg/log"
 	"io"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/client-go/rest"
-	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"text/template"
+
+	"github.com/Masterminds/sprig"
+	"github.com/bakito/kubexporter/pkg/log"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/rest"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
 )
 
 const (

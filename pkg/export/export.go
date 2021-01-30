@@ -1,6 +1,12 @@
 package export
 
 import (
+	"os"
+	"sort"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/bakito/kubexporter/pkg/export/worker"
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
@@ -14,11 +20,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
-	"os"
-	"sort"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // NewExporter create a new exporter
@@ -239,7 +240,7 @@ func (e *exporter) printStats() {
 	if e.stats.HasErrors() {
 		e.l.Checkf("Errors     ⚠️ %12d\n", e.stats.Errors)
 	}
-	e.l.Checkf("Duration   ⌛ %s\n", time.Now().Sub(e.start).String())
+	e.l.Checkf("Duration   ⌛ %s\n", time.Since(e.start).String())
 }
 
 func (e *exporter) purgeTarget() error {

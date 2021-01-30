@@ -2,6 +2,10 @@ package worker
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	mockdynamic "github.com/bakito/kubexporter/pkg/mocks/client"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/ghodss/yaml"
@@ -9,7 +13,6 @@ import (
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -17,8 +20,6 @@ import (
 	amtypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/pointer"
-	"os"
-	"path/filepath"
 )
 
 var _ = Describe("Worker", func() {

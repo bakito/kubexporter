@@ -3,23 +3,29 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/coreos/go-semver/semver"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/coreos/go-semver/semver"
 )
 
 func main() {
-	cmd := exec.Command("git", "describe")
-	out, err := cmd.Output()
+	out, err := exec.Command("git", "branch", "--show-current").Output()
+	if err != nil {
+		panic(err)
+	}
+	branch := strings.TrimSpace(string(out))
+	if branch != "master" {
+		panic(fmt.Errorf(`error: must be in "master" branch, current branch: %q`, branch))
+	}
+
+	out, err = exec.Command("git", "describe").Output()
 	if err != nil {
 		panic(err)
 	}
 
-	version := strings.TrimSpace(string(out))
-	if strings.HasPrefix(version, "v") {
-		version = version[1:]
-	}
+	version := strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
 	v := semver.New(version)
 	v.BumpPatch()
 	reader := bufio.NewReader(os.Stdin)
