@@ -30,7 +30,7 @@ Usage:
 Flags:
       --as string                      Username to impersonate for the operation
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
-      --cache-dir string               Default cache directory (default "${HOME}/.kube/cache")
+      --cache-dir string               Default cache directory (default "C:\\develop\\home\\.kube\\cache")
       --certificate-authority string   Path to a cert file for the certificate authority
   -c, --clear-target                   If enabled, the target dir is deleted before running the new export
       --client-certificate string      Path to a client certificate file for TLS
@@ -46,7 +46,7 @@ Flags:
   -l, --lists                          If enabled, all resources are exported as lists instead of individual files
   -n, --namespace string               If present, the namespace scope for this CLI request
   -o, --output string                  Output format. One of: json|yaml. (default "yaml")
-  -p, --progress                       If enabled, the progress bar is shown (default true)
+  -p, --progress string                Progress mode bar|simple|none (default bar)  (default "bar")
   -q, --quiet                          If enabled, output is prevented
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -s, --server string                  The address and port of the Kubernetes API server
