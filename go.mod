@@ -16,7 +16,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
-	github.com/spf13/cobra v1.1.1
+	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v5 v5.4.0
