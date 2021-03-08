@@ -5,36 +5,37 @@
 package mock_dynamic
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	dynamic "k8s.io/client-go/dynamic"
-	reflect "reflect"
 )
 
-// MockInterface is a mock of Interface interface
+// MockInterface is a mock of Interface interface.
 type MockInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockInterfaceMockRecorder
 }
 
-// MockInterfaceMockRecorder is the mock recorder for MockInterface
+// MockInterfaceMockRecorder is the mock recorder for MockInterface.
 type MockInterfaceMockRecorder struct {
 	mock *MockInterface
 }
 
-// NewMockInterface creates a new mock instance
+// NewMockInterface creates a new mock instance.
 func NewMockInterface(ctrl *gomock.Controller) *MockInterface {
 	mock := &MockInterface{ctrl: ctrl}
 	mock.recorder = &MockInterfaceMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 	return m.recorder
 }
 
-// Resource mocks base method
+// Resource mocks base method.
 func (m *MockInterface) Resource(arg0 schema.GroupVersionResource) dynamic.NamespaceableResourceInterface {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Resource", arg0)
@@ -42,7 +43,7 @@ func (m *MockInterface) Resource(arg0 schema.GroupVersionResource) dynamic.Names
 	return ret0
 }
 
-// Resource indicates an expected call of Resource
+// Resource indicates an expected call of Resource.
 func (mr *MockInterfaceMockRecorder) Resource(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resource", reflect.TypeOf((*MockInterface)(nil).Resource), arg0)

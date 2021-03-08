@@ -29,12 +29,7 @@ mocks: mockgen
 	mockgen -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
 	mockgen -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 
-goreleaser:
-ifeq (, $(shell which goreleaser))
- $(shell go get github.com/goreleaser/goreleaser)
-endif
-
 mockgen:
 ifeq (, $(shell which mockgen))
- $(shell go get github.com/golang/mock/mockgen@v1.4.3)
+ $(shell go get github.com/golang/mock/mockgen)
 endif
