@@ -243,6 +243,54 @@ var _ = Describe("Config", func() {
 		})
 	})
 
+	Context("FilterFields", func() {
+		var (
+			us unstructured.Unstructured
+		)
+		BeforeEach(func() {
+			config.Excluded = types.Excluded{
+				KindFields: map[string][][]string{
+					"group.kind": {
+						[]string{"metadata", "revision"},
+					},
+				},
+			}
+			config.Masked = types.Masked{
+				Replacement: "***",
+				KindFields: map[string][][]string{
+					"group.kind": {
+						[]string{"data"},
+						[]string{"status"},
+					},
+				},
+			}
+			us = unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind": "kind",
+					"metadata": map[string]interface{}{
+						"name":     "name",
+						"uid":      "uid",
+						"revision": "revision",
+					},
+					"data": map[string]interface{}{
+						"a": "A",
+						"b": "BB",
+					},
+
+					"status": "abc",
+				},
+			}
+		})
+		It("should mask status and all data fields", func() {
+			config.MaskFields(res, us)
+			Ω(us.Object["status"]).Should(Equal("***"))
+			Ω(us.Object["data"]).Should(HaveKey("a"))
+			Ω(us.Object["data"].(map[string]interface{})["a"]).Should(Equal("***"))
+			Ω(us.Object["data"]).Should(HaveKey("b"))
+			Ω(us.Object["data"].(map[string]interface{})["b"]).Should(Equal("***"))
+		})
+	})
+
 	Context("PrintObj", func() {
 		var (
 			data *unstructured.Unstructured

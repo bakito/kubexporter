@@ -35,6 +35,9 @@ const (
 	ProgressSimple = Progress("simple")
 	// ProgressNone no progress
 	ProgressNone = Progress("none")
+
+	// DefaultMaskReplacement Default Mask Replacement
+	DefaultMaskReplacement = "*****"
 )
 
 var (
@@ -72,6 +75,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 type Config struct {
 	Excluded             Excluded `yaml:"excluded"`
 	Included             Included `yaml:"included"`
+	Masked               Masked   `yaml:"masked"`
 	FileNameTemplate     string   `yaml:"fileNameTemplate"`
 	ListFileNameTemplate string   `yaml:"listFileNameTemplate"`
 	AsLists              bool     `yaml:"asLists"`
@@ -100,6 +104,12 @@ type Excluded struct {
 	Kinds      []string              `yaml:"kinds"`
 	Fields     [][]string            `yaml:"fields"`
 	KindFields map[string][][]string `yaml:"kindFields"`
+}
+
+// Masked masking params
+type Masked struct {
+	Replacement string                `yaml:"replacement"`
+	KindFields  map[string][][]string `yaml:"kindFields"`
 }
 
 // Included inclusion params
@@ -138,6 +148,45 @@ func removeNestedField(obj map[string]interface{}, fields ...string) {
 		}
 	}
 	delete(m, fields[len(fields)-1])
+}
+
+// MaskFields mask fields for a given resource
+func (c *Config) MaskFields(res *GroupResource, us unstructured.Unstructured) {
+	gk := res.GroupKind()
+	if c.Masked.KindFields != nil && c.Masked.KindFields[gk] != nil {
+		for _, f := range c.Masked.KindFields[gk] {
+			maskNestedField(us.Object, c.Masked.Replacement, f...)
+		}
+	}
+}
+
+// maskNestedField masks the nested field from the obj.
+func maskNestedField(obj map[string]interface{}, rep string, fields ...string) {
+	m := obj
+	for i, field := range fields[:len(fields)-1] {
+		if x, ok := m[field].(map[string]interface{}); ok {
+			m = x
+		} else {
+			if x, ok := m[field].([]interface{}); ok {
+				for _, y := range x {
+					if yy, ok := y.(map[string]interface{}); ok {
+						maskNestedField(yy, rep, fields[i+1:]...)
+					}
+				}
+			}
+			return
+		}
+	}
+	switch e := m[fields[len(fields)-1]].(type) {
+	case map[string]interface{}:
+		for k := range e {
+			e[k] = rep
+		}
+	case string:
+		m[fields[len(fields)-1]] = rep
+	default:
+		println()
+	}
 }
 
 // IsExcluded check if the group resource is excluded

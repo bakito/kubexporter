@@ -92,7 +92,6 @@ excluded:
     - ReplicationController
     - ReplicationControllerDummy
     - RoleBindingRestriction
-    - Secret
     - apps.ReplicaSet
     - batch.Job
     - events.k8s.io.Event
@@ -108,4 +107,8 @@ excluded:
   kindFields: # kind specific excluded fields
     Service:
       - [ spec, clusterIP ]
+masked:
+  kindFields: # kind specific excluded fields
+    Secret:
+      - [ data ]
 ```

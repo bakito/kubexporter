@@ -226,6 +226,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 	perNs := make(map[string]*unstructured.UnstructuredList)
 	for _, u := range ul.Items {
 		w.config.FilterFields(res, u)
+		w.config.MaskFields(res, u)
 
 		if _, ok := perNs[u.GetNamespace()]; !ok {
 			ul := &unstructured.UnstructuredList{}
@@ -273,6 +274,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	for _, u := range ul.Items {
 		w.stats.addNamespace(u.GetNamespace())
 		w.config.FilterFields(res, u)
+		w.config.MaskFields(res, u)
 		us := &u
 
 		namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))

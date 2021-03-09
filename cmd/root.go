@@ -93,6 +93,10 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		}
 	})
 
+	if config.Masked.Replacement == "" {
+		config.Masked.Replacement = types.DefaultMaskReplacement
+	}
+
 	return config, nil
 }
 
