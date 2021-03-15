@@ -24,7 +24,7 @@ require (
 	k8s.io/apimachinery v0.20.4
 	k8s.io/cli-runtime v0.20.4
 	k8s.io/client-go v0.20.4
-	k8s.io/klog/v2 v2.6.0
+	k8s.io/klog/v2 v2.8.0
 	k8s.io/kubectl v0.20.4
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
 )
