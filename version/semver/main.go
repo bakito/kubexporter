@@ -16,7 +16,7 @@ func main() {
 		panic(err)
 	}
 	branch := strings.TrimSpace(string(out))
-	if branch != "master" {
+	if branch != "main" {
 		panic(fmt.Errorf(`error: must be in "master" branch, current branch: %q`, branch))
 	}
 
