@@ -16,12 +16,12 @@ test: mocks tidy fmt vet
 	go test ./...  -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
-release: goreleaser
+release:
 	@version=$$(go run version/semver/main.go); \
 	git tag -s $$version -m"Release $$version"
 	goreleaser --rm-dist
 
-test-release: goreleaser
+test-release:
 	goreleaser --skip-publish --snapshot --rm-dist
 
 # generate mocks
