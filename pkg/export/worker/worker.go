@@ -273,41 +273,45 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	}
 	names := make(map[string]int)
 	for _, u := range ul.Items {
-		w.stats.addNamespace(u.GetNamespace())
-		w.config.FilterFields(res, u)
-		w.config.MaskFields(res, u)
-		w.config.SortSliceFields(res, u)
-		us := &u
 
-		namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
-		nameCnt := names[namespaceName]
+		if !w.config.IsInstanceExcluded(res, u) {
 
-		filename, err := w.config.FileName(res, us, nameCnt)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
+			w.stats.addNamespace(u.GetNamespace())
+			w.config.FilterFields(res, u)
+			w.config.MaskFields(res, u)
+			w.config.SortSliceFields(res, u)
+			us := &u
 
-		names[namespaceName] = nameCnt + 1
+			namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
+			nameCnt := names[namespaceName]
 
-		filename = filepath.Join(w.config.Target, filename)
-		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+			filename, err := w.config.FileName(res, us, nameCnt)
+			if err != nil {
+				res.Error = err.Error()
+				continue
+			}
 
-		f, err := os.Create(filename)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		closeIgnoreError(f)
+			names[namespaceName] = nameCnt + 1
 
-		err = w.config.PrintObj(us, f)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
+			filename = filepath.Join(w.config.Target, filename)
+			_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 
-		if w.recBar != nil {
-			w.recBar.Increment()
+			f, err := os.Create(filename)
+			if err != nil {
+				res.Error = err.Error()
+				continue
+			}
+			closeIgnoreError(f)
+
+			err = w.config.PrintObj(us, f)
+			if err != nil {
+				res.Error = err.Error()
+				continue
+			}
+
+			if w.recBar != nil {
+				w.recBar.Increment()
+			}
 		}
 	}
 }

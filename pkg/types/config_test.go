@@ -56,6 +56,53 @@ var _ = Describe("Config", func() {
 		})
 	})
 
+	Context("KindsByField", func() {
+		var (
+			us unstructured.Unstructured
+		)
+		BeforeEach(func() {
+			config.Excluded = types.Excluded{
+				KindsByField: map[string][]types.FieldValue{
+					"group.kind": {
+						types.FieldValue{
+							Field:  []string{"metadata", "name"},
+							Values: []string{"name1", "name2"},
+						},
+						types.FieldValue{
+							Field:  []string{"metadata", "namespace"},
+							Values: []string{"namespace1"},
+						},
+					},
+				},
+			}
+			us = unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind": "kind",
+					"metadata": map[string]interface{}{
+						"namespace": "namespace",
+						"name":      "name",
+					},
+				},
+			}
+		})
+
+		It("should not be excluded if no match", func() {
+			Ω(config.IsInstanceExcluded(res, us)).Should(BeFalse())
+		})
+
+		It("should be excluded if name matches", func() {
+			Ω(unstructured.SetNestedField(us.Object, "name1", "metadata", "name")).ShouldNot(HaveOccurred())
+			Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
+
+			Ω(unstructured.SetNestedField(us.Object, "name2", "metadata", "name")).ShouldNot(HaveOccurred())
+			Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
+		})
+
+		It("should be excluded if namespace matches", func() {
+			Ω(unstructured.SetNestedField(us.Object, "namespace1", "metadata", "namespace")).ShouldNot(HaveOccurred())
+			Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
+		})
+	})
 	Context("FileName / ListFileName", func() {
 		var (
 			res *types.GroupResource

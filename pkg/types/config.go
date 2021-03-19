@@ -65,7 +65,8 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		Progress:             ProgressBar,
 		Worker:               1,
 		Excluded: Excluded{
-			Fields: DefaultExcludedFields,
+			Fields:       DefaultExcludedFields,
+			KindsByField: make(map[string][]FieldValue),
 		},
 		configFlags: configFlags,
 		printFlags:  printFlags,
@@ -103,9 +104,10 @@ type Progress string
 
 // Excluded exclusion params
 type Excluded struct {
-	Kinds      []string   `yaml:"kinds"`
-	Fields     [][]string `yaml:"fields"`
-	KindFields KindFields `yaml:"kindFields"`
+	Kinds        []string                `yaml:"kinds"`
+	Fields       [][]string              `yaml:"fields"`
+	KindFields   KindFields              `yaml:"kindFields"`
+	KindsByField map[string][]FieldValue `yaml:"kindByField"`
 }
 
 // Masked masking params
@@ -120,6 +122,12 @@ type KindFields map[string][][]string
 // Included inclusion params
 type Included struct {
 	Kinds []string `yaml:"kinds"`
+}
+
+// FieldValue field with value
+type FieldValue struct {
+	Field  []string `yaml:"field"`
+	Values []string `yaml:"values"`
 }
 
 // FilterFields filter fields for a given resource
@@ -237,8 +245,32 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 	if c.excludedSet == nil {
 		c.excludedSet = newSet(c.Excluded.Kinds...)
 	}
-
 	return c.excludedSet.contains(gr.GroupKind())
+}
+
+// IsInstanceExcluded check if the kind instance is excluded
+func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstructured) bool {
+
+	if fvs, ok := c.Excluded.KindsByField[res.GroupKind()]; ok {
+		for _, fv := range fvs {
+			for _, v := range fv.Values {
+				if matches(us, fv.Field, v) {
+					return true
+				}
+			}
+
+		}
+	}
+	return false
+}
+
+func matches(us unstructured.Unstructured, field []string, filter string) bool {
+	if v, ok, err := unstructured.NestedFieldCopy(us.Object, field...); ok && err == nil && v != nil {
+		if fmt.Sprintf("%v", v) == filter {
+			return true
+		}
+	}
+	return false
 }
 
 // FileName generate export file name

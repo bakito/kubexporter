@@ -107,11 +107,16 @@ excluded:
   kindFields: # kind specific excluded fields
     Service:
       - [ spec, clusterIP ]
-masked:
-  kindFields: # kind specific excluded fields
+  kindByField: # allows to exclude single instances wir certain field values
+    Service:
+    - field: [ metadata, name ]
+      values: [ exclude-me-1, exclude-me-2 ] # the value is compared to the string representation of the actual kind value
+masked: # mask certain fields 
+  kindFields: # kind specific excluded fields with a replacement
+    replacement: '***'
     Secret:
       - [ data ]
-sortSlices:
+sortSlices: # sort the slice field value before exporting
   User:
     - [ roles ]
 ```
