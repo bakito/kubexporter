@@ -243,18 +243,11 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("FilterFields", func() {
+	Context("MaskedFields", func() {
 		var (
 			us unstructured.Unstructured
 		)
 		BeforeEach(func() {
-			config.Excluded = types.Excluded{
-				KindFields: map[string][][]string{
-					"group.kind": {
-						[]string{"metadata", "revision"},
-					},
-				},
-			}
 			config.Masked = types.Masked{
 				Replacement: "***",
 				KindFields: map[string][][]string{
@@ -288,6 +281,40 @@ var _ = Describe("Config", func() {
 			Ω(us.Object["data"].(map[string]interface{})["a"]).Should(Equal("***"))
 			Ω(us.Object["data"]).Should(HaveKey("b"))
 			Ω(us.Object["data"].(map[string]interface{})["b"]).Should(Equal("***"))
+		})
+	})
+
+	Context("SortSlices", func() {
+		var (
+			us unstructured.Unstructured
+		)
+		BeforeEach(func() {
+			config.SortSlices = map[string][][]string{
+				"group.kind": {},
+			}
+			us = unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":        "kind",
+					"stringSlice": []interface{}{"C", "A", "B", "AA"},
+					"intSlice":    []interface{}{int64(3), int64(1), int64(2), int64(4)},
+					"floatSlice":  []interface{}{1.3, 1.1, 1.2, 1.4},
+				},
+			}
+		})
+		It("should sort the string slice", func() {
+			config.SortSlices["group.kind"] = [][]string{{"stringSlice"}}
+			config.SortSliceFields(res, us)
+			Ω(us.Object["stringSlice"]).Should(Equal([]interface{}{"A", "AA", "B", "C"}))
+		})
+		It("should sort the int slice", func() {
+			config.SortSlices["group.kind"] = [][]string{{"intSlice"}}
+			config.SortSliceFields(res, us)
+			Ω(us.Object["intSlice"]).Should(Equal([]interface{}{int64(1), int64(2), int64(3), int64(4)}))
+		})
+		It("should sort the float slice", func() {
+			config.SortSlices["group.kind"] = [][]string{{"floatSlice"}}
+			config.SortSliceFields(res, us)
+			Ω(us.Object["floatSlice"]).Should(Equal([]interface{}{1.1, 1.2, 1.3, 1.4}))
 		})
 	})
 

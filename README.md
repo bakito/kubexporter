@@ -111,4 +111,7 @@ masked:
   kindFields: # kind specific excluded fields
     Secret:
       - [ data ]
+sortSlices:
+  User:
+    - [ roles ]
 ```

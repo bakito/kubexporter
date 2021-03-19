@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"text/template"
 
@@ -73,21 +74,22 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config
 type Config struct {
-	Excluded             Excluded `yaml:"excluded"`
-	Included             Included `yaml:"included"`
-	Masked               Masked   `yaml:"masked"`
-	FileNameTemplate     string   `yaml:"fileNameTemplate"`
-	ListFileNameTemplate string   `yaml:"listFileNameTemplate"`
-	AsLists              bool     `yaml:"asLists"`
-	Target               string   `yaml:"target"`
-	ClearTarget          bool     `yaml:"clearTarget"`
-	Summary              bool     `yaml:"summary"`
-	Progress             Progress `yaml:"progress"`
-	Namespace            string   `yaml:"namespace"`
-	Worker               int      `yaml:"worker"`
-	Archive              bool     `yaml:"archive"`
-	Quiet                bool     `yaml:"quiet"`
-	Verbose              bool     `yaml:"verbose"`
+	Excluded             Excluded   `yaml:"excluded"`
+	Included             Included   `yaml:"included"`
+	Masked               Masked     `yaml:"masked"`
+	SortSlices           KindFields `yaml:"sortSlices"`
+	FileNameTemplate     string     `yaml:"fileNameTemplate"`
+	ListFileNameTemplate string     `yaml:"listFileNameTemplate"`
+	AsLists              bool       `yaml:"asLists"`
+	Target               string     `yaml:"target"`
+	ClearTarget          bool       `yaml:"clearTarget"`
+	Summary              bool       `yaml:"summary"`
+	Progress             Progress   `yaml:"progress"`
+	Namespace            string     `yaml:"namespace"`
+	Worker               int        `yaml:"worker"`
+	Archive              bool       `yaml:"archive"`
+	Quiet                bool       `yaml:"quiet"`
+	Verbose              bool       `yaml:"verbose"`
 
 	excludedSet set
 	includedSet set
@@ -101,16 +103,19 @@ type Progress string
 
 // Excluded exclusion params
 type Excluded struct {
-	Kinds      []string              `yaml:"kinds"`
-	Fields     [][]string            `yaml:"fields"`
-	KindFields map[string][][]string `yaml:"kindFields"`
+	Kinds      []string   `yaml:"kinds"`
+	Fields     [][]string `yaml:"fields"`
+	KindFields KindFields `yaml:"kindFields"`
 }
 
 // Masked masking params
 type Masked struct {
-	Replacement string                `yaml:"replacement"`
-	KindFields  map[string][][]string `yaml:"kindFields"`
+	Replacement string     `yaml:"replacement"`
+	KindFields  KindFields `yaml:"kindFields"`
 }
+
+// KindFields map kinds to fields
+type KindFields map[string][][]string
 
 // Included inclusion params
 type Included struct {
@@ -186,6 +191,36 @@ func maskNestedField(obj map[string]interface{}, rep string, fields ...string) {
 		m[fields[len(fields)-1]] = rep
 	default:
 		println()
+	}
+}
+
+// SortSliceFields sort fields for a given resource
+func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructured) {
+	gk := res.GroupKind()
+	if c.SortSlices != nil && c.SortSlices[gk] != nil {
+		for _, f := range c.SortSlices[gk] {
+			if sl, ok, err := unstructured.NestedSlice(us.Object, f...); ok && err == nil {
+				if len(sl) > 0 {
+					switch sl[0].(type) {
+					case string:
+						sort.Slice(sl, func(i, j int) bool {
+							return sl[i].(string) < sl[j].(string)
+						})
+					case int64:
+						sort.Slice(sl, func(i, j int) bool {
+							return sl[i].(int64) < sl[j].(int64)
+						})
+					case float64:
+						sort.Slice(sl, func(i, j int) bool {
+							return sl[i].(float64) < sl[j].(float64)
+						})
+					default:
+						c.log.Printf("type %v is nor supported for SortSlices")
+					}
+					_ = unstructured.SetNestedSlice(us.Object, sl, f...)
+				}
+			}
+		}
 	}
 }
 
