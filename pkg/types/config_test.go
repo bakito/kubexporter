@@ -404,4 +404,19 @@ kind: Pod
 			Ω(err).Should(HaveOccurred())
 		})
 	})
+
+	Context("read-config", func() {
+		It("should print the object as yaml", func() {
+			cfg := types.NewConfig(nil, nil)
+			err := types.UpdateFrom(cfg, "../../config.yaml")
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(cfg.Excluded.KindsByField).Should(HaveKey("Secret"))
+			Ω(cfg.Excluded.KindsByField["Secret"]).Should(HaveLen(1))
+			Ω(cfg.Excluded.KindsByField["Secret"][0].Field).Should(Equal([]string{"type"}))
+			Ω(cfg.Excluded.KindsByField["Secret"][0].Values).Should(Equal([]string{"helm.sh/release", "helm.sh/release.v1"}))
+
+			Ω(cfg.Masked.KindFields).Should(HaveKey("Secret"))
+			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
+		})
+	})
 })

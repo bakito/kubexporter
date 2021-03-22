@@ -5,6 +5,10 @@ namespace:
 asLists: false
 clearTarget: true
 worker: 5
+masked:
+  kindFields:
+    Secret:
+      - [ data ]
 excluded:
   kinds:
     - Binding
@@ -18,7 +22,6 @@ excluded:
     - ReplicationController
     - ReplicationControllerDummy
     - RoleBindingRestriction
-    - Secret
     - apps.ReplicaSet
     - batch.Job
     - events.k8s.io.Event
@@ -34,3 +37,10 @@ excluded:
   kindFields:
     Service:
       - [ spec, clusterIP ]
+    Secret:
+      - [ metadata, annotations, "openshift.io/token-secret.name" ]
+      - [ metadata, annotations, "openshift.io/token-secret.value" ]
+  kindByField:
+    Secret:
+      - field: [ type ]
+        values: [ 'helm.sh/release', 'helm.sh/release.v1' ]

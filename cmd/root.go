@@ -9,7 +9,6 @@ import (
 	"github.com/bakito/kubexporter/pkg/export"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -48,14 +47,10 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 	config := types.NewConfig(configFlags, printFlags)
 
 	if cfgFile != "" {
-		b, err := ioutil.ReadFile(cfgFile)
-		if err != nil {
+		if err := types.UpdateFrom(config, cfgFile); err != nil {
 			return nil, err
 		}
-		err = yaml.Unmarshal(b, config)
-		if err != nil {
-			return nil, err
-		}
+
 	}
 
 	cmd.Flags().Visit(func(f *pflag.Flag) {

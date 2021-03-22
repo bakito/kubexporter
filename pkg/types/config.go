@@ -2,8 +2,10 @@ package types
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/Masterminds/sprig"
 	"github.com/bakito/kubexporter/pkg/log"
+	"github.com/ghodss/yaml"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -55,6 +58,16 @@ var (
 	}
 )
 
+// Update the config from the file with given path
+func UpdateFrom(config *Config, path string) error {
+
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	return yaml.Unmarshal(b, config)
+}
+
 // NewConfig create a new config
 func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericclioptions.PrintFlags) *Config {
 	return &Config{
@@ -64,10 +77,15 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		Summary:              false,
 		Progress:             ProgressBar,
 		Worker:               1,
+		Masked: Masked{
+			KindFields: KindFields{},
+		},
 		Excluded: Excluded{
 			Fields:       DefaultExcludedFields,
+			KindFields:   KindFields{},
 			KindsByField: make(map[string][]FieldValue),
 		},
+		SortSlices:  KindFields{},
 		configFlags: configFlags,
 		printFlags:  printFlags,
 	}
@@ -75,22 +93,22 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config
 type Config struct {
-	Excluded             Excluded   `yaml:"excluded"`
-	Included             Included   `yaml:"included"`
-	Masked               Masked     `yaml:"masked"`
-	SortSlices           KindFields `yaml:"sortSlices"`
-	FileNameTemplate     string     `yaml:"fileNameTemplate"`
-	ListFileNameTemplate string     `yaml:"listFileNameTemplate"`
-	AsLists              bool       `yaml:"asLists"`
-	Target               string     `yaml:"target"`
-	ClearTarget          bool       `yaml:"clearTarget"`
-	Summary              bool       `yaml:"summary"`
-	Progress             Progress   `yaml:"progress"`
-	Namespace            string     `yaml:"namespace"`
-	Worker               int        `yaml:"worker"`
-	Archive              bool       `yaml:"archive"`
-	Quiet                bool       `yaml:"quiet"`
-	Verbose              bool       `yaml:"verbose"`
+	Excluded             Excluded   `json:"excluded" yaml:"excluded"`
+	Included             Included   `json:"included" yaml:"included"`
+	Masked               Masked     `json:"masked" yaml:"masked"`
+	SortSlices           KindFields `json:"sortSlices" yaml:"sortSlices"`
+	FileNameTemplate     string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
+	ListFileNameTemplate string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
+	AsLists              bool       `json:"asLists" yaml:"asLists"`
+	Target               string     `json:"target" yaml:"target"`
+	ClearTarget          bool       `json:"clearTarget" yaml:"clearTarget"`
+	Summary              bool       `json:"summary" yaml:"summary"`
+	Progress             Progress   `json:"progress" yaml:"progress"`
+	Namespace            string     `json:"namespace" yaml:"namespace"`
+	Worker               int        `json:"worker" yaml:"worker"`
+	Archive              bool       `json:"archive" yaml:"archive"`
+	Quiet                bool       `json:"quiet" yaml:"quiet"`
+	Verbose              bool       `json:"verbose" yaml:"verbose"`
 
 	excludedSet set
 	includedSet set
@@ -104,16 +122,16 @@ type Progress string
 
 // Excluded exclusion params
 type Excluded struct {
-	Kinds        []string                `yaml:"kinds"`
-	Fields       [][]string              `yaml:"fields"`
-	KindFields   KindFields              `yaml:"kindFields"`
-	KindsByField map[string][]FieldValue `yaml:"kindByField"`
+	Kinds        []string                `json:"kinds" yaml:"kinds"`
+	Fields       [][]string              `json:"fields" yaml:"fields"`
+	KindFields   KindFields              `json:"kindFields" yaml:"kindFields"`
+	KindsByField map[string][]FieldValue `json:"kindByField" yaml:"kindByField"`
 }
 
 // Masked masking params
 type Masked struct {
-	Replacement string     `yaml:"replacement"`
-	KindFields  KindFields `yaml:"kindFields"`
+	Replacement string     `json:"replacement" yaml:"replacement"`
+	KindFields  KindFields `json:"kindFields" yaml:"kindFields"`
 }
 
 // KindFields map kinds to fields
@@ -121,13 +139,13 @@ type KindFields map[string][][]string
 
 // Included inclusion params
 type Included struct {
-	Kinds []string `yaml:"kinds"`
+	Kinds []string `json:"kinds" yaml:"kinds"`
 }
 
 // FieldValue field with value
 type FieldValue struct {
-	Field  []string `yaml:"field"`
-	Values []string `yaml:"values"`
+	Field  []string `json:"field" yaml:"field"`
+	Values []string `json:"values" yaml:"values"   `
 }
 
 // FilterFields filter fields for a given resource
@@ -223,7 +241,11 @@ func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructure
 							return sl[i].(float64) < sl[j].(float64)
 						})
 					default:
-						c.log.Printf("type %v is nor supported for SortSlices")
+						sort.Slice(sl, func(i, j int) bool {
+							a, _ := json.Marshal(sl[i])
+							b, _ := json.Marshal(sl[i])
+							return string(a) < string(b)
+						})
 					}
 					_ = unstructured.SetNestedSlice(us.Object, sl, f...)
 				}
@@ -250,7 +272,6 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 
 // IsInstanceExcluded check if the kind instance is excluded
 func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstructured) bool {
-
 	if fvs, ok := c.Excluded.KindsByField[res.GroupKind()]; ok {
 		for _, fv := range fvs {
 			for _, v := range fv.Values {
@@ -258,7 +279,6 @@ func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstruct
 					return true
 				}
 			}
-
 		}
 	}
 	return false
@@ -266,7 +286,8 @@ func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstruct
 
 func matches(us unstructured.Unstructured, field []string, filter string) bool {
 	if v, ok, err := unstructured.NestedFieldCopy(us.Object, field...); ok && err == nil && v != nil {
-		if fmt.Sprintf("%v", v) == filter {
+		value := fmt.Sprintf("%v", v)
+		if value == filter {
 			return true
 		}
 	}
