@@ -345,6 +345,7 @@ var _ = Describe("Config", func() {
 					"stringSlice": []interface{}{"C", "A", "B", "AA"},
 					"intSlice":    []interface{}{int64(3), int64(1), int64(2), int64(4)},
 					"floatSlice":  []interface{}{1.3, 1.1, 1.2, 1.4},
+					"structSlice": []interface{}{map[string]interface{}{"field": "val2"}, map[string]interface{}{"field": "val1"}},
 				},
 			}
 		})
@@ -362,6 +363,11 @@ var _ = Describe("Config", func() {
 			config.SortSlices["group.kind"] = [][]string{{"floatSlice"}}
 			config.SortSliceFields(res, us)
 			Ω(us.Object["floatSlice"]).Should(Equal([]interface{}{1.1, 1.2, 1.3, 1.4}))
+		})
+		It("should sort the struct slice", func() {
+			config.SortSlices["group.kind"] = [][]string{{"structSlice"}}
+			config.SortSliceFields(res, us)
+			Ω(us.Object["structSlice"]).Should(Equal([]interface{}{map[string]interface{}{"field": "val1"}, map[string]interface{}{"field": "val2"}}))
 		})
 	})
 

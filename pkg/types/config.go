@@ -243,7 +243,7 @@ func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructure
 					default:
 						sort.Slice(sl, func(i, j int) bool {
 							a, _ := json.Marshal(sl[i])
-							b, _ := json.Marshal(sl[i])
+							b, _ := json.Marshal(sl[j])
 							return string(a) < string(b)
 						})
 					}
