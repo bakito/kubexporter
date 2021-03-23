@@ -291,9 +291,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("MaskedFields", func() {
-		var (
-			us unstructured.Unstructured
-		)
+		var us unstructured.Unstructured
 		BeforeEach(func() {
 			config.Masked = types.Masked{
 				Replacement: "***",
@@ -345,6 +343,7 @@ var _ = Describe("Config", func() {
 					"stringSlice": []interface{}{"C", "A", "B", "AA"},
 					"intSlice":    []interface{}{int64(3), int64(1), int64(2), int64(4)},
 					"floatSlice":  []interface{}{1.3, 1.1, 1.2, 1.4},
+					"structSlice": []interface{}{map[string]interface{}{"field": "val2"}, map[string]interface{}{"field": "val1"}},
 				},
 			}
 		})
@@ -362,6 +361,11 @@ var _ = Describe("Config", func() {
 			config.SortSlices["group.kind"] = [][]string{{"floatSlice"}}
 			config.SortSliceFields(res, us)
 			Ω(us.Object["floatSlice"]).Should(Equal([]interface{}{1.1, 1.2, 1.3, 1.4}))
+		})
+		It("should sort the struct slice", func() {
+			config.SortSlices["group.kind"] = [][]string{{"structSlice"}}
+			config.SortSliceFields(res, us)
+			Ω(us.Object["structSlice"]).Should(Equal([]interface{}{map[string]interface{}{"field": "val1"}, map[string]interface{}{"field": "val2"}}))
 		})
 	})
 
@@ -402,6 +406,45 @@ kind: Pod
 			pf.OutputFormat = pointer.StringPtr("xyz")
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).Should(HaveOccurred())
+		})
+	})
+
+	Context("read-config", func() {
+		var (
+			cfg *types.Config
+		)
+		BeforeEach(func() {
+			cfg = types.NewConfig(nil, nil)
+			err := types.UpdateFrom(cfg, "../../config.yaml")
+			Ω(err).ShouldNot(HaveOccurred())
+		})
+
+		It("should read Excluded.Kinds correctly", func() {
+			Ω(cfg.Excluded.Kinds).Should(ContainElement("Pod"))
+			Ω(cfg.Excluded.Kinds).Should(ContainElement("batch.Job"))
+		})
+
+		It("should read Excluded.Fields correctly", func() {
+			Ω(cfg.Excluded.Fields).Should(ContainElement([]string{"status"}))
+			Ω(cfg.Excluded.Fields).Should(ContainElement([]string{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"}))
+		})
+
+		It("should read Excluded.KindsField correctly", func() {
+			Ω(cfg.Excluded.KindFields).Should(HaveKey("Secret"))
+			Ω(cfg.Excluded.KindFields["Secret"]).Should(ContainElement([]string{"metadata", "annotations", "openshift.io/token-secret.name"}))
+			Ω(cfg.Excluded.KindFields["Secret"]).Should(ContainElement([]string{"metadata", "annotations", "openshift.io/token-secret.value"}))
+		})
+
+		It("should read Excluded.KindsByField correctly", func() {
+			Ω(cfg.Excluded.KindsByField).Should(HaveKey("Secret"))
+			Ω(cfg.Excluded.KindsByField["Secret"]).Should(HaveLen(1))
+			Ω(cfg.Excluded.KindsByField["Secret"][0].Field).Should(Equal([]string{"type"}))
+			Ω(cfg.Excluded.KindsByField["Secret"][0].Values).Should(Equal([]string{"helm.sh/release", "helm.sh/release.v1"}))
+		})
+
+		It("should read Masked.KindFields correctly", func() {
+			Ω(cfg.Masked.KindFields).Should(HaveKey("Secret"))
+			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
 		})
 	})
 })
