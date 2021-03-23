@@ -291,9 +291,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("MaskedFields", func() {
-		var (
-			us unstructured.Unstructured
-		)
+		var us unstructured.Unstructured
 		BeforeEach(func() {
 			config.Masked = types.Masked{
 				Replacement: "***",
