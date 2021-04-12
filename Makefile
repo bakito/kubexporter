@@ -12,7 +12,7 @@ tidy:
 	go mod tidy
 
 # Run tests
-test: mocks tidy fmt vet
+test: tidy fmt vet
 	go test ./...  -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
@@ -31,5 +31,5 @@ mocks: mockgen
 
 mockgen:
 ifeq (, $(shell which mockgen))
- $(shell go get github.com/golang/mock/mockgen)
+ $(shell go get github.com/golang/mock/mockgen@v1.5.0)
 endif
