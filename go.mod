@@ -9,7 +9,7 @@ require (
 	github.com/coreos/go-semver v0.3.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/mitchellh/copystructure v1.0.0 // indirect
