@@ -20,13 +20,13 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v5 v5.4.0
-	k8s.io/api v0.21.3
-	k8s.io/apimachinery v0.21.3
-	k8s.io/cli-runtime v0.21.3
-	k8s.io/client-go v0.21.3
+	k8s.io/api v0.22.0
+	k8s.io/apimachinery v0.22.0
+	k8s.io/cli-runtime v0.22.0
+	k8s.io/client-go v0.22.0
 	k8s.io/klog/v2 v2.10.0
 	k8s.io/kubectl v0.21.3
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920
+	k8s.io/utils v0.0.0-20210707171843-4b05e18ac7d9
 )
 
 // fix for darwin
