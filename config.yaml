@@ -6,6 +6,7 @@ asLists: false
 clearTarget: true
 worker: 5
 masked:
+  replacement: '***'
   kindFields:
     Secret:
       - [ data ]
