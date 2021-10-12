@@ -4,8 +4,7 @@ WORKDIR /build
 
 RUN apt-get update && apt-get install -y upx
 
-ENV GOPROXY=https://goproxy.io \
-    GO111MODULE=on \
+ENV GO111MODULE=on \
     CGO_ENABLED=0 \
     GOOS=linux \
     GOARCH=amd64
