@@ -58,7 +58,7 @@ var (
 	}
 )
 
-// Update the config from the file with given path
+// UpdateFrom the config from the file with given path
 func UpdateFrom(config *Config, path string) error {
 
 	b, err := ioutil.ReadFile(path)
@@ -371,7 +371,7 @@ func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return p.PrintObj(ro.(runtime.Object), out)
+	return p.PrintObj(ro, out)
 }
 
 // Logger get the logger
