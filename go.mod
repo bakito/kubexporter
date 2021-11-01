@@ -22,10 +22,10 @@ require (
 	github.com/vbauerster/mpb/v5 v5.4.0
 	k8s.io/api v0.22.3
 	k8s.io/apimachinery v0.22.3
-	k8s.io/cli-runtime v0.22.2
+	k8s.io/cli-runtime v0.22.3
 	k8s.io/client-go v0.22.3
 	k8s.io/klog/v2 v2.30.0
-	k8s.io/kubectl v0.22.2
+	k8s.io/kubectl v0.22.3
 	k8s.io/utils v0.0.0-20210819203725-bdf08cb9a70a
 )
 
