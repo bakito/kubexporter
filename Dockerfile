@@ -2,6 +2,7 @@ FROM golang:1.17 as builder
 
 WORKDIR /build
 
+ARG VERSION=main
 RUN apt-get update && apt-get install -y upx
 
 ENV GO111MODULE=on \
@@ -11,7 +12,8 @@ ENV GO111MODULE=on \
 COPY . .
 
 RUN make test
-RUN ./hack/build.sh kubexporter .
+RUN go build -a -installsuffix cgo -ldflags="-w -s -X github.com/bakito/kubexporter/version.Version=${VERSION}" -o kubexporter && \
+    upx -q kubexporter
 
 # application image
 FROM scratch
