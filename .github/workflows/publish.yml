@@ -2,7 +2,7 @@ name: Build images
 
 on:
   push:
-    branches: master
+    branches: main
   release:
     types:
       - published
