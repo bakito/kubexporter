@@ -251,7 +251,6 @@ func (e *exporter) purgeTarget() error {
 	e.l.Printf("Deleting target %q\n", e.config.Target)
 	defer e.l.Checkf("done 🚮\n")
 	return os.RemoveAll(e.config.Target)
-
 }
 
 type exporter struct {

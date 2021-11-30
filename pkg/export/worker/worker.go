@@ -112,7 +112,6 @@ func (w *worker) Stop() Stats {
 
 // list resources
 func (w *worker) list(ctx context.Context, group, version, kind string) (*unstructured.UnstructuredList, error) {
-
 	mapping, err := w.mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
 	if err != nil {
 		return nil, err
@@ -139,7 +138,6 @@ func (w *worker) preDecorator() decor.Decorator {
 		}
 		if !w.queryFinished {
 			return fmt.Sprintf("🔍 %2d: %s", w.id, w.currentKind)
-
 		}
 		return fmt.Sprintf("👷 %2d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
 	})
@@ -159,7 +157,6 @@ func (w *worker) postDecorator() decor.Decorator {
 
 // GenerateWork generate the work function
 func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
-
 	return func(res *types.GroupResource) {
 		defer wg.Done()
 		w.stats.Kinds++
@@ -253,13 +250,13 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 			res.Error = err.Error()
 			continue
 		}
-		closeIgnoreError(f)
 
 		err = w.config.PrintObj(usl, f)
 		if err != nil {
 			res.Error = err.Error()
 			continue
 		}
+		closeIgnoreError(f)()
 
 		if w.recBar != nil {
 			w.recBar.IncrBy(len(usl.Items))
@@ -272,8 +269,8 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 		return
 	}
 	names := make(map[string]int)
-	for _, u := range ul.Items {
-
+	for i := range ul.Items {
+		u := ul.Items[i]
 		if !w.config.IsInstanceExcluded(res, u) {
 
 			w.stats.addNamespace(u.GetNamespace())
@@ -301,13 +298,13 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 				res.Error = err.Error()
 				continue
 			}
-			closeIgnoreError(f)
 
 			err = w.config.PrintObj(us, f)
 			if err != nil {
 				res.Error = err.Error()
 				continue
 			}
+			closeIgnoreError(f)
 
 			if w.recBar != nil {
 				w.recBar.Increment()

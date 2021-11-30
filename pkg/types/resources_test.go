@@ -8,9 +8,7 @@ import (
 )
 
 var _ = Describe("Resources", func() {
-	var (
-		res *types.GroupResource
-	)
+	var res *types.GroupResource
 	BeforeEach(func() {
 		res = &types.GroupResource{
 			APIResource: metav1.APIResource{

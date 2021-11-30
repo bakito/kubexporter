@@ -80,7 +80,6 @@ var _ = Describe("Worker", func() {
 	Context("exportLists", func() {
 		It("should do noting with nil args", func() {
 			w.exportLists(nil, nil)
-
 		})
 		It("should create two dirs with one file each", func() {
 			w.exportLists(res, ul)

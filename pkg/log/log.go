@@ -15,9 +15,7 @@ const (
 	Check = ColorGreen + "✓" + ColorReset
 )
 
-var (
-	nonAscii = regexp.MustCompile("[[:^ascii:]]")
-)
+var nonASCII = regexp.MustCompile("[[:^ascii:]]")
 
 // YALI yet another logger interface ;)
 type YALI interface {
@@ -45,7 +43,7 @@ func (l *log) Printf(format string, a ...interface{}) {
 			format = strings.ReplaceAll(format, "✓", "-")
 			format = strings.ReplaceAll(format, ColorReset, "")
 			format = strings.ReplaceAll(format, ColorGreen, "")
-			format = nonAscii.ReplaceAllLiteralString(format, "")
+			format = nonASCII.ReplaceAllLiteralString(format, "")
 		}
 		fmt.Printf(format, a...)
 	}

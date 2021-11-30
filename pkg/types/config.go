@@ -60,7 +60,6 @@ var (
 
 // UpdateFrom the config from the file with given path
 func UpdateFrom(config *Config, path string) error {
-
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -321,7 +320,8 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 		"Name":      name,
 		"Kind":      res.Kind(),
 		"Group":     res.APIGroup,
-		"Extension": *c.printFlags.OutputFormat},
+		"Extension": *c.printFlags.OutputFormat,
+	},
 	)
 
 	path := tpl.String()

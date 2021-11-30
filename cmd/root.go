@@ -28,7 +28,6 @@ var rootCmd = &cobra.Command{
 	Version: version.Version,
 	Short:   "easily export kubernetes resources",
 	RunE: func(cmd *cobra.Command, args []string) error {
-
 		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {
 			return err
@@ -50,7 +49,6 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		if err := types.UpdateFrom(config, cfgFile); err != nil {
 			return nil, err
 		}
-
 	}
 
 	cmd.Flags().Visit(func(f *pflag.Flag) {
@@ -104,7 +102,6 @@ func Execute() {
 }
 
 func init() {
-
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 	rootCmd.Flags().StringP("target", "t", "", "Set the target directory (default exports)")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")

@@ -57,9 +57,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("KindsByField", func() {
-		var (
-			us unstructured.Unstructured
-		)
+		var us unstructured.Unstructured
 		BeforeEach(func() {
 			config.Excluded = types.Excluded{
 				KindsByField: map[string][]types.FieldValue{
@@ -118,9 +116,7 @@ var _ = Describe("Config", func() {
 		})
 
 		Context("FileName", func() {
-			var (
-				us *unstructured.Unstructured
-			)
+			var us *unstructured.Unstructured
 			BeforeEach(func() {
 				us = &unstructured.Unstructured{
 					Object: map[string]interface{}{
@@ -212,9 +208,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("FilterFields", func() {
-		var (
-			us unstructured.Unstructured
-		)
+		var us unstructured.Unstructured
 		BeforeEach(func() {
 			config.Excluded = types.Excluded{
 				Fields: [][]string{
@@ -260,7 +254,6 @@ var _ = Describe("Config", func() {
 			Ω(us.Object["metadata"]).Should(HaveKey("revision"))
 			Ω(us.Object["metadata"]).ShouldNot(HaveKey("uid"))
 			Ω(us.Object).ShouldNot(HaveKey("status"))
-
 		})
 		It("should filter slice fields", func() {
 			config.FilterFields(res, us)
@@ -277,7 +270,6 @@ var _ = Describe("Config", func() {
 			Ω(ok).Should(BeTrue())
 			Ω(b).Should(HaveKey("ba"))
 			Ω(b).ShouldNot(HaveKey("bb"))
-
 		})
 		It("should filter default fields and kindFields", func() {
 			res.APIResource.Kind = "kind2"
@@ -330,9 +322,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("SortSlices", func() {
-		var (
-			us unstructured.Unstructured
-		)
+		var us unstructured.Unstructured
 		BeforeEach(func() {
 			config.SortSlices = map[string][][]string{
 				"group.kind": {},
@@ -370,9 +360,7 @@ var _ = Describe("Config", func() {
 	})
 
 	Context("PrintObj", func() {
-		var (
-			data *unstructured.Unstructured
-		)
+		var data *unstructured.Unstructured
 		BeforeEach(func() {
 			data = &unstructured.Unstructured{}
 			data.SetUnstructuredContent(map[string]interface{}{
@@ -410,9 +398,7 @@ kind: Pod
 	})
 
 	Context("read-config", func() {
-		var (
-			cfg *types.Config
-		)
+		var cfg *types.Config
 		BeforeEach(func() {
 			cfg = types.NewConfig(nil, nil)
 			err := types.UpdateFrom(cfg, "../../config.yaml")
