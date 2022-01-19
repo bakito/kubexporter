@@ -20,6 +20,7 @@ FROM scratch
 WORKDIR /opt/go
 
 LABEL maintainer="bakito <github@bakito.ch>"
+USER 1001
 ENTRYPOINT ["/opt/go/kubexporter"]
 
 COPY --from=builder /build/kubexporter /opt/go/kubexporter

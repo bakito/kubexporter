@@ -94,5 +94,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-// fix for darwin
-replace golang.org/x/sys => golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6
+replace github.com/dgrijalva/jwt-go v3.2.0+incompatible => github.com/form3tech-oss/jwt-go v3.2.2+incompatible
