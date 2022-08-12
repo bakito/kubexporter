@@ -2,7 +2,6 @@ package worker
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -34,7 +33,7 @@ var _ = Describe("Worker", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		tmpDir, err = ioutil.TempDir("", "ginkgo-convert")
+		tmpDir, err = os.MkdirTemp("", "ginkgo-convert")
 		Ω(err).ShouldNot(HaveOccurred())
 		mockCtrl = gm.NewController(GinkgoT())
 		mockClient = mockdynamic.NewMockInterface(mockCtrl)
@@ -129,8 +128,8 @@ var _ = Describe("Worker", func() {
 	})
 })
 
-func checkDir(expectedFiles int, dir ...string) []os.FileInfo {
-	files, err := ioutil.ReadDir(filepath.Join(dir...))
+func checkDir(expectedFiles int, dir ...string) []os.DirEntry {
+	files, err := os.ReadDir(filepath.Join(dir...))
 	Ω(err).ShouldNot(HaveOccurred())
 	Ω(files).Should(HaveLen(expectedFiles))
 	return files
@@ -161,7 +160,7 @@ func deployment(n, d int) appsv1.Deployment {
 
 func unstructuredListFrom(path ...string) *unstructured.UnstructuredList {
 	ul := &unstructured.UnstructuredList{}
-	b, err := ioutil.ReadFile(filepath.Join(path...))
+	b, err := os.ReadFile(filepath.Join(path...))
 	Ω(err).ShouldNot(HaveOccurred())
 	err = yaml.Unmarshal(b, ul)
 	Ω(err).ShouldNot(HaveOccurred())
@@ -170,7 +169,7 @@ func unstructuredListFrom(path ...string) *unstructured.UnstructuredList {
 
 func unstructuredFrom(path ...string) *unstructured.Unstructured {
 	u := &unstructured.Unstructured{}
-	b, err := ioutil.ReadFile(filepath.Join(path...))
+	b, err := os.ReadFile(filepath.Join(path...))
 	Ω(err).ShouldNot(HaveOccurred())
 	err = yaml.Unmarshal(b, u)
 	Ω(err).ShouldNot(HaveOccurred())

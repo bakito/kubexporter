@@ -3,7 +3,7 @@ package cmd
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 
 	"github.com/bakito/kubexporter/pkg/export"
@@ -127,5 +127,5 @@ func init() {
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	klog.InitFlags(fs)
 	_ = fs.Parse([]string{"-logtostderr=false"})
-	klog.SetOutput(ioutil.Discard)
+	klog.SetOutput(io.Discard)
 }

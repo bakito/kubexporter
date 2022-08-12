@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -60,7 +59,7 @@ var (
 
 // UpdateFrom the config from the file with given path
 func UpdateFrom(config *Config, path string) error {
-	b, err := ioutil.ReadFile(path)
+	b, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
