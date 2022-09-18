@@ -16,8 +16,8 @@ test: tidy fmt vet
 	go test ./...  -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
-release:
-	@version=$$(go run version/semver/main.go); \
+release: semver
+	@version=$$(semver); \
 	git tag -s $$version -m"Release $$version"
 	goreleaser --rm-dist
 
@@ -32,4 +32,9 @@ mocks: mockgen
 mockgen:
 ifeq (, $(shell which mockgen))
  $(shell go get github.com/golang/mock/mockgen@v1.5.0)
+endif
+
+semver:
+ifeq (, $(shell which semver))
+ $(shell go install github.com/bakito/semver@latest)
 endif
