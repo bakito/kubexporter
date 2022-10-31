@@ -10,7 +10,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo/v2 v2.4.0
 	github.com/onsi/gomega v1.22.1
-	github.com/spf13/cobra v1.6.0
+	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v5 v5.4.0
