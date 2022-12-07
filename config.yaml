@@ -30,6 +30,8 @@ excluded:
     - extensions.ReplicaSet
     - kyverno.io.ClusterBackgroundScanReport
     - kyverno.io.BackgroundScanReport
+    - wgpolicyk8s.io.ClusterPolicyReport
+    - wgpolicyk8s.io.PolicyReport
     - cilium.io.CiliumIdentity
     - metrics.k8s.io.PodMetrics
     - metrics.k8s.io.NodeMetrics
