@@ -1,6 +1,6 @@
 module github.com/bakito/kubexporter
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
@@ -93,7 +93,4 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-replace (
-	github.com/Masterminds/goutils v1.1.0 => github.com/Masterminds/goutils v1.1.1
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible => github.com/form3tech-oss/jwt-go v3.2.2+incompatible
-)
+replace github.com/Masterminds/goutils v1.1.0 => github.com/Masterminds/goutils v1.1.1
