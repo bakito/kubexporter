@@ -31,6 +31,9 @@ excluded:
     - kyverno.io.ClusterBackgroundScanReport
     - kyverno.io.BackgroundScanReport
     - cilium.io.CiliumIdentity
+    - metrics.k8s.io.PodMetrics
+    - metrics.k8s.io.NodeMetrics
+    - coordination.k8s.io.Lease
   fields:
     - [ status ]
     - [ metadata, uid ]
