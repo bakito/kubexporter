@@ -16,6 +16,7 @@ excluded:
     - ComponentStatus
     - Endpoints
     - Event
+    - events.k8s.io.Event
     - LimitRange
     - LocalSubjectAccessReview
     - PersistentVolume
@@ -27,6 +28,9 @@ excluded:
     - batch.Job
     - events.k8s.io.Event
     - extensions.ReplicaSet
+    - kyverno.io.ClusterBackgroundScanReport
+    - kyverno.io.BackgroundScanReport
+    - cilium.io.CiliumIdentity
   fields:
     - [ status ]
     - [ metadata, uid ]
