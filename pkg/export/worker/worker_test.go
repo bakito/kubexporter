@@ -38,7 +38,7 @@ var _ = Describe("Worker", func() {
 		mockCtrl = gm.NewController(GinkgoT())
 		mockClient = mockdynamic.NewMockInterface(mockCtrl)
 		config = types.NewConfig(nil, &genericclioptions.PrintFlags{
-			OutputFormat:       pointer.StringPtr(types.DefaultFormat),
+			OutputFormat:       pointer.String(types.DefaultFormat),
 			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 		})
 		config.Target = tmpDir

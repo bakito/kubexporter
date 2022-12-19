@@ -118,7 +118,7 @@ func init() {
 	configFlags.AddFlags(rootCmd.Flags())
 
 	printFlags = &genericclioptions.PrintFlags{
-		OutputFormat:       pointer.StringPtr(types.DefaultFormat),
+		OutputFormat:       pointer.String(types.DefaultFormat),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 	}
 	printFlags.AddFlags(rootCmd)

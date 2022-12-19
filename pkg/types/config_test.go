@@ -22,7 +22,7 @@ var _ = Describe("Config", func() {
 	)
 	BeforeEach(func() {
 		pf = &genericclioptions.PrintFlags{
-			OutputFormat:       pointer.StringPtr(types.DefaultFormat),
+			OutputFormat:       pointer.String(types.DefaultFormat),
 			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 		}
 		config = types.NewConfig(nil, pf)
@@ -370,7 +370,7 @@ var _ = Describe("Config", func() {
 		})
 		It("should print the object as yaml", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = pointer.StringPtr("yaml")
+			pf.OutputFormat = pointer.String("yaml")
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(buf.String()).Should(Equal(`foo: bar
@@ -379,7 +379,7 @@ kind: Pod
 		})
 		It("should print the object as json", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = pointer.StringPtr("json")
+			pf.OutputFormat = pointer.String("json")
 
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
@@ -391,7 +391,7 @@ kind: Pod
 		})
 		It("should fail with unsupported format", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = pointer.StringPtr("xyz")
+			pf.OutputFormat = pointer.String("xyz")
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).Should(HaveOccurred())
 		})
