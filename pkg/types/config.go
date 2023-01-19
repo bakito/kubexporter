@@ -213,8 +213,6 @@ func maskNestedField(obj map[string]interface{}, rep string, fields ...string) {
 		}
 	case string:
 		m[fields[len(fields)-1]] = rep
-	default:
-		println()
 	}
 }
 
