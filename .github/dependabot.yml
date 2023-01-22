@@ -5,6 +5,7 @@ updates:
     schedule:
       interval: "weekly"
     ignore:
+      # covered by k8s.io/kubectl
       - dependency-name: "k8s.io/api"
       - dependency-name: "k8s.io/apimachinery"
       - dependency-name: "k8s.io/client-go"
