@@ -5,9 +5,9 @@ updates:
     schedule:
       interval: "weekly"
     ignore:
-      - dependency_name: "k8s.io/api"
-      - dependency_name: "k8s.io/apimachinery"
-      - dependency_name: "k8s.io/client-go"
+      - dependency-name: "k8s.io/api"
+      - dependency-name: "k8s.io/apimachinery"
+      - dependency-name: "k8s.io/client-go"
 
   - package-ecosystem: "github-actions"
     directory: "/"
