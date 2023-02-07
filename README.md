@@ -71,15 +71,23 @@ The benefit is that new custom resource definitions are automatically considered
 Example configuration
 
 ```yaml
-summary: true # print a summary
-progress: true # print progress
-archive: true # create an archive
-namespace: # define a single namespace (default all)
-worker: 1 # define the number of parallel worker
-asLists: false # export as lists
-clearTarget: true # clear the target directory before exporting
+# print a summary
+summary: true
+# print progress
+progress: true
+# create an archive
+archive: true
+# define a single namespace (default all)
+namespace:
+# define the number of parallel worker
+worker: 1
+# export as lists
+asLists: false
+# clear the target directory before exporting
+clearTarget: true
 excluded:
-  kinds: # list all kinds to be excluded
+  # list all kinds to be excluded
+  kinds:
     - Binding
     - ComponentStatus
     - Endpoints
@@ -95,7 +103,8 @@ excluded:
     - batch.Job
     - events.k8s.io.Event
     - extensions.ReplicaSet
-  fields: # list fields that should be removed for all resources before exported; slices are also traversed
+  # list fields that should be removed for all resources before exported; slices are also traversed
+  fields:
     - [ status ]
     - [ metadata, uid ]
     - [ metadata, selfLink ]
@@ -103,19 +112,28 @@ excluded:
     - [ metadata, creationTimestamp ]
     - [ metadata, generation ]
     - [ metadata, annotations, "kubectl.kubernetes.io/last-applied-configuration" ]
-  kindFields: # kind specific excluded fields
+  # kind specific excluded fields
+  kindFields:
     Service:
       - [ spec, clusterIP ]
-  kindByField: # allows to exclude single instances wir certain field values
+  # allows to exclude single instances wir certain field values
+  kindByField:
     Service:
-    - field: [ metadata, name ]
-      values: [ exclude-me-1, exclude-me-2 ] # the value is compared to the string representation of the actual kind value
-masked: # mask certain fields 
+      - field: [ metadata, name ]
+        # the value is compared to the string representation of the actual kind value
+        values: [ exclude-me-1, exclude-me-2 ]
+# mask certain fields 
+masked:
+  # the replacement string to be used for masked fields (default '***')
   replacement: '***'
-  kindFields: # kind specific excluded fields with a replacement
+  # generate a checksum from the value to be masked value instead of the replacement. (supported 'md5', 'sha1', 'sha256')  
+  checksum: ''
+  # kind specific excluded fields with a replacement
+  kindFields:
     Secret:
       - [ data ]
-sortSlices: # sort the slice field value before exporting
+# sort the slice field value before exporting
+sortSlices:
   User:
     - [ roles ]
 ```

@@ -285,7 +285,7 @@ var _ = Describe("Config", func() {
 	Context("MaskedFields", func() {
 		var us unstructured.Unstructured
 		BeforeEach(func() {
-			config.Masked = types.Masked{
+			config.Masked = &types.Masked{
 				Replacement: "***",
 				KindFields: map[string][][]string{
 					"group.kind": {
@@ -312,12 +312,51 @@ var _ = Describe("Config", func() {
 			}
 		})
 		It("should mask status and all data fields", func() {
+			Ω(config.Masked.Setup()).ShouldNot(HaveOccurred())
 			config.MaskFields(res, us)
 			Ω(us.Object["status"]).Should(Equal("***"))
 			Ω(us.Object["data"]).Should(HaveKey("a"))
 			Ω(us.Object["data"].(map[string]interface{})["a"]).Should(Equal("***"))
 			Ω(us.Object["data"]).Should(HaveKey("b"))
 			Ω(us.Object["data"].(map[string]interface{})["b"]).Should(Equal("***"))
+		})
+		It("should generate the md5 checksum of status and all data fields", func() {
+			config.Masked.Checksum = "md5"
+			Ω(config.Masked.Setup()).ShouldNot(HaveOccurred())
+			config.MaskFields(res, us)
+			Ω(us.Object["status"]).Should(Equal("900150983cd24fb0d6963f7d28e17f72"))
+			Ω(us.Object["data"]).Should(HaveKey("a"))
+			Ω(us.Object["data"].(map[string]interface{})["a"]).Should(Equal("7fc56270e7a70fa81a5935b72eacbe29"))
+			Ω(us.Object["data"]).Should(HaveKey("b"))
+			Ω(us.Object["data"].(map[string]interface{})["b"]).Should(Equal("9d3d9048db16a7eee539e93e3618cbe7"))
+		})
+		It("should generate the sha1 checksum of status and all data fields", func() {
+			config.Masked.Checksum = "sha1"
+			Ω(config.Masked.Setup()).ShouldNot(HaveOccurred())
+			config.MaskFields(res, us)
+			Ω(us.Object["status"]).Should(Equal("a9993e364706816aba3e25717850c26c9cd0d89d"))
+			Ω(us.Object["data"]).Should(HaveKey("a"))
+			Ω(us.Object["data"].(map[string]interface{})["a"]).
+				Should(Equal("6dcd4ce23d88e2ee9568ba546c007c63d9131c1b"))
+			Ω(us.Object["data"]).Should(HaveKey("b"))
+			Ω(us.Object["data"].(map[string]interface{})["b"]).
+				Should(Equal("71c9db717578b9ee49a59e69375c16c0627dffef"))
+		})
+		It("should generate the sha256 checksum of status and all data fields", func() {
+			config.Masked.Checksum = "sha256"
+			Ω(config.Masked.Setup()).ShouldNot(HaveOccurred())
+			config.MaskFields(res, us)
+			Ω(us.Object["status"]).Should(Equal("23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"))
+			Ω(us.Object["data"]).Should(HaveKey("a"))
+			Ω(us.Object["data"].(map[string]interface{})["a"]).
+				Should(Equal("5cfe2cddbb9940fb4d8505e25ea77e763a0077693dbb01b1a6aa94f2"))
+			Ω(us.Object["data"]).Should(HaveKey("b"))
+			Ω(us.Object["data"].(map[string]interface{})["b"]).
+				Should(Equal("a6eaa57c9e088b8466692680ab779768f4cf36622bc893aee163be9c"))
+		})
+		It("should fail with an unknown checksum", func() {
+			config.Masked.Checksum = "foo"
+			Ω(config.Masked.Setup()).Should(HaveOccurred())
 		})
 	})
 
