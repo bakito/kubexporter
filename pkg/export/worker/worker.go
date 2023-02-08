@@ -186,16 +186,16 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 				res.Error = "Error:" + err.Error()
 			}
 		} else {
-			w.stats.Resources += len(ul.Items)
 			if w.recBar != nil {
 				w.recBar.SetTotal(int64(len(ul.Items)), false)
 			}
 			if w.config.AsLists {
-				w.exportLists(res, ul)
+				res.ExportedInstances += w.exportLists(res, ul)
 			} else {
-				w.exportSingleResources(res, ul)
+				res.ExportedInstances += w.exportSingleResources(res, ul)
 			}
 		}
+		w.stats.Resources += res.ExportedInstances
 		if ul != nil {
 			res.Instances = len(ul.Items)
 		}
@@ -212,9 +212,9 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 	}
 }
 
-func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
 	if res == nil || ul == nil {
-		return
+		return 0
 	}
 	clone := ul.DeepCopy()
 	clone.Items = nil
@@ -222,18 +222,21 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 
 	perNs := make(map[string]*unstructured.UnstructuredList)
 	for _, u := range ul.Items {
-		w.config.FilterFields(res, u)
-		w.config.MaskFields(res, u)
-		w.config.SortSliceFields(res, u)
+		if !w.config.IsInstanceExcluded(res, u) {
+			w.config.FilterFields(res, u)
+			w.config.MaskFields(res, u)
+			w.config.SortSliceFields(res, u)
 
-		if _, ok := perNs[u.GetNamespace()]; !ok {
-			ul := &unstructured.UnstructuredList{}
-			clone.DeepCopyInto(ul)
-			perNs[u.GetNamespace()] = ul
+			if _, ok := perNs[u.GetNamespace()]; !ok {
+				ul := &unstructured.UnstructuredList{}
+				clone.DeepCopyInto(ul)
+				perNs[u.GetNamespace()] = ul
+			}
+			perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
 		}
-		perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
 	}
 
+	cnt := 0
 	for ns, usl := range perNs {
 		w.stats.addNamespace(ns)
 		filename, err := w.config.ListFileName(res, ns)
@@ -261,18 +264,21 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		if w.recBar != nil {
 			w.recBar.IncrBy(len(usl.Items))
 		}
+		cnt += len(usl.Items)
 	}
+	return cnt
 }
 
-func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) {
+func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
 	if res == nil || ul == nil {
-		return
+		return 0
 	}
 	names := make(map[string]int)
+	cnt := 0
 	for i := range ul.Items {
 		u := ul.Items[i]
 		if !w.config.IsInstanceExcluded(res, u) {
-
+			cnt++
 			w.stats.addNamespace(u.GetNamespace())
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
@@ -311,6 +317,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			}
 		}
 	}
+	return cnt
 }
 
 func closeIgnoreError(f io.Closer) func() {
