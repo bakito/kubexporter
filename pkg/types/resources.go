@@ -11,14 +11,15 @@ import (
 
 // GroupResource group resource information
 type GroupResource struct {
-	APIGroup        string
-	APIGroupVersion string
-	APIResource     metav1.APIResource
-	APIVersion      string
-	Instances       int
-	Error           string
-	QueryDuration   time.Duration
-	ExportDuration  time.Duration
+	APIGroup          string
+	APIGroupVersion   string
+	APIResource       metav1.APIResource
+	APIVersion        string
+	Instances         int
+	ExportedInstances int
+	Error             string
+	QueryDuration     time.Duration
+	ExportDuration    time.Duration
 }
 
 // Report generate report rows
@@ -28,7 +29,7 @@ func (r GroupResource) Report(withError bool) []string {
 		r.APIVersion,
 		r.APIResource.Kind,
 		strconv.FormatBool(r.APIResource.Namespaced),
-		strconv.Itoa(r.Instances),
+		strconv.Itoa(r.ExportedInstances),
 		r.QueryDuration.String(),
 		r.ExportDuration.String(),
 	}

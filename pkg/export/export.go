@@ -220,7 +220,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors()))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
-		inst += r.Instances
+		inst += r.ExportedInstances
 	}
 	total := "TOTAL"
 	if e.config.Worker > 1 {
