@@ -122,6 +122,10 @@ excluded:
       - field: [ metadata, name ]
         # the value is compared to the string representation of the actual kind value
         values: [ exclude-me-1, exclude-me-2 ]
+    Secret:
+      - field: [ type ]
+        # exclude helm secrets
+        values: [ 'helm.sh/release', 'helm.sh/release.v1' ]
 # mask certain fields 
 masked:
   # the replacement string to be used for masked fields (default '***')

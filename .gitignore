@@ -18,3 +18,4 @@ exports
 dist
 kubexporter
 gomock_*
+bin
