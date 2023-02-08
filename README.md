@@ -116,7 +116,7 @@ excluded:
   kindFields:
     Service:
       - [ spec, clusterIP ]
-  # allows to exclude single instances wir certain field values
+  # allows to exclude single instances with certain field values
   kindByField:
     Service:
       - field: [ metadata, name ]
