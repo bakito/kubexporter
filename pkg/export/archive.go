@@ -17,11 +17,16 @@ func (e *exporter) tarGz() error {
 		return err
 	}
 
+	dir := e.config.Target
+	if e.config.ArchiveTarget != "" {
+		dir = e.config.ArchiveTarget
+	}
+
 	var name string
 	if e.config.Namespace != "" {
-		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format("2006-01-02-150405"))
+		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(dir), e.config.Namespace, time.Now().Format("2006-01-02-150405"))
 	} else {
-		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format("2006-01-02-150405"))
+		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(dir), time.Now().Format("2006-01-02-150405"))
 	}
 	name = filepath.Join(e.config.Target, name)
 	e.l.Printf("\n    Creating archive ...\n")
