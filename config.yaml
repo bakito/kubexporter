@@ -1,6 +1,7 @@
 summary: true
 progress: true
 archive: true
+archiveTarget: .
 namespace:
 asLists: false
 clearTarget: true

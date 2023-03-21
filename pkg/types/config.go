@@ -392,6 +392,14 @@ func (c *Config) Validate() error {
 	}
 	c.Target = abs
 
+	if c.ArchiveTarget != "" {
+		abs, err := filepath.Abs(c.ArchiveTarget)
+		if err != nil {
+			return err
+		}
+		c.ArchiveTarget = abs
+	}
+
 	if c.Quiet {
 		c.Summary = false
 		c.Progress = ProgressNone

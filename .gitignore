@@ -15,6 +15,7 @@
 .idea
 
 exports
+exports*.tar.gz
 dist
 kubexporter
 gomock_*
