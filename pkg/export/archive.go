@@ -70,11 +70,11 @@ func addFile(tw *tar.Writer, workDir, path string) error {
 		return err
 	}
 
-	fPath := strings.Replace(path, workDir, "", 1)
+	fPath := filepath.ToSlash(strings.Replace(path, workDir, "", 1))
 
 	defer closeIgnoreError(file)()
 	if stat, err := file.Stat(); err == nil {
-		// now lets create the header as needed for this file within the tarball
+		// now let's create the header as needed for this file within the tarball
 		header := new(tar.Header)
 		header.Name = fPath
 		header.Size = stat.Size()
