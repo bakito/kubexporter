@@ -52,7 +52,7 @@ func (r GroupResource) Kind() string {
 	return r.APIResource.Kind
 }
 
-// Sort sort GroupResource
+// Sort GroupResource
 func Sort(resources []*GroupResource) func(int, int) bool {
 	return func(i, j int) bool {
 		ret := strings.Compare(resources[i].APIGroup, resources[j].APIGroup)

@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	mockdynamic "github.com/bakito/kubexporter/pkg/mocks/client"
+	mock "github.com/bakito/kubexporter/pkg/mocks/client"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/ghodss/yaml"
 	gm "github.com/golang/mock/gomock"
@@ -25,7 +25,7 @@ var _ = Describe("Worker", func() {
 	var (
 		w          *worker
 		mockCtrl   *gm.Controller
-		mockClient *mockdynamic.MockInterface
+		mockClient *mock.MockInterface
 		config     *types.Config
 		res        *types.GroupResource
 		ul         *unstructured.UnstructuredList
@@ -36,7 +36,7 @@ var _ = Describe("Worker", func() {
 		tmpDir, err = os.MkdirTemp("", "ginkgo-convert")
 		Ω(err).ShouldNot(HaveOccurred())
 		mockCtrl = gm.NewController(GinkgoT())
-		mockClient = mockdynamic.NewMockInterface(mockCtrl)
+		mockClient = mock.NewMockInterface(mockCtrl)
 		config = types.NewConfig(nil, &genericclioptions.PrintFlags{
 			OutputFormat:       pointer.String(types.DefaultFormat),
 			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),

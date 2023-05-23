@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/bakito/kubexporter/pkg/types"
-	workerpool "github.com/vardius/worker-pool/v2"
+	wp "github.com/vardius/worker-pool/v2"
 )
 
 // RunExport run the export wit the given workers
@@ -14,7 +14,7 @@ func RunExport(workers []Worker, resources []*types.GroupResource) (*Stats, erro
 	poolSize := len(resources)
 
 	// create new pool
-	pool := workerpool.New(poolSize)
+	pool := wp.New(poolSize)
 	out := make(chan *types.GroupResource, poolSize)
 
 	for _, w := range workers {

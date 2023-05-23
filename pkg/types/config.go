@@ -132,10 +132,10 @@ type Excluded struct {
 
 // Masked masking params
 type Masked struct {
-	Replacement string              `json:"replacement" yaml:"replacement"`
-	Checksum    string              `json:"checksum" yaml:"checksum"`
-	doSum       func(string) string `json:"-" yaml:"-"`
-	KindFields  KindFields          `json:"kindFields" yaml:"kindFields"`
+	Replacement string `json:"replacement" yaml:"replacement"`
+	Checksum    string `json:"checksum" yaml:"checksum"`
+	doSum       func(string) string
+	KindFields  KindFields `json:"kindFields" yaml:"kindFields"`
 }
 
 func (m *Masked) Setup() error {
