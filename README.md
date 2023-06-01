@@ -73,7 +73,7 @@ Example configuration
 ```yaml
 # print a summary
 summary: true
-# print progress [ bar(default), simple, none ]
+# print progress (bar|simple|none)
 progress: bar
 # create an archive
 archive: true
