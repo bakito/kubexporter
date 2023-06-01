@@ -31,23 +31,15 @@ jobs:
           platforms: linux/amd64
           build-args: VERSION=${{ github.event.release.tag_name }}
 
-      - name: Build and push master
-        id: docker_build_master
+      - name: Build and push main
+        id: docker_build_main
         uses: docker/build-push-action@v4
         if: ${{ github.event.release.tag_name == '' }}
         with:
           push: true
-          tags: ghcr.io/bakito/kubexporter:master
+          tags: ghcr.io/bakito/kubexporter:main
           platforms: linux/amd64
-          build-args: VERSION=master
+          build-args: VERSION=main
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
 
-      - name: Prune ghcr images
-        uses: vlaurin/action-ghcr-prune@main
-        with:
-          token: ${{ secrets.PRUNE_IMAGE_TOKEN }}
-          container: ${{github.event.repository.name}}
-          dry-run: false # Dry-run first, then change to `false`
-          older-than: 7 # days
-          untagged: true
