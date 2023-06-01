@@ -29,6 +29,7 @@ jobs:
           push: true
           tags: ghcr.io/bakito/kubexporter:latest,ghcr.io/bakito/kubexporter:${{ github.event.release.tag_name }}
           platforms: linux/amd64
+          provenance: false
           build-args: VERSION=${{ github.event.release.tag_name }}
 
       - name: Build and push main
@@ -39,6 +40,7 @@ jobs:
           push: true
           tags: ghcr.io/bakito/kubexporter:main
           platforms: linux/amd64
+          provenance: false
           build-args: VERSION=main
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
