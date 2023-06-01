@@ -73,8 +73,8 @@ Example configuration
 ```yaml
 # print a summary
 summary: true
-# print progress
-progress: true
+# print progress (bar|simple|none)
+progress: bar
 # create an archive
 archive: true
 # define a single namespace (default all)

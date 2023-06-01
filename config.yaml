@@ -1,5 +1,5 @@
 summary: true
-progress: true
+progress: bar
 archive: true
 archiveTarget: .
 namespace:
