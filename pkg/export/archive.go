@@ -7,26 +7,57 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
 
-func (e *exporter) tarGz() error {
-	workDir, err := os.Getwd()
+const archiveTimestampPattern = "2006-01-02-150405"
+
+func (e *exporter) pruneArchives() error {
+	_, dir, err := e.archiveDirs()
 	if err != nil {
 		return err
 	}
 
-	dir := e.config.Target
-	if e.config.ArchiveTarget != "" {
-		dir = e.config.ArchiveTarget
+	pattern := regexp.MustCompile(fmt.Sprintf(`^%s-?.*-\d{4}-\d{2}-\d{2}-\d{6}\.tar\.gz$`, filepath.Base(e.config.Target)))
+
+	deleteOlderThan := time.Now().AddDate(0, 0, -e.config.ArchiveRetentionDays)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	var matches []string
+	for _, e := range entries {
+		if !e.IsDir() && pattern.MatchString(e.Name()) {
+			f, err := e.Info()
+			if err != nil {
+				return err
+			}
+			if f.ModTime().Before(deleteOlderThan) {
+				name := filepath.Join(dir, f.Name())
+				if err = os.Remove(name); err != nil {
+					return err
+				}
+				matches = append(matches, name)
+			}
+		}
+	}
+	e.deletedArchives = matches
+	return nil
+}
+
+func (e *exporter) tarGz() error {
+	workDir, dir, err := e.archiveDirs()
+	if err != nil {
+		return err
 	}
 
 	var name string
 	if e.config.Namespace != "" {
-		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format("2006-01-02-150405"))
+		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format(archiveTimestampPattern))
 	} else {
-		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format("2006-01-02-150405"))
+		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format(archiveTimestampPattern))
 	}
 	name = filepath.Join(dir, name)
 	e.l.Printf("\n    Creating archive ...\n")
@@ -62,6 +93,19 @@ func (e *exporter) tarGz() error {
 	}
 	e.archive = name
 	return filepath.Walk(e.config.Target, walker)
+}
+
+func (e *exporter) archiveDirs() (string, string, error) {
+	workDir, err := os.Getwd()
+	if err != nil {
+		return "", "", err
+	}
+
+	dir := e.config.Target
+	if e.config.ArchiveTarget != "" {
+		dir = e.config.ArchiveTarget
+	}
+	return workDir, dir, nil
 }
 
 func addFile(tw *tar.Writer, workDir, path string) error {

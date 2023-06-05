@@ -108,6 +108,7 @@ type Config struct {
 	Namespace            string     `json:"namespace" yaml:"namespace"`
 	Worker               int        `json:"worker" yaml:"worker"`
 	Archive              bool       `json:"archive" yaml:"archive"`
+	ArchiveRetentionDays int        `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
 	ArchiveTarget        string     `json:"archiveTarget" yaml:"archiveTarget"`
 	Quiet                bool       `json:"quiet" yaml:"quiet"`
 	Verbose              bool       `json:"verbose" yaml:"verbose"`

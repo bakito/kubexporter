@@ -103,7 +103,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
-	rootCmd.Flags().StringP("target", "t", "", "Set the target directory (default exports)")
+	rootCmd.Flags().StringP("target", "t", "exports", "Set the target directory (default exports)")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
 	rootCmd.Flags().BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")

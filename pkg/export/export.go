@@ -124,8 +124,18 @@ func (e *exporter) Export() error {
 
 	if e.config.Archive {
 		err = e.tarGz()
+		if err != nil {
+			return err
+		}
+
+		if e.config.ArchiveRetentionDays > 0 {
+			err = e.pruneArchives()
+			if err != nil {
+				return err
+			}
+		}
 	}
-	return err
+	return nil
 }
 
 func (e *exporter) writeIntro() {
@@ -152,7 +162,10 @@ func (e *exporter) writeIntro() {
 		e.l.Printf("  as lists 📦\n")
 	}
 	if e.config.Archive {
-		e.l.Printf("  compress as archive 🗜️\n")
+		e.l.Printf("  compress as archive ️\n")
+		if e.config.ArchiveRetentionDays > 0 {
+			e.l.Printf("  delete archives older than %d days 🚮\n", e.config.ArchiveRetentionDays)
+		}
 	}
 	e.config.Logger().Printf("\nExporting ...\n")
 }
@@ -232,15 +245,18 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 
 func (e *exporter) printStats() {
 	if e.archive != "" {
-		e.l.Checkf("Archive    🗜️  %s\n", e.archive)
+		e.l.Checkf("🗜 Archive %s\n", e.archive)
+		if len(e.deletedArchives) > 0 {
+			e.l.Checkf("🚮 Deleted old Archives %d\n", len(e.deletedArchives) > 0)
+		}
 	}
-	e.l.Checkf("Kinds      📜%12d\n", e.stats.Kinds)
-	e.l.Checkf("Resources  🗃 ️%12d\n", e.stats.Resources)
-	e.l.Checkf("Namespaces 🏘️ %12d\n", e.stats.Namespaces())
+	e.l.Checkf("📜 Kinds %d\n", e.stats.Kinds)
+	e.l.Checkf("🗃 Resources %d\n", e.stats.Resources)
+	e.l.Checkf("🏠 Namespaces %d\n", e.stats.Namespaces())
 	if e.stats.HasErrors() {
-		e.l.Checkf("Errors     ⚠️ %12d\n", e.stats.Errors)
+		e.l.Checkf("⚠️ Errors %d\n", e.stats.Errors)
 	}
-	e.l.Checkf("Duration   ⌛ %s\n", time.Since(e.start).String())
+	e.l.Checkf("⏱️ Duration %s\n", time.Since(e.start).String())
 }
 
 func (e *exporter) purgeTarget() error {
@@ -254,10 +270,11 @@ func (e *exporter) purgeTarget() error {
 }
 
 type exporter struct {
-	start      time.Time
-	l          log.YALI
-	config     *types.Config
-	restConfig *rest.Config
-	stats      *worker.Stats
-	archive    string
+	start           time.Time
+	l               log.YALI
+	config          *types.Config
+	restConfig      *rest.Config
+	stats           *worker.Stats
+	archive         string
+	deletedArchives []string
 }
