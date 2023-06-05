@@ -1,6 +1,7 @@
 summary: true
-progress: bar
+progress: simple
 archive: true
+archiveRetentionDays: 10
 archiveTarget: .
 namespace:
 asLists: false

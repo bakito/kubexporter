@@ -46,7 +46,7 @@ GORELEASER ?= $(LOCALBIN)/goreleaser
 ## Tool Versions
 SEMVER_VERSION ?= v1.1.3
 MOCKGEN_VERSION ?= v1.6.0
-GORELEASER_VERSION ?= v1.16.2
+GORELEASER_VERSION ?= v1.18.2
 
 ## Tool Installer
 .PHONY: semver
