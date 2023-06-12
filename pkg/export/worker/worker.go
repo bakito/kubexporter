@@ -144,10 +144,14 @@ func (w *worker) preDecorator() decor.Decorator {
 		if w.queryFinished && s.Total == 0 {
 			return fmt.Sprintf("\U0001F971 %2d: idle", w.id)
 		}
-		if !w.queryFinished {
-			return fmt.Sprintf("🔍 %2d: %s (page %d)", w.id, w.currentKind, w.currentPage)
+		page := ""
+		if w.config.QueryPageSize > 0 {
+			page = fmt.Sprintf(" (page %d)", w.currentPage)
 		}
-		return fmt.Sprintf("👷 %2d: %s (page %d) %s", w.id, w.currentKind, w.currentPage, w.elapsedDecorator.Decor(s))
+		if !w.queryFinished {
+			return fmt.Sprintf("🔍 %2d: %s%s", w.id, w.currentKind, page)
+		}
+		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, w.elapsedDecorator.Decor(s))
 	})
 }
 

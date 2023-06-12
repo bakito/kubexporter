@@ -2,7 +2,7 @@ package types
 
 import (
 	"bytes"
-	"crypto/md5" // #nosec G501 we are ok with md5
+	"crypto/md5"  // #nosec G501 we are ok with md5
 	"crypto/sha1" // #nosec G505 we are ok with sha1
 	"crypto/sha256"
 	"encoding/json"
@@ -74,7 +74,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 	return &Config{
 		FileNameTemplate:     DefaultFileNameTemplate,
 		ListFileNameTemplate: DefaultListFileNameTemplate,
-		QueryPageSize:        100,
+		QueryPageSize:        0,
 		Target:               DefaultTarget,
 		Summary:              false,
 		Progress:             ProgressBar,
