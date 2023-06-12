@@ -46,6 +46,7 @@ type Stats struct {
 	Errors     int
 	namespaces map[string]bool
 	Kinds      int
+	Pages      int
 	Resources  int
 }
 
@@ -53,6 +54,7 @@ type Stats struct {
 func (s *Stats) Add(o *Stats) {
 	if o != nil {
 		s.Kinds += o.Kinds
+		s.Pages += o.Pages
 		s.Resources += o.Resources
 		s.Errors += o.Errors
 		for ns := range o.namespaces {
@@ -125,10 +127,10 @@ func (w *worker) list(ctx context.Context, group, version, kind string, continue
 		// for cluster-wide resources
 		dr = w.client.Resource(mapping.Resource)
 	}
-	opts := metav1.ListOptions{Limit: int64(w.config.PageSize), Continue: continueValue}
+	opts := metav1.ListOptions{Continue: continueValue}
 	if !w.config.AsLists {
 		// for lists we do no pagination
-		opts.Limit = int64(w.config.PageSize)
+		opts.Limit = int64(w.config.QueryPageSize)
 	}
 	return dr.List(ctx, opts)
 }
@@ -182,6 +184,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 			}
 		}
 		w.stats.Resources += res.ExportedInstances
+		w.stats.Pages += res.Pages
 
 		if w.config.Progress == types.ProgressSimple {
 			w.config.Logger().Checkf("%s\n", res.GroupKind())
@@ -224,6 +227,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 	res.ExportDuration += time.Since(start)
 
 	res.Instances += len(ul.Items)
+	res.Pages++
 
 	return ul.GetContinue()
 }

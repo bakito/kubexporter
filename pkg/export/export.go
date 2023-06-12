@@ -160,6 +160,8 @@ func (e *exporter) writeIntro() {
 	}
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
+	} else if e.config.QueryPageSize != 0 {
+		e.l.Printf("  query page size %d 📃\n", e.config.QueryPageSize)
 	}
 	if e.config.Archive {
 		e.l.Printf("  compress as archive ️\n")
@@ -219,7 +221,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
-	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
+	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Query Pages", "Export Duration"}
 	if e.config.Verbose && e.stats.HasErrors() {
 		header = append(header, "Error")
 	}
@@ -228,18 +230,20 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	qd := start
 	ed := start
 	var inst int
+	var pages int
 
 	for _, r := range resources {
 		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors()))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
 		inst += r.ExportedInstances
+		pages += r.Pages
 	}
 	total := "TOTAL"
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
+	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), strconv.Itoa(pages), ed.Sub(start).String()})
 	table.Render()
 }
 
@@ -251,7 +255,8 @@ func (e *exporter) printStats() {
 		}
 	}
 	e.l.Checkf("📜 Kinds %d\n", e.stats.Kinds)
-	e.l.Checkf("🗃 Resources %d\n", e.stats.Resources)
+	e.l.Checkf("📃 Query Pages %d\n", e.stats.Pages)
+	e.l.Checkf("🗃  Resources %d\n", e.stats.Resources)
 	e.l.Checkf("🏠 Namespaces %d\n", e.stats.Namespaces())
 	if e.stats.HasErrors() {
 		e.l.Checkf("⚠️ Errors %d\n", e.stats.Errors)

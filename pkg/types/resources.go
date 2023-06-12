@@ -17,6 +17,7 @@ type GroupResource struct {
 	APIVersion        string
 	Instances         int
 	ExportedInstances int
+	Pages             int
 	Error             string
 	QueryDuration     time.Duration
 	ExportDuration    time.Duration
@@ -31,6 +32,7 @@ func (r GroupResource) Report(withError bool) []string {
 		strconv.FormatBool(r.APIResource.Namespaced),
 		strconv.Itoa(r.ExportedInstances),
 		r.QueryDuration.String(),
+		strconv.Itoa(r.Pages),
 		r.ExportDuration.String(),
 	}
 	if withError {

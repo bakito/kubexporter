@@ -2,7 +2,7 @@ package types
 
 import (
 	"bytes"
-	"crypto/md5"  // #nosec G501 we are ok with md5
+	"crypto/md5" // #nosec G501 we are ok with md5
 	"crypto/sha1" // #nosec G505 we are ok with sha1
 	"crypto/sha256"
 	"encoding/json"
@@ -74,7 +74,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 	return &Config{
 		FileNameTemplate:     DefaultFileNameTemplate,
 		ListFileNameTemplate: DefaultListFileNameTemplate,
-		PageSize:             100,
+		QueryPageSize:        100,
 		Target:               DefaultTarget,
 		Summary:              false,
 		Progress:             ProgressBar,
@@ -102,7 +102,7 @@ type Config struct {
 	FileNameTemplate     string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
 	ListFileNameTemplate string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
 	AsLists              bool       `json:"asLists" yaml:"asLists"`
-	PageSize             int        `json:"pageSize" yaml:"pageSize"`
+	QueryPageSize        int        `json:"queryPageSize" yaml:"queryPageSize"`
 	Target               string     `json:"target" yaml:"target"`
 	ClearTarget          bool       `json:"clearTarget" yaml:"clearTarget"`
 	Summary              bool       `json:"summary" yaml:"summary"`

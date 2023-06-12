@@ -1,11 +1,11 @@
 summary: true
-progress: simple
+progress: bar
 archive: true
 archiveRetentionDays: 10
 archiveTarget: .
 namespace:
 asLists: false
-pageSize: 100
+queryPageSize: 100
 clearTarget: true
 worker: 5
 masked:
