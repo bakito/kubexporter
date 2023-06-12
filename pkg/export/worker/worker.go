@@ -111,7 +111,7 @@ func (w *worker) Stop() Stats {
 }
 
 // list resources
-func (w *worker) list(ctx context.Context, group, version, kind string) (*unstructured.UnstructuredList, error) {
+func (w *worker) list(ctx context.Context, group, version, kind string, continueValue string) (*unstructured.UnstructuredList, error) {
 	mapping, err := w.mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
 	if err != nil {
 		return nil, err
@@ -125,7 +125,12 @@ func (w *worker) list(ctx context.Context, group, version, kind string) (*unstru
 		// for cluster-wide resources
 		dr = w.client.Resource(mapping.Resource)
 	}
-	return dr.List(ctx, metav1.ListOptions{})
+	opts := metav1.ListOptions{Limit: int64(w.config.PageSize), Continue: continueValue}
+	if !w.config.AsLists {
+		// for lists we do no pagination
+		opts.Limit = int64(w.config.PageSize)
+	}
+	return dr.List(ctx, opts)
 }
 
 func (w *worker) preDecorator() decor.Decorator {
@@ -169,37 +174,14 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 			w.recBar.SetCurrent(0)
 			w.recBar.SetTotal(0, false)
 		}
-		start := time.Now()
-		ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind)
-
-		res.QueryDuration = time.Since(start)
-		w.queryFinished = true
-		start = time.Now()
-
-		if err != nil {
-			w.stats.Errors++
-			if errors.IsNotFound(err) {
-				res.Error = "Not Found"
-			} else if errors.IsMethodNotSupported(err) {
-				res.Error = "Not Allowed"
-			} else {
-				res.Error = "Error:" + err.Error()
-			}
-		} else {
-			if w.recBar != nil {
-				w.recBar.SetTotal(int64(len(ul.Items)), false)
-			}
-			if w.config.AsLists {
-				res.ExportedInstances += w.exportLists(res, ul)
-			} else {
-				res.ExportedInstances += w.exportSingleResources(res, ul)
+		hasMorePages := ""
+		for {
+			hasMorePages = w.listResources(ctx, res, hasMorePages)
+			if hasMorePages == "" {
+				break
 			}
 		}
 		w.stats.Resources += res.ExportedInstances
-		if ul != nil {
-			res.Instances = len(ul.Items)
-		}
-		res.ExportDuration = time.Since(start)
 
 		if w.config.Progress == types.ProgressSimple {
 			w.config.Logger().Checkf("%s\n", res.GroupKind())
@@ -210,6 +192,40 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		}
 		out <- res
 	}
+}
+
+func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
+	start := time.Now()
+	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
+
+	res.QueryDuration += time.Since(start)
+	w.queryFinished = true
+	start = time.Now()
+
+	if err != nil {
+		w.stats.Errors++
+		if errors.IsNotFound(err) {
+			res.Error = "Not Found"
+		} else if errors.IsMethodNotSupported(err) {
+			res.Error = "Not Allowed"
+		} else {
+			res.Error = "Error:" + err.Error()
+		}
+	} else {
+		if w.recBar != nil {
+			w.recBar.SetTotal(int64(len(ul.Items)), false)
+		}
+		if w.config.AsLists {
+			res.ExportedInstances += w.exportLists(res, ul)
+		} else {
+			res.ExportedInstances += w.exportSingleResources(res, ul)
+		}
+	}
+	res.ExportDuration += time.Since(start)
+
+	res.Instances += len(ul.Items)
+
+	return ul.GetContinue()
 }
 
 func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
