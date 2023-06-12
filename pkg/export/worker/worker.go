@@ -34,6 +34,7 @@ type worker struct {
 	mainBar          *mpb.Bar
 	recBar           *mpb.Bar
 	currentKind      string
+	currentPage      int
 	elapsedDecorator decor.Decorator
 	client           dynamic.Interface
 	mapper           meta.RESTMapper
@@ -144,9 +145,9 @@ func (w *worker) preDecorator() decor.Decorator {
 			return fmt.Sprintf("\U0001F971 %2d: idle", w.id)
 		}
 		if !w.queryFinished {
-			return fmt.Sprintf("🔍 %2d: %s", w.id, w.currentKind)
+			return fmt.Sprintf("🔍 %2d: %s (page %d)", w.id, w.currentKind, w.currentPage)
 		}
-		return fmt.Sprintf("👷 %2d: %s %s", w.id, w.currentKind, w.elapsedDecorator.Decor(s))
+		return fmt.Sprintf("👷 %2d: %s (page %d) %s", w.id, w.currentKind, w.currentPage, w.elapsedDecorator.Decor(s))
 	})
 }
 
@@ -172,10 +173,6 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		w.currentKind = res.GroupKind()
 		w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
 
-		if w.recBar != nil {
-			w.recBar.SetCurrent(0)
-			w.recBar.SetTotal(0, false)
-		}
 		hasMorePages := ""
 		for {
 			hasMorePages = w.listResources(ctx, res, hasMorePages)
@@ -198,6 +195,11 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 }
 
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
+	w.currentPage = res.Pages + 1
+	if w.recBar != nil {
+		w.recBar.SetCurrent(0)
+		w.recBar.SetTotal(0, false)
+	}
 	start := time.Now()
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
 

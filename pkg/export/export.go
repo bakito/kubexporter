@@ -249,19 +249,19 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 
 func (e *exporter) printStats() {
 	if e.archive != "" {
-		e.l.Checkf("🗜 Archive %s\n", e.archive)
+		e.l.Checkf("🗜\tArchive %s\n", e.archive)
 		if len(e.deletedArchives) > 0 {
 			e.l.Checkf("🚮 Deleted old Archives %d\n", len(e.deletedArchives) > 0)
 		}
 	}
-	e.l.Checkf("📜 Kinds %d\n", e.stats.Kinds)
-	e.l.Checkf("📃 Query Pages %d\n", e.stats.Pages)
-	e.l.Checkf("🗃  Resources %d\n", e.stats.Resources)
-	e.l.Checkf("🏠 Namespaces %d\n", e.stats.Namespaces())
+	e.l.Checkf("📜\tKinds %d\n", e.stats.Kinds)
+	e.l.Checkf("📃\tQuery Pages %d\n", e.stats.Pages)
+	e.l.Checkf("🗃\tResources %d\n", e.stats.Resources)
+	e.l.Checkf("🏠\tNamespaces %d\n", e.stats.Namespaces())
 	if e.stats.HasErrors() {
-		e.l.Checkf("⚠️ Errors %d\n", e.stats.Errors)
+		e.l.Checkf("⚠️\tErrors %d\n", e.stats.Errors)
 	}
-	e.l.Checkf("⏱️ Duration %s\n", time.Since(e.start).String())
+	e.l.Checkf("⏱️\tDuration %s\n", time.Since(e.start).String())
 }
 
 func (e *exporter) purgeTarget() error {
