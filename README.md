@@ -83,6 +83,8 @@ namespace:
 worker: 1
 # export as lists
 asLists: false
+# enable pagination on queries (only supported when asLists = false)
+#queryPageSize: 1000
 # clear the target directory before exporting
 clearTarget: true
 excluded:

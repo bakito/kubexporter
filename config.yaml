@@ -5,7 +5,7 @@ archiveRetentionDays: 10
 archiveTarget: .
 namespace:
 asLists: false
-#queryPageSize: 100
+#queryPageSize: 1000
 clearTarget: true
 worker: 5
 masked:
