@@ -4,6 +4,8 @@
 [![Coverage Status](https://coveralls.io/repos/github/bakito/kubexporter/badge.svg?branch=main)](https://coveralls.io/github/bakito/kubexporter?branch=main)
 # KubExporter
 
+![kubexporter](docs/icons/kubexporter.png)
+
 KubExporter allows you to export resources from kubernetes as yaml/json files.
 
 The configuration allows customization on which resources and which fields to exclude.
