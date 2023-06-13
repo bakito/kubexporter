@@ -160,6 +160,8 @@ func (e *exporter) writeIntro() {
 	}
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
+	} else if e.config.QueryPageSize != 0 {
+		e.l.Printf("  query page size %d 📃\n", e.config.QueryPageSize)
 	}
 	if e.config.Archive {
 		e.l.Printf("  compress as archive ️\n")
@@ -213,13 +215,19 @@ func allowsList(r metav1.APIResource) bool {
 }
 
 func (e *exporter) printSummary(resources []*types.GroupResource) {
+	withPages := e.config.QueryPageSize > 0
+
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeaderLine(false)
 	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
-	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration", "Export Duration"}
+	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration"}
+	if withPages {
+		header = append(header, "Query Pages")
+	}
+	header = append(header, "Export Duration")
 	if e.config.Verbose && e.stats.HasErrors() {
 		header = append(header, "Error")
 	}
@@ -228,35 +236,45 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	qd := start
 	ed := start
 	var inst int
+	var pages int
 
 	for _, r := range resources {
-		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors()))
+		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors(), withPages))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
 		inst += r.ExportedInstances
+		pages += r.Pages
 	}
 	total := "TOTAL"
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	table.Append([]string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String(), ed.Sub(start).String()})
+	totalRow := []string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String()}
+	if withPages {
+		totalRow = append(totalRow, strconv.Itoa(pages))
+	}
+	totalRow = append(totalRow, ed.Sub(start).String())
+	table.Append(totalRow)
 	table.Render()
 }
 
 func (e *exporter) printStats() {
 	if e.archive != "" {
-		e.l.Checkf("🗜 Archive %s\n", e.archive)
+		e.l.Checkf("🗜\tArchive %s\n", e.archive)
 		if len(e.deletedArchives) > 0 {
 			e.l.Checkf("🚮 Deleted old Archives %d\n", len(e.deletedArchives) > 0)
 		}
 	}
-	e.l.Checkf("📜 Kinds %d\n", e.stats.Kinds)
-	e.l.Checkf("🗃 Resources %d\n", e.stats.Resources)
-	e.l.Checkf("🏠 Namespaces %d\n", e.stats.Namespaces())
-	if e.stats.HasErrors() {
-		e.l.Checkf("⚠️ Errors %d\n", e.stats.Errors)
+	e.l.Checkf("📜\tKinds %d\n", e.stats.Kinds)
+	if e.config.QueryPageSize > 0 {
+		e.l.Checkf("📃\tQuery Pages %d\n", e.stats.Pages)
 	}
-	e.l.Checkf("⏱️ Duration %s\n", time.Since(e.start).String())
+	e.l.Checkf("🗃\tResources %d\n", e.stats.Resources)
+	e.l.Checkf("🏠\tNamespaces %d\n", e.stats.Namespaces())
+	if e.stats.HasErrors() {
+		e.l.Checkf("⚠️\tErrors %d\n", e.stats.Errors)
+	}
+	e.l.Checkf("⏱️\tDuration %s\n", time.Since(e.start).String())
 }
 
 func (e *exporter) purgeTarget() error {

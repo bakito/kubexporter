@@ -74,6 +74,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 	return &Config{
 		FileNameTemplate:     DefaultFileNameTemplate,
 		ListFileNameTemplate: DefaultListFileNameTemplate,
+		QueryPageSize:        0,
 		Target:               DefaultTarget,
 		Summary:              false,
 		Progress:             ProgressBar,
@@ -101,6 +102,7 @@ type Config struct {
 	FileNameTemplate     string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
 	ListFileNameTemplate string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
 	AsLists              bool       `json:"asLists" yaml:"asLists"`
+	QueryPageSize        int        `json:"queryPageSize" yaml:"queryPageSize"`
 	Target               string     `json:"target" yaml:"target"`
 	ClearTarget          bool       `json:"clearTarget" yaml:"clearTarget"`
 	Summary              bool       `json:"summary" yaml:"summary"`

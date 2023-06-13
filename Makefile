@@ -1,18 +1,12 @@
-# Run go fmt against code
-fmt:
-	go fmt ./...
-	gofmt -s -w .
-
-# Run go vet against code
-vet:
-	go vet ./...
+lint: golangci-lint
+	$(GOLANGCI_LINT) run --fix
 
 # Run go mod tidy
 tidy:
 	go mod tidy
 
 # Run tests
-test: tidy fmt vet
+test: tidy lint
 	go test ./...  -coverprofile=coverage.out
 	go tool cover -func=coverage.out
 
@@ -41,11 +35,13 @@ $(LOCALBIN):
 ## Tool Binaries
 SEMVER ?= $(LOCALBIN)/semver
 MOCKGEN ?= $(LOCALBIN)/mockgen
+GOLANGCI_LINT ?= $(LOCALBIN)/golangci-lint
 GORELEASER ?= $(LOCALBIN)/goreleaser
 
 ## Tool Versions
 SEMVER_VERSION ?= v1.1.3
 MOCKGEN_VERSION ?= v1.6.0
+GOLANGCI_LINT_VERSION ?= v1.53.2
 GORELEASER_VERSION ?= v1.18.2
 
 ## Tool Installer
@@ -57,6 +53,10 @@ $(SEMVER): $(LOCALBIN)
 mockgen: $(MOCKGEN) ## Download mockgen locally if necessary.
 $(MOCKGEN): $(LOCALBIN)
 	test -s $(LOCALBIN)/mockgen || GOBIN=$(LOCALBIN) go install github.com/golang/mock/mockgen@$(MOCKGEN_VERSION)
+.PHONY: golangci-lint
+golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
+$(GOLANGCI_LINT): $(LOCALBIN)
+	test -s $(LOCALBIN)/golangci-lint || GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 .PHONY: goreleaser
 goreleaser: $(GORELEASER) ## Download goreleaser locally if necessary.
 $(GORELEASER): $(LOCALBIN)
@@ -68,9 +68,11 @@ update-toolbox-tools:
 	@rm -f \
 		$(LOCALBIN)/semver \
 		$(LOCALBIN)/mockgen \
+		$(LOCALBIN)/golangci-lint \
 		$(LOCALBIN)/goreleaser
 	toolbox makefile -f $(LOCALDIR)/Makefile \
 		github.com/bakito/semver \
 		github.com/golang/mock/mockgen \
+		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		github.com/goreleaser/goreleaser
 ## toolbox - end
