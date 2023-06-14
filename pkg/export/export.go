@@ -1,6 +1,7 @@
 package export
 
 import (
+	"github.com/bakito/kubexporter/version"
 	"os"
 	"sort"
 	"strconv"
@@ -140,6 +141,7 @@ func (e *exporter) Export() error {
 
 func (e *exporter) writeIntro() {
 	e.l.Printf("Starting export ...\n")
+	e.l.Printf("  kubexporter version %q\n", version.Version)
 	e.l.Printf("  cluster %q\n", e.restConfig.Host)
 	if e.config.Namespace == "" {
 		e.l.Printf("  all namespaces 🏘️\n")
