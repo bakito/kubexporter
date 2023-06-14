@@ -30,6 +30,7 @@ func (r GroupResource) Report(withError bool, withPages bool) []string {
 		r.APIVersion,
 		r.APIResource.Kind,
 		strconv.FormatBool(r.APIResource.Namespaced),
+		strconv.Itoa(r.Instances),
 		strconv.Itoa(r.ExportedInstances),
 		r.QueryDuration.String(),
 	}

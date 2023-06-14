@@ -223,7 +223,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
-	header := []string{"Group", "Version", "Kind", "Namespaces", "Instances", "Query Duration"}
+	header := []string{"Group", "Version", "Kind", "Namespaces", "Total Instances", "Exported Instances", "Query Duration"}
 	if withPages {
 		header = append(header, "Query Pages")
 	}
@@ -236,12 +236,14 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	qd := start
 	ed := start
 	var inst int
+	var totalInst int
 	var pages int
 
 	for _, r := range resources {
 		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors(), withPages))
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
+		totalInst += r.Instances
 		inst += r.ExportedInstances
 		pages += r.Pages
 	}
@@ -249,7 +251,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	totalRow := []string{total, "", "", "", strconv.Itoa(inst), qd.Sub(start).String()}
+	totalRow := []string{total, "", "", "", strconv.Itoa(inst), strconv.Itoa(totalInst), qd.Sub(start).String()}
 	if withPages {
 		totalRow = append(totalRow, strconv.Itoa(pages))
 	}
@@ -269,7 +271,7 @@ func (e *exporter) printStats() {
 	if e.config.QueryPageSize > 0 {
 		e.l.Checkf("📃\tQuery Pages %d\n", e.stats.Pages)
 	}
-	e.l.Checkf("🗃\tResources %d\n", e.stats.Resources)
+	e.l.Checkf("🗃\tExported Resources %d\n", e.stats.Resources)
 	e.l.Checkf("🏠\tNamespaces %d\n", e.stats.Namespaces())
 	if e.stats.HasErrors() {
 		e.l.Checkf("⚠️\tErrors %d\n", e.stats.Errors)
