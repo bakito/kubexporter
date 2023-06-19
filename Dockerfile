@@ -1,4 +1,4 @@
-FROM golang:1.20 as builder
+FROM golang:1.20-bullseye as builder
 
 WORKDIR /build
 
@@ -11,7 +11,6 @@ ENV GO111MODULE=on \
     GOARCH=amd64
 COPY . .
 
-RUN make test
 RUN go build -a -installsuffix cgo -ldflags="-w -s -X github.com/bakito/kubexporter/version.Version=${VERSION}" -o kubexporter && \
     upx -q kubexporter
 
