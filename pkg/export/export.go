@@ -1,7 +1,6 @@
 package export
 
 import (
-	"github.com/bakito/kubexporter/version"
 	"os"
 	"sort"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/export/worker"
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/version"
 	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
