@@ -83,6 +83,9 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		case "exclude-kinds":
 			sl, _ := cmd.Flags().GetStringSlice(f.Name)
 			config.Excluded.Kinds = sl
+		case "archive":
+			sl, _ := cmd.Flags().GetBool(f.Name)
+			config.Archive = sl
 		}
 	})
 
@@ -109,6 +112,7 @@ func init() {
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
 	rootCmd.Flags().BoolP("verbose", "v", false, "If enabled, errors during export are listed in summary")
 	rootCmd.Flags().Bool("summary", false, "If enabled, a summary is printed")
+	rootCmd.Flags().BoolP("archive", "a", false, "If enabled, an archive with the exports is created")
 	rootCmd.Flags().StringP("progress", "p", string(types.ProgressBar), "Progress mode bar|simple|none (default bar) ")
 	rootCmd.Flags().BoolP("lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
 	rootCmd.Flags().StringSliceP("include-kinds", "i", []string{}, "Export only included kinds, if included kinds are defined, excluded will be ignored")

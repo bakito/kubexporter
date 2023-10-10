@@ -17,7 +17,7 @@ release: semver goreleaser
 
 
 test-release: goreleaser
-	$(GORELEASER)  --skip-publish --snapshot --clean
+	$(GORELEASER) --skip=publish --snapshot --clean
 
 # generate mocks
 mocks: mockgen
@@ -41,8 +41,8 @@ GORELEASER ?= $(LOCALBIN)/goreleaser
 ## Tool Versions
 SEMVER_VERSION ?= v1.1.3
 MOCKGEN_VERSION ?= v1.6.0
-GOLANGCI_LINT_VERSION ?= v1.53.3
-GORELEASER_VERSION ?= v1.18.2
+GOLANGCI_LINT_VERSION ?= v1.54.2
+GORELEASER_VERSION ?= v1.21.2
 
 ## Tool Installer
 .PHONY: semver
