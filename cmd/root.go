@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 var (
@@ -122,7 +122,7 @@ func init() {
 	configFlags.AddFlags(rootCmd.Flags())
 
 	printFlags = &genericclioptions.PrintFlags{
-		OutputFormat:       pointer.String(types.DefaultFormat),
+		OutputFormat:       ptr.To(types.DefaultFormat),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 	}
 	printFlags.AddFlags(rootCmd)

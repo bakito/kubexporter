@@ -11,7 +11,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("Config", func() {
@@ -22,7 +22,7 @@ var _ = Describe("Config", func() {
 	)
 	BeforeEach(func() {
 		pf = &genericclioptions.PrintFlags{
-			OutputFormat:       pointer.String(types.DefaultFormat),
+			OutputFormat:       ptr.To(types.DefaultFormat),
 			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 		}
 		config = types.NewConfig(nil, pf)
@@ -409,7 +409,7 @@ var _ = Describe("Config", func() {
 		})
 		It("should print the object as yaml", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = pointer.String("yaml")
+			pf.OutputFormat = ptr.To("yaml")
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(buf.String()).Should(Equal(`foo: bar
@@ -418,7 +418,7 @@ kind: Pod
 		})
 		It("should print the object as json", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = pointer.String("json")
+			pf.OutputFormat = ptr.To("json")
 
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
@@ -430,7 +430,7 @@ kind: Pod
 		})
 		It("should fail with unsupported format", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = pointer.String("xyz")
+			pf.OutputFormat = ptr.To("xyz")
 			err := config.PrintObj(data, io.Writer(&buf))
 			Ω(err).Should(HaveOccurred())
 		})

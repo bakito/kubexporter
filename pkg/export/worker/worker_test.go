@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	amtypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 )
 
 var _ = Describe("Worker", func() {
@@ -38,7 +38,7 @@ var _ = Describe("Worker", func() {
 		mockCtrl = gm.NewController(GinkgoT())
 		mockClient = mock.NewMockInterface(mockCtrl)
 		config = types.NewConfig(nil, &genericclioptions.PrintFlags{
-			OutputFormat:       pointer.String(types.DefaultFormat),
+			OutputFormat:       ptr.To(types.DefaultFormat),
 			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 		})
 		config.Target = tmpDir
