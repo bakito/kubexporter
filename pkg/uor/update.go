@@ -3,20 +3,17 @@ package uor
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/bakito/kubexporter/pkg/client"
+	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/discovery"
-	memory "k8s.io/client-go/discovery/cached"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/restmapper"
 )
 
 func Update(config *types.Config) error {
@@ -41,22 +38,14 @@ func Update(config *types.Config) error {
 		return err
 	}
 
-	rc, err := config.RestConfig()
+	ac, err := client.NewApiClient(config)
 	if err != nil {
 		return err
 	}
 
-	client, err := dynamic.NewForConfig(rc)
-	if err != nil {
-		return err
-	}
+	table := render.Table()
+	table.SetHeader([]string{"File", "Owner Kind", "Owner Name", "UID From", "UID To"})
 
-	dcl, err := discovery.NewDiscoveryClientForConfig(rc)
-	if err != nil {
-		return err
-	}
-
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dcl))
 	ctx := context.TODO()
 	for _, file := range files {
 		us, err := read(file)
@@ -65,39 +54,60 @@ func Update(config *types.Config) error {
 		}
 		refs := us.GetOwnerReferences()
 		owners := make(map[string]*unstructured.Unstructured)
+		changed := false
 		if len(refs) > 0 {
 			for i := range refs {
 				ref := &refs[i]
-				owner, err := findOwner(ctx, owners, ref, mapper, client, us)
+				owner, err := findOwner(ctx, ac, owners, ref, us)
 				if err != nil {
 					return err
 				}
-				fmt.Printf("%s:\t%s -> %s\n",
-					strings.Replace(file, config.Target+"/", "", 1),
-					ref.UID, owner.GetUID())
-				ref.UID = owner.GetUID()
+
+				if ref.UID != owner.GetUID() {
+					table.Append([]string{
+						strings.Replace(file, config.Target+"/", "", 1),
+						ref.Kind,
+						ref.Name,
+						string(ref.UID),
+						string(owner.GetUID()),
+					})
+					ref.UID = owner.GetUID()
+					changed = true
+				}
 			}
-			us.SetOwnerReferences(refs)
+			if changed {
+				us.SetOwnerReferences(refs)
+				err := write(config, file, us)
+				if err != nil {
+					return err
+				}
+			}
 		}
+	}
+
+	if table.NumLines() == 0 {
+		println("No changed owner references found")
+	} else {
+		table.Render()
 	}
 	return nil
 }
 
-func findOwner(ctx context.Context, owners map[string]*unstructured.Unstructured, ref *v1.OwnerReference, mapper *restmapper.DeferredDiscoveryRESTMapper, client *dynamic.DynamicClient, us *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func findOwner(ctx context.Context, ac *client.ApiClient, owners map[string]*unstructured.Unstructured, ref *v1.OwnerReference, us *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	key := us.GetNamespace() + "#" + ref.APIVersion + "#" + ref.Name
 	if owner, ok := owners[key]; ok {
 		return owner, nil
 	}
 
 	group, version := groupVersion(ref)
-	mapping, err := mapper.RESTMapping(schema.GroupKind{
+	mapping, err := ac.Mapper.RESTMapping(schema.GroupKind{
 		Group: group,
 		Kind:  ref.Kind,
 	}, version)
 	if err != nil {
 		return nil, err
 	}
-	owner, err := client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, v1.GetOptions{})
+	owner, err := ac.Client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, v1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +135,7 @@ func read(file string) (*unstructured.Unstructured, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer f.Close()
 
 	decoder := yaml.NewYAMLOrJSONDecoder(bufio.NewReader(f), 20)
 	err = decoder.Decode(us)
@@ -132,4 +143,17 @@ func read(file string) (*unstructured.Unstructured, error) {
 		return nil, err
 	}
 	return us, nil
+}
+
+func write(config *types.Config, file string, us *unstructured.Unstructured) error {
+	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	err = config.PrintObj(us, f)
+	if err != nil {
+		return err
+	}
+	return nil
 }
