@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/vbauerster/mpb/v5"
@@ -36,8 +37,7 @@ type worker struct {
 	currentKind      string
 	currentPage      int
 	elapsedDecorator decor.Decorator
-	client           dynamic.Interface
-	mapper           meta.RESTMapper
+	ac               *client.ApiClient
 	queryFinished    bool
 	stats            Stats
 }
@@ -82,13 +82,12 @@ func (s *Stats) HasErrors() bool {
 }
 
 // New create a new worker
-func New(id int, config *types.Config, mapper meta.RESTMapper, client dynamic.Interface, prog *mpb.Progress, mainBar *mpb.Bar) Worker {
+func New(id int, config *types.Config, ac *client.ApiClient, prog *mpb.Progress, mainBar *mpb.Bar) Worker {
 	w := &worker{
 		id:               id + 1,
 		mainBar:          mainBar,
 		config:           config,
-		mapper:           mapper,
-		client:           client,
+		ac:               ac,
 		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
 	}
 
@@ -115,7 +114,7 @@ func (w *worker) Stop() Stats {
 
 // list resources
 func (w *worker) list(ctx context.Context, group, version, kind string, continueValue string) (*unstructured.UnstructuredList, error) {
-	mapping, err := w.mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
+	mapping, err := w.ac.Mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
 	if err != nil {
 		return nil, err
 	}
@@ -123,10 +122,10 @@ func (w *worker) list(ctx context.Context, group, version, kind string, continue
 	var dr dynamic.ResourceInterface
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 		// namespaced resources should specify the namespace
-		dr = w.client.Resource(mapping.Resource).Namespace(w.config.Namespace)
+		dr = w.ac.Client.Resource(mapping.Resource).Namespace(w.config.Namespace)
 	} else {
 		// for cluster-wide resources
-		dr = w.client.Resource(mapping.Resource)
+		dr = w.ac.Client.Resource(mapping.Resource)
 	}
 	opts := metav1.ListOptions{Continue: continueValue}
 	if !w.config.AsLists {

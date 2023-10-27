@@ -7,39 +7,30 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/export/worker"
 	"github.com/bakito/kubexporter/pkg/log"
+	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	"github.com/olekukonko/tablewriter"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/discovery"
-	memory "k8s.io/client-go/discovery/cached"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/restmapper"
 )
 
 // NewExporter create a new exporter
 func NewExporter(config *types.Config) (Exporter, error) {
-	err := config.Validate()
-	if err != nil {
-		return nil, err
-	}
-
-	rc, err := config.RestConfig()
+	ac, err := client.NewApiClient(config)
 	if err != nil {
 		return nil, err
 	}
 
 	return &exporter{
-		config:     config,
-		restConfig: rc,
-		l:          config.Logger(),
-		stats:      &worker.Stats{},
+		config: config,
+		ac:     ac,
+		l:      config.Logger(),
+		stats:  &worker.Stats{},
 	}, nil
 }
 
@@ -60,12 +51,7 @@ func (e *exporter) Export() error {
 
 	e.writeIntro()
 
-	dcl, err := discovery.NewDiscoveryClientForConfig(e.restConfig)
-	if err != nil {
-		return err
-	}
-
-	resources, err := e.listResources(dcl)
+	resources, err := e.listResources()
 	if err != nil {
 		return err
 	}
@@ -98,15 +84,9 @@ func (e *exporter) Export() error {
 		)
 	}
 
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dcl))
-	client, err := dynamic.NewForConfig(e.restConfig)
-	if err != nil {
-		return err
-	}
-
 	var workers []worker.Worker
 	for i := 0; i < e.config.Worker; i++ {
-		workers = append(workers, worker.New(i, e.config, mapper, client, prog, mainBar))
+		workers = append(workers, worker.New(i, e.config, e.ac, prog, mainBar))
 	}
 
 	s, err := worker.RunExport(workers, resources)
@@ -142,7 +122,7 @@ func (e *exporter) Export() error {
 func (e *exporter) writeIntro() {
 	e.l.Printf("Starting export ...\n")
 	e.l.Printf("  kubexporter version %q\n", version.Version)
-	e.l.Printf("  cluster %q\n", e.restConfig.Host)
+	e.l.Printf("  cluster %q\n", e.ac.RestConfig.Host)
 	if e.config.Namespace == "" {
 		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
@@ -174,8 +154,8 @@ func (e *exporter) writeIntro() {
 	e.config.Logger().Printf("\nExporting ...\n")
 }
 
-func (e *exporter) listResources(dcl *discovery.DiscoveryClient) ([]*types.GroupResource, error) {
-	lists, err := dcl.ServerPreferredResources()
+func (e *exporter) listResources() ([]*types.GroupResource, error) {
+	lists, err := e.ac.DiscoveryClient.ServerPreferredResources()
 	if err != nil {
 		return nil, err
 	}
@@ -219,12 +199,7 @@ func allowsList(r metav1.APIResource) bool {
 func (e *exporter) printSummary(resources []*types.GroupResource) {
 	withPages := e.config.QueryPageSize > 0
 
-	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeaderLine(false)
-	table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
-	table.SetCenterSeparator("")
-	table.SetColumnSeparator("")
-	table.SetRowSeparator("")
+	table := render.Table()
 	header := []string{"Group", "Version", "Kind", "Namespaces", "Total Instances", "Exported Instances", "Query Duration"}
 	if withPages {
 		header = append(header, "Query Pages")
@@ -295,8 +270,8 @@ type exporter struct {
 	start           time.Time
 	l               log.YALI
 	config          *types.Config
-	restConfig      *rest.Config
 	stats           *worker.Stats
 	archive         string
 	deletedArchives []string
+	ac              *client.ApiClient
 }

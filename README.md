@@ -12,7 +12,7 @@ The configuration allows customization on which resources and which fields to ex
 
 ## Install
 
-Downlad the latest binary from https://github.com/bakito/kubexporter/releases.
+Download the latest binary from https://github.com/bakito/kubexporter/releases.
 
 ### Use as kubectl plugin
 
@@ -148,4 +148,16 @@ masked:
 sortSlices:
   User:
     - [ roles ]
+```
+
+### Update Owner References
+
+Allows updating Owner references against a running cluster.
+
+```shell
+kubexporter update-owner-references
+
+ FILE                                                                                 OWNER KIND  OWNER NAME                                 UID FROM                              UID TO                               
+ cert-manager/cilium.io.CiliumEndpoint.cert-manager-cainjector-7fd8f6bbbf-9nlf2.yaml  Pod         cert-manager-cainjector-7fd8f6bbbf-9nlf2   1d494969-hhhh-4c79-96d4-25d31c66c895  1d494969-db54-4c79-96d4-25d31c66c895 
+ cert-manager/cilium.io.CiliumEndpoint.cert-manager-webhook-787cd749dc-7sfvq.yaml     Pod         cert-manager-webhook-787cd749dc-7sfvq-XXX  eeeb48d9-751c-4aa9-9389-6aab845dba1e  <NOT FOUND>      
 ```
