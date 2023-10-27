@@ -1,10 +1,7 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-
+	"github.com/bakito/kubexporter/pkg/uor"
 	"github.com/spf13/cobra"
 )
 
@@ -19,33 +16,7 @@ var updateOwnerReferences = &cobra.Command{
 			return err
 		}
 
-		err = config.Validate()
-		if err != nil {
-			return err
-		}
-
-		_, err = config.RestConfig()
-		if err != nil {
-			return err
-		}
-
-		var files []string
-		err = filepath.Walk(config.Target, func(path string, info os.FileInfo, err error) error {
-
-			if err != nil {
-
-				fmt.Println(err)
-				return nil
-			}
-
-			if !info.IsDir() && filepath.Ext(path) == ".yaml" {
-				files = append(files, path)
-			}
-
-			return nil
-		})
-
-		return err
+		return uor.Update(config)
 
 	},
 }
@@ -53,5 +24,6 @@ var updateOwnerReferences = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(updateOwnerReferences)
 	configFlags.AddFlags(updateOwnerReferences.Flags())
+	printFlags.AddFlags(updateOwnerReferences)
 	updateOwnerReferences.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
 }
