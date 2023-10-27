@@ -61,31 +61,16 @@ func Update(config *types.Config) error {
 			return err
 		}
 		refs := us.GetOwnerReferences()
+		owners := make(map[string]*unstructured.Unstructured)
 		if len(refs) > 0 {
 			for i := range refs {
 				ref := &refs[i]
-				group, version := groupVersion(ref)
-				mapping, err := mapper.RESTMapping(schema.GroupKind{
-					Group: group,
-					Kind:  ref.Kind,
-				}, version)
+				owner, err := findOwner(ctx, owners, ref, mapper, client, us)
 				if err != nil {
 					return err
 				}
-				owner, err := client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, v1.GetOptions{})
-
-				if err != nil {
-					return err
-				}
-				fmt.Printf("Changed owner of %s.%s %s/%s\n\t%s.%s %s/%s from %s -> %s\n",
-					us.GetAPIVersion(),
-					us.GetKind(),
-					us.GetNamespace(),
-					us.GetName(),
-					owner.GetAPIVersion(),
-					owner.GetKind(),
-					owner.GetNamespace(),
-					owner.GetName(),
+				fmt.Printf("%s:\t%s -> %s\n",
+					strings.Replace(file, config.Target+"/", "", 1),
 					ref.UID, owner.GetUID())
 				ref.UID = owner.GetUID()
 			}
@@ -94,6 +79,29 @@ func Update(config *types.Config) error {
 	}
 	return nil
 
+}
+
+func findOwner(ctx context.Context, owners map[string]*unstructured.Unstructured, ref *v1.OwnerReference, mapper *restmapper.DeferredDiscoveryRESTMapper, client *dynamic.DynamicClient, us *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+	key := us.GetNamespace() + "#" + ref.APIVersion + "#" + ref.Name
+	if owner, ok := owners[key]; ok {
+		return owner, nil
+	}
+
+	group, version := groupVersion(ref)
+	mapping, err := mapper.RESTMapping(schema.GroupKind{
+		Group: group,
+		Kind:  ref.Kind,
+	}, version)
+	if err != nil {
+		return nil, err
+	}
+	owner, err := client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, v1.GetOptions{})
+
+	if err != nil {
+		return nil, err
+	}
+	owners[key] = owner
+	return owner, nil
 }
 
 func groupVersion(reference *v1.OwnerReference) (string, string) {
