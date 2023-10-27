@@ -10,6 +10,8 @@ import (
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/olekukonko/tablewriter"
+	"k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -48,40 +50,9 @@ func Update(config *types.Config) error {
 
 	ctx := context.TODO()
 	for _, file := range files {
-		us, err := read(file)
-		if err != nil {
-			return err
-		}
-		refs := us.GetOwnerReferences()
-		owners := make(map[string]*unstructured.Unstructured)
-		changed := false
-		if len(refs) > 0 {
-			for i := range refs {
-				ref := &refs[i]
-				owner, err := findOwner(ctx, ac, owners, ref, us)
-				if err != nil {
-					return err
-				}
-
-				if ref.UID != owner.GetUID() {
-					table.Append([]string{
-						strings.Replace(file, config.Target+"/", "", 1),
-						ref.Kind,
-						ref.Name,
-						string(ref.UID),
-						string(owner.GetUID()),
-					})
-					ref.UID = owner.GetUID()
-					changed = true
-				}
-			}
-			if changed {
-				us.SetOwnerReferences(refs)
-				err := write(config, file, us)
-				if err != nil {
-					return err
-				}
-			}
+		err2 := updateFile(ctx, config, file, ac, table)
+		if err2 != nil {
+			return err2
 		}
 	}
 
@@ -89,6 +60,57 @@ func Update(config *types.Config) error {
 		println("No changed owner references found")
 	} else {
 		table.Render()
+	}
+	return nil
+}
+
+func updateFile(ctx context.Context, config *types.Config, file string, ac *client.ApiClient, table *tablewriter.Table) error {
+	fileName := strings.Replace(file, config.Target+"/", "", 1)
+	us, err := read(file)
+	if err != nil {
+		return err
+	}
+	refs := us.GetOwnerReferences()
+	owners := make(map[string]*unstructured.Unstructured)
+	changed := false
+	if len(refs) > 0 {
+		for i := range refs {
+			ref := &refs[i]
+			owner, err := findOwner(ctx, ac, owners, ref, us)
+			if err != nil {
+				errMsg := "<ERROR>"
+				if errors.IsNotFound(err) {
+					errMsg = "<NOT FOUND>"
+				}
+				table.Append([]string{
+					fileName,
+					ref.Kind,
+					ref.Name,
+					string(ref.UID),
+					errMsg,
+				})
+				continue
+			}
+
+			if ref.UID != owner.GetUID() {
+				table.Append([]string{
+					fileName,
+					ref.Kind,
+					ref.Name,
+					string(ref.UID),
+					string(owner.GetUID()),
+				})
+				ref.UID = owner.GetUID()
+				changed = true
+			}
+		}
+		if changed {
+			us.SetOwnerReferences(refs)
+			err := write(config, file, us)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
