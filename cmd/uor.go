@@ -17,7 +17,6 @@ var updateOwnerReferences = &cobra.Command{
 		}
 
 		return uor.Update(config)
-
 	},
 }
 

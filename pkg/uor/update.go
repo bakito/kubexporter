@@ -27,7 +27,6 @@ func Update(config *types.Config) error {
 
 	var files []string
 	err = filepath.Walk(config.Target, func(path string, info os.FileInfo, err error) error {
-
 		if err != nil {
 			return err
 		}
@@ -38,6 +37,10 @@ func Update(config *types.Config) error {
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
 	rc, err := config.RestConfig()
 	if err != nil {
 		return err
@@ -78,7 +81,6 @@ func Update(config *types.Config) error {
 		}
 	}
 	return nil
-
 }
 
 func findOwner(ctx context.Context, owners map[string]*unstructured.Unstructured, ref *v1.OwnerReference, mapper *restmapper.DeferredDiscoveryRESTMapper, client *dynamic.DynamicClient, us *unstructured.Unstructured) (*unstructured.Unstructured, error) {
@@ -96,7 +98,6 @@ func findOwner(ctx context.Context, owners map[string]*unstructured.Unstructured
 		return nil, err
 	}
 	owner, err := client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, v1.GetOptions{})
-
 	if err != nil {
 		return nil, err
 	}
