@@ -55,6 +55,8 @@ var (
 		{"metadata", "selfLink"},
 		{"metadata", "resourceVersion"},
 		{"metadata", "creationTimestamp"},
+		{"metadata", "deletionTimestamp"},
+		{"metadata", "deletionGracePeriodSeconds"},
 		{"metadata", "generation"},
 		{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
 	}
