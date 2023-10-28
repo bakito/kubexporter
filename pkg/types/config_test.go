@@ -72,6 +72,7 @@ var _ = Describe("Config", func() {
 						},
 					},
 				},
+				Kinds: []string{"foo.Bar"},
 			}
 			us = unstructured.Unstructured{
 				Object: map[string]interface{}{
@@ -99,6 +100,20 @@ var _ = Describe("Config", func() {
 		It("should be excluded if namespace matches", func() {
 			Ω(unstructured.SetNestedField(us.Object, "namespace1", "metadata", "namespace")).ShouldNot(HaveOccurred())
 			Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
+		})
+
+		Context("ConsiderOwnerReferences", func() {
+			BeforeEach(func() {
+				us.SetOwnerReferences([]v1.OwnerReference{{APIVersion: "foo/v1", Kind: "Bar"}})
+			})
+			It("if enabled it should be excluded if the owner is excluded", func() {
+				config.ConsiderOwnerReferences = true
+				Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
+			})
+			It("if enabled it should be excluded if the owner is excluded", func() {
+				config.ConsiderOwnerReferences = false
+				Ω(config.IsInstanceExcluded(res, us)).Should(BeFalse())
+			})
 		})
 	})
 	Context("FileName / ListFileName", func() {
