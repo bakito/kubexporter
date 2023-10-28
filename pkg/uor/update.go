@@ -121,11 +121,14 @@ func findOwner(ctx context.Context, ac *client.ApiClient, owners map[string]*uns
 		return owner, nil
 	}
 
-	group, version := groupVersion(ref)
+	gv, err := schema.ParseGroupVersion(ref.APIVersion)
+	if err != nil {
+		return nil, err
+	}
 	mapping, err := ac.Mapper.RESTMapping(schema.GroupKind{
-		Group: group,
+		Group: gv.Group,
 		Kind:  ref.Kind,
-	}, version)
+	}, gv.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -135,19 +138,6 @@ func findOwner(ctx context.Context, ac *client.ApiClient, owners map[string]*uns
 	}
 	owners[key] = owner
 	return owner, nil
-}
-
-func groupVersion(reference *v1.OwnerReference) (string, string) {
-	gv := strings.Split(reference.APIVersion, "/")
-	var group string
-	var version string
-	if len(gv) > 1 {
-		group = gv[0]
-		version = gv[1]
-	} else {
-		version = gv[0]
-	}
-	return group, version
 }
 
 func read(file string) (*unstructured.Unstructured, error) {

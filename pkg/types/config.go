@@ -18,8 +18,10 @@ import (
 	"github.com/Masterminds/sprig"
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/ghodss/yaml"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
@@ -97,25 +99,26 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config
 type Config struct {
-	Excluded             Excluded   `json:"excluded" yaml:"excluded"`
-	Included             Included   `json:"included" yaml:"included"`
-	Masked               *Masked    `json:"masked" yaml:"masked"`
-	SortSlices           KindFields `json:"sortSlices" yaml:"sortSlices"`
-	FileNameTemplate     string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
-	ListFileNameTemplate string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
-	AsLists              bool       `json:"asLists" yaml:"asLists"`
-	QueryPageSize        int        `json:"queryPageSize" yaml:"queryPageSize"`
-	Target               string     `json:"target" yaml:"target"`
-	ClearTarget          bool       `json:"clearTarget" yaml:"clearTarget"`
-	Summary              bool       `json:"summary" yaml:"summary"`
-	Progress             Progress   `json:"progress" yaml:"progress"`
-	Namespace            string     `json:"namespace" yaml:"namespace"`
-	Worker               int        `json:"worker" yaml:"worker"`
-	Archive              bool       `json:"archive" yaml:"archive"`
-	ArchiveRetentionDays int        `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
-	ArchiveTarget        string     `json:"archiveTarget" yaml:"archiveTarget"`
-	Quiet                bool       `json:"quiet" yaml:"quiet"`
-	Verbose              bool       `json:"verbose" yaml:"verbose"`
+	Excluded                Excluded   `json:"excluded" yaml:"excluded"`
+	Included                Included   `json:"included" yaml:"included"`
+	ConsiderOwnerReferences bool       `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
+	Masked                  *Masked    `json:"masked" yaml:"masked"`
+	SortSlices              KindFields `json:"sortSlices" yaml:"sortSlices"`
+	FileNameTemplate        string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
+	ListFileNameTemplate    string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
+	AsLists                 bool       `json:"asLists" yaml:"asLists"`
+	QueryPageSize           int        `json:"queryPageSize" yaml:"queryPageSize"`
+	Target                  string     `json:"target" yaml:"target"`
+	ClearTarget             bool       `json:"clearTarget" yaml:"clearTarget"`
+	Summary                 bool       `json:"summary" yaml:"summary"`
+	Progress                Progress   `json:"progress" yaml:"progress"`
+	Namespace               string     `json:"namespace" yaml:"namespace"`
+	Worker                  int        `json:"worker" yaml:"worker"`
+	Archive                 bool       `json:"archive" yaml:"archive"`
+	ArchiveRetentionDays    int        `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
+	ArchiveTarget           string     `json:"archiveTarget" yaml:"archiveTarget"`
+	Quiet                   bool       `json:"quiet" yaml:"quiet"`
+	Verbose                 bool       `json:"verbose" yaml:"verbose"`
 
 	excludedSet set
 	includedSet set
@@ -314,12 +317,34 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 
 // IsInstanceExcluded check if the kind instance is excluded
 func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstructured) bool {
+	if c.isExcludedByOwnerReference(us) {
+		return true
+	}
 	if fvs, ok := c.Excluded.KindsByField[res.GroupKind()]; ok {
 		for _, fv := range fvs {
 			for _, v := range fv.Values {
 				if matches(us, fv.Field, v) {
 					return true
 				}
+			}
+		}
+	}
+	return false
+}
+
+func (c *Config) isExcludedByOwnerReference(us unstructured.Unstructured) bool {
+	if c.ConsiderOwnerReferences && len(us.GetOwnerReferences()) > 0 {
+		for _, or := range us.GetOwnerReferences() {
+			gv, err := schema.ParseGroupVersion(or.APIVersion)
+			r := &GroupResource{
+				APIGroup:        gv.Group,
+				APIVersion:      gv.Version,
+				APIGroupVersion: gv.String(),
+				APIResource:     v1.APIResource{Kind: or.Kind},
+			}
+
+			if err == nil && c.IsExcluded(r) {
+				return true
 			}
 		}
 	}

@@ -134,6 +134,8 @@ excluded:
       - field: [ type ]
         # exclude helm secrets
         values: [ 'helm.sh/release', 'helm.sh/release.v1' ]
+# excludes resources if the owner reference kind is excluded
+considerOwnerReferences: false
 # mask certain fields 
 masked:
   # the replacement string to be used for masked fields (default '***')

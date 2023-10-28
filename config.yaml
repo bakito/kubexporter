@@ -14,6 +14,7 @@ masked:
   kindFields:
     Secret:
       - [ data ]
+considerOwnerReferences: true
 excluded:
   kinds:
     - Binding
