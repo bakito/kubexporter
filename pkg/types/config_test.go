@@ -110,7 +110,12 @@ var _ = Describe("Config", func() {
 				config.ConsiderOwnerReferences = true
 				Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
 			})
-			It("if enabled it should be excluded if the owner is excluded", func() {
+			It("if enabled it should not be excluded if the owner is not excluded", func() {
+				us.SetOwnerReferences([]v1.OwnerReference{{APIVersion: "foofoo/v1", Kind: "Bar"}})
+				config.ConsiderOwnerReferences = true
+				Ω(config.IsInstanceExcluded(res, us)).Should(BeFalse())
+			})
+			It("if disabled it should be not excluded if the owner is excluded", func() {
 				config.ConsiderOwnerReferences = false
 				Ω(config.IsInstanceExcluded(res, us)).Should(BeFalse())
 			})

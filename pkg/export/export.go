@@ -140,13 +140,17 @@ func (e *exporter) writeIntro() {
 	if e.config.Summary {
 		e.l.Printf("  summary 📊\n")
 	}
+	if e.config.ConsiderOwnerReferences {
+		e.l.Printf("  considering owner references 👑\n")
+	}
+
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
 	} else if e.config.QueryPageSize != 0 {
 		e.l.Printf("  query page size %d 📃\n", e.config.QueryPageSize)
 	}
 	if e.config.Archive {
-		e.l.Printf("  compress as archive ️\n")
+		e.l.Printf("  compress as archive ️🗜\n")
 		if e.config.ArchiveRetentionDays > 0 {
 			e.l.Printf("  delete archives older than %d days 🚮\n", e.config.ArchiveRetentionDays)
 		}
@@ -238,6 +242,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 }
 
 func (e *exporter) printStats() {
+	println()
 	if e.archive != "" {
 		e.l.Checkf("🗜\tArchive %s\n", e.archive)
 		if len(e.deletedArchives) > 0 {

@@ -44,6 +44,7 @@ func (l *log) Printf(format string, a ...interface{}) {
 			format = strings.ReplaceAll(format, ColorReset, "")
 			format = strings.ReplaceAll(format, ColorGreen, "")
 			format = nonASCII.ReplaceAllLiteralString(format, "")
+			format = strings.ReplaceAll(format, "- \t", "\t")
 		}
 		fmt.Printf(format, a...)
 	}
