@@ -23,4 +23,4 @@ jobs:
         uses: bakito/kind-with-registry-action@main
 
       - name: Run Exporter
-        run:  go run . --config config.yaml
+        run:  go run . --config config.yaml --progress simple >> $GITHUB_STEP_SUMMARY

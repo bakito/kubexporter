@@ -242,6 +242,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 }
 
 func (e *exporter) printStats() {
+	println()
 	if e.archive != "" {
 		e.l.Checkf("🗜\tArchive %s\n", e.archive)
 		if len(e.deletedArchives) > 0 {
