@@ -2,13 +2,10 @@ module github.com/bakito/kubexporter
 
 go 1.21
 
-toolchain go1.21.6
-
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/bakito/semver v1.1.3
 	github.com/ghodss/yaml v1.0.0
-	github.com/golang/mock v1.6.0
 	github.com/golangci/golangci-lint v1.55.2
 	github.com/google/uuid v1.5.0
 	github.com/goreleaser/goreleaser v1.23.0
@@ -19,6 +16,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v5 v5.4.0
+	go.uber.org/mock v0.4.0
 	k8s.io/api v0.29.0
 	k8s.io/apimachinery v0.29.0
 	k8s.io/cli-runtime v0.29.0

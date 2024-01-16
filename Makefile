@@ -50,7 +50,7 @@ $(GORELEASER): $(LOCALBIN)
 .PHONY: mockgen
 mockgen: $(MOCKGEN) ## Download mockgen locally if necessary.
 $(MOCKGEN): $(LOCALBIN)
-	test -s $(LOCALBIN)/mockgen || GOBIN=$(LOCALBIN) go install github.com/golang/mock/mockgen
+	test -s $(LOCALBIN)/mockgen || GOBIN=$(LOCALBIN) go install go.uber.org/mock/mockgen
 .PHONY: semver
 semver: $(SEMVER) ## Download semver locally if necessary.
 $(SEMVER): $(LOCALBIN)
