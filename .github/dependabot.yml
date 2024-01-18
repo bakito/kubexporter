@@ -13,7 +13,7 @@ updates:
           - "patch"
       onsi:
         patterns:
-          - "github.com/onsi/"
+          - "github.com/onsi/*"
         update-types:
           - "minor"
           - "patch"
