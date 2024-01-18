@@ -13,7 +13,13 @@ updates:
           - "patch"
       onsi:
         patterns:
-          - "github.com/onsi/"
+          - "github.com/onsi/*"
+        update-types:
+          - "minor"
+          - "patch"
+      spf13:
+        patterns:
+          - "github.com/spf13/*"
         update-types:
           - "minor"
           - "patch"
