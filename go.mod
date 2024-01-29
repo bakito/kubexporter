@@ -7,7 +7,7 @@ require (
 	github.com/bakito/semver v1.1.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/golangci/golangci-lint v1.55.2
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/goreleaser/goreleaser v1.23.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo/v2 v2.15.0
