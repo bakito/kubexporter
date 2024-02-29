@@ -1,6 +1,6 @@
 module github.com/bakito/kubexporter
 
-go 1.21
+go 1.22
 
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible

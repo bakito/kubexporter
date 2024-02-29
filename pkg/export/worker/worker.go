@@ -300,8 +300,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	}
 	names := make(map[string]int)
 	cnt := 0
-	for i := range ul.Items {
-		u := ul.Items[i]
+	for _, u := range ul.Items {
 		if !w.config.IsInstanceExcluded(res, u) {
 			cnt++
 			w.stats.addNamespace(u.GetNamespace())

@@ -3,35 +3,37 @@ run:
 
 linters:
   enable:
-  - asciicheck
-  - bodyclose
-  - dogsled
-  - durationcheck
-  - errcheck
-  - errorlint
-  - exportloopref
-  - gci
-  - gofmt
-  - gofumpt
-  - goimports
-  - gosec
-  - gosimple
-  - govet
-  - importas
-  - ineffassign
-  - megacheck
-  - misspell
-  - nakedret
-  - nolintlint
-  - staticcheck
-  - typecheck
-  - unconvert
-  - unparam
-  - unused
+    - asciicheck
+    - bodyclose
+    - dogsled
+    - durationcheck
+    - errcheck
+    - errorlint
+    - exportloopref
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - importas
+    - ineffassign
+    - megacheck
+    - misspell
+    - nakedret
+    - nolintlint
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
 linters-settings:
   gosec:
     # Exclude generated files
     exclude-generated: true
+    excludes:
+      - G601 # fixed in go 1.22
   gofmt:
     # simplify code: gofmt with `-s` option, true by default
     simplify: true
