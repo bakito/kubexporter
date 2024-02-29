@@ -250,6 +250,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		if !w.config.IsInstanceExcluded(res, u) {
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
+			w.config.EncryptFields(res, u)
 			w.config.SortSliceFields(res, u)
 
 			if _, ok := perNs[u.GetNamespace()]; !ok {
@@ -306,6 +307,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			w.stats.addNamespace(u.GetNamespace())
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
+			w.config.EncryptFields(res, u)
 			w.config.SortSliceFields(res, u)
 			us := &u
 

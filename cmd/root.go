@@ -93,6 +93,10 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		return nil, err
 	}
 
+	if err := config.Encrypted.Setup(); err != nil {
+		return nil, err
+	}
+
 	return config, nil
 }
 

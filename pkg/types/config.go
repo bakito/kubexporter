@@ -2,9 +2,6 @@ package types
 
 import (
 	"bytes"
-	"crypto/md5"  // #nosec G501 we are ok with md5
-	"crypto/sha1" // #nosec G505 we are ok with sha1
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -86,6 +83,9 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		Masked: &Masked{
 			KindFields: KindFields{},
 		},
+		Encrypted: &Encrypted{
+			KindFields: KindFields{},
+		},
 		Excluded: Excluded{
 			Fields:       DefaultExcludedFields,
 			KindFields:   KindFields{},
@@ -103,6 +103,7 @@ type Config struct {
 	Included                Included   `json:"included" yaml:"included"`
 	ConsiderOwnerReferences bool       `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
 	Masked                  *Masked    `json:"masked" yaml:"masked"`
+	Encrypted               *Encrypted `json:"encrypted" yaml:"masked"`
 	SortSlices              KindFields `json:"sortSlices" yaml:"sortSlices"`
 	FileNameTemplate        string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
 	ListFileNameTemplate    string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
@@ -136,49 +137,6 @@ type Excluded struct {
 	Fields       [][]string              `json:"fields" yaml:"fields"`
 	KindFields   KindFields              `json:"kindFields" yaml:"kindFields"`
 	KindsByField map[string][]FieldValue `json:"kindByField" yaml:"kindByField"`
-}
-
-// Masked masking params
-type Masked struct {
-	Replacement string `json:"replacement" yaml:"replacement"`
-	Checksum    string `json:"checksum" yaml:"checksum"`
-	doSum       func(string) string
-	KindFields  KindFields `json:"kindFields" yaml:"kindFields"`
-}
-
-func (m *Masked) Setup() error {
-	if m.Checksum != "" {
-		switch m.Checksum {
-		case "md5":
-			m.doSum = func(s string) string {
-				// #nosec G401 we are ok with md5
-				return fmt.Sprintf("%x", md5.Sum([]byte(s)))
-			}
-		case "sha1":
-			m.doSum = func(s string) string {
-				// #nosec G401 we are ok with sha1
-				return fmt.Sprintf("%x", sha1.Sum([]byte(s)))
-			}
-		case "sha256":
-			m.doSum = func(s string) string {
-				return fmt.Sprintf("%x", sha256.Sum224([]byte(s)))
-			}
-		default:
-			return fmt.Errorf("invalid checksum %q supported are: [md5/sha1/sha256]", m.Checksum)
-		}
-	}
-	if m.Replacement == "" {
-		m.Replacement = DefaultMaskReplacement
-	}
-	return nil
-}
-
-func (m *Masked) doMask(val interface{}) string {
-	if m.doSum != nil {
-		s := fmt.Sprintf("%v", val)
-		return m.doSum(s)
-	}
-	return m.Replacement
 }
 
 // KindFields map kinds to fields
@@ -228,18 +186,16 @@ func removeNestedField(obj map[string]interface{}, fields ...string) {
 	delete(m, fields[len(fields)-1])
 }
 
-// MaskFields mask fields for a given resource
-func (c *Config) MaskFields(res *GroupResource, us unstructured.Unstructured) {
-	gk := res.GroupKind()
-	if c.Masked.KindFields != nil && c.Masked.KindFields[gk] != nil {
-		for _, f := range c.Masked.KindFields[gk] {
-			maskNestedField(us.Object, c.Masked, f...)
+func transformNestedFields(kf KindFields, transform func(val interface{}) string, gk string, us unstructured.Unstructured) {
+	if kf != nil && kf[gk] != nil {
+		for _, f := range kf[gk] {
+			transformNestedField(us.Object, transform, f...)
 		}
 	}
 }
 
-// maskNestedField masks the nested field from the obj.
-func maskNestedField(obj map[string]interface{}, mask *Masked, fields ...string) {
+// transformNestedField transforms the nested field from the obj.
+func transformNestedField(obj map[string]interface{}, transform func(val interface{}) string, fields ...string) {
 	m := obj
 	for i, field := range fields[:len(fields)-1] {
 		if x, ok := m[field].(map[string]interface{}); ok {
@@ -248,7 +204,7 @@ func maskNestedField(obj map[string]interface{}, mask *Masked, fields ...string)
 			if x, ok := m[field].([]interface{}); ok {
 				for _, y := range x {
 					if yy, ok := y.(map[string]interface{}); ok {
-						maskNestedField(yy, mask, fields[i+1:]...)
+						transformNestedField(yy, transform, fields[i+1:]...)
 					}
 				}
 			}
@@ -258,10 +214,10 @@ func maskNestedField(obj map[string]interface{}, mask *Masked, fields ...string)
 	switch e := m[fields[len(fields)-1]].(type) {
 	case map[string]interface{}:
 		for k := range e {
-			e[k] = mask.doMask(e[k])
+			e[k] = transform(e[k])
 		}
 	case string:
-		m[fields[len(fields)-1]] = mask.doMask(m[fields[len(fields)-1]])
+		m[fields[len(fields)-1]] = transform(m[fields[len(fields)-1]])
 	}
 }
 

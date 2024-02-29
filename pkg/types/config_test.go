@@ -490,6 +490,14 @@ kind: Pod
 		It("should read Masked.KindFields correctly", func() {
 			Ω(cfg.Masked.KindFields).Should(HaveKey("Secret"))
 			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
+			Ω(cfg.Masked.Replacement).Should(Equal("***"))
+			Ω(cfg.Masked.Checksum).Should(Equal("md5"))
+		})
+
+		It("should read Encrypted.KindFields correctly", func() {
+			Ω(cfg.Encrypted.KindFields).Should(HaveKey("Secret"))
+			Ω(cfg.Encrypted.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
+			Ω(cfg.Encrypted.AesKey).Should(Equal("12345678901234567890123456789012"))
 		})
 	})
 })

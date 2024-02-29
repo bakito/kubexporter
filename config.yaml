@@ -8,6 +8,11 @@ asLists: false
 #queryPageSize: 1000
 clearTarget: true
 worker: 5
+encrypted:
+  aesKey: "12345678901234567890123456789012"
+  kindFields:
+    Secret:
+      - [ data ]
 masked:
   replacement: '***'
   checksum: md5
