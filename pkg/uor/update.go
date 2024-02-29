@@ -74,9 +74,8 @@ func updateFile(ctx context.Context, config *types.Config, file string, ac *clie
 	owners := make(map[string]*unstructured.Unstructured)
 	changed := false
 	if len(refs) > 0 {
-		for i := range refs {
-			ref := &refs[i]
-			owner, err := findOwner(ctx, ac, owners, ref, us)
+		for _, ref := range refs {
+			owner, err := findOwner(ctx, ac, owners, &ref, us)
 			if err != nil {
 				errMsg := "<ERROR>"
 				if errors.IsNotFound(err) {
