@@ -489,7 +489,7 @@ kind: Pod
 
 		It("should read Masked.KindFields correctly", func() {
 			Ω(cfg.Masked.KindFields).Should(HaveKey("Secret"))
-			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
+			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"stringData"}}))
 			Ω(cfg.Masked.Replacement).Should(Equal("***"))
 			Ω(cfg.Masked.Checksum).Should(Equal("md5"))
 		})

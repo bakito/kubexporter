@@ -18,7 +18,7 @@ masked:
   checksum: md5
   kindFields:
     Secret:
-      - [ data ]
+      - [ stringData ]
 considerOwnerReferences: true
 excluded:
   kinds:

@@ -8,7 +8,13 @@ tidy:
 # Run tests
 test: tidy lint
 	go test ./...  -coverprofile=coverage.out
-	go tool cover -func=coverage.out
+	@sed -i '/pkg\/mocks/d'              coverage.out
+	@sed -i '/pkg\/export\/archive.go/d' coverage.out
+	@sed -i '/pkg\/export\/export.go/d'  coverage.out
+	@sed -i '/cmd/d'                     coverage.out
+	@sed -i '/uor/d'                     coverage.out
+	@sed -i '/log/d'                     coverage.out
+	go tool cover -func coverage.out
 
 release: semver goreleaser
 	@version=$$($(LOCALBIN)/semver); \
