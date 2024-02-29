@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,7 +16,6 @@ import (
 	"github.com/ghodss/yaml"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
@@ -93,7 +91,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		},
 		SortSlices:  KindFields{},
 		configFlags: configFlags,
-		printFlags:  printFlags,
+		PrintFlags:  printFlags,
 	}
 }
 
@@ -125,7 +123,7 @@ type Config struct {
 	includedSet set
 	log         log.YALI
 	configFlags *genericclioptions.ConfigFlags
-	printFlags  *genericclioptions.PrintFlags
+	PrintFlags  *genericclioptions.PrintFlags `json:"-" yaml:"-"`
 }
 
 // Progress type
@@ -344,7 +342,7 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 		"Name":      name,
 		"Kind":      res.Kind(),
 		"Group":     res.APIGroup,
-		"Extension": *c.printFlags.OutputFormat,
+		"Extension": *c.PrintFlags.OutputFormat,
 	},
 	)
 
@@ -397,15 +395,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// PrintObj print the given object
-func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
-	p, err := c.printFlags.ToPrinter()
-	if err != nil {
-		return err
-	}
-	return p.PrintObj(ro, out)
-}
-
 // Logger get the logger
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
@@ -416,8 +405,8 @@ func (c *Config) Logger() log.YALI {
 
 // OutputFormat get the current output format
 func (c *Config) OutputFormat() string {
-	if c.printFlags != nil && c.printFlags.OutputFormat != nil {
-		return *c.printFlags.OutputFormat
+	if c.PrintFlags != nil && c.PrintFlags.OutputFormat != nil {
+		return *c.PrintFlags.OutputFormat
 	}
 	return ""
 }

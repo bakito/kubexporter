@@ -136,4 +136,6 @@ func init() {
 	klog.InitFlags(fs)
 	_ = fs.Parse([]string{"-logtostderr=false"})
 	klog.SetOutput(io.Discard)
+
+	printFlags.AddFlags(decrypt)
 }

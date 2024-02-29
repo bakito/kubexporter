@@ -1,8 +1,6 @@
 package types_test
 
 import (
-	"bytes"
-	"io"
 	"os"
 
 	"github.com/bakito/kubexporter/pkg/types"
@@ -415,44 +413,6 @@ var _ = Describe("Config", func() {
 			config.SortSlices["group.kind"] = [][]string{{"structSlice"}}
 			config.SortSliceFields(res, us)
 			Ω(us.Object["structSlice"]).Should(Equal([]interface{}{map[string]interface{}{"field": "val1"}, map[string]interface{}{"field": "val2"}}))
-		})
-	})
-
-	Context("PrintObj", func() {
-		var data *unstructured.Unstructured
-		BeforeEach(func() {
-			data = &unstructured.Unstructured{}
-			data.SetUnstructuredContent(map[string]interface{}{
-				"kind": "Pod",
-				"foo":  "bar",
-			})
-		})
-		It("should print the object as yaml", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("yaml")
-			err := config.PrintObj(data, io.Writer(&buf))
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(buf.String()).Should(Equal(`foo: bar
-kind: Pod
-`))
-		})
-		It("should print the object as json", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("json")
-
-			err := config.PrintObj(data, io.Writer(&buf))
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(buf.String()).Should(Equal(`{
-    "foo": "bar",
-    "kind": "Pod"
-}
-`))
-		})
-		It("should fail with unsupported format", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("xyz")
-			err := config.PrintObj(data, io.Writer(&buf))
-			Ω(err).Should(HaveOccurred())
 		})
 	})
 

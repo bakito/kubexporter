@@ -12,6 +12,7 @@ import (
 
 	"github.com/bakito/kubexporter/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
 const prefix = "AES@"
@@ -65,7 +66,7 @@ func (c *Config) EncryptFields(res *GroupResource, us unstructured.Unstructured)
 	transformNestedFields(c.Encrypted.KindFields, c.Encrypted.doEncrypt, res.GroupKind(), us)
 }
 
-func Decrypt(aesKey string, files ...string) error {
+func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...string) error {
 	gcm, err := setupAES(aesKey)
 	if err != nil {
 		return err
@@ -78,6 +79,10 @@ func Decrypt(aesKey string, files ...string) error {
 			return err
 		}
 		if err := decryptFields(us.Object, gcm, nonceSize); err != nil {
+			return err
+		}
+
+		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
 		}
 	}

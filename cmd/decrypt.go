@@ -19,7 +19,6 @@ var (
 		Aliases: []string{"uor"},
 		Short:   "Decrypt secrets in exported resource files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if aesKey == "" {
 				fmt.Println("Please the aes key: ")
 				key, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -29,7 +28,7 @@ var (
 				aesKey = string(key)
 			}
 
-			return types.Decrypt(aesKey, resourceFiles...)
+			return types.Decrypt(printFlags, aesKey, resourceFiles...)
 		},
 	}
 )

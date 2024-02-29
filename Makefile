@@ -6,7 +6,8 @@ tidy:
 	go mod tidy
 
 # Run tests
-test: tidy lint
+test: tidy lint test-ci
+test-ci:
 	go test ./...  -coverprofile=coverage.out
 	@sed -i '/pkg\/mocks/d'              coverage.out
 	@sed -i '/pkg\/export\/archive.go/d' coverage.out

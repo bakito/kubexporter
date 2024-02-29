@@ -35,7 +35,7 @@ jobs:
           go-version-file: "go.mod"
 
       - name: Test
-        run: go test ./...  -coverprofile=coverage.out
+        run: make test-ci
 
       - name: Send coverage
         uses: shogo82148/actions-goveralls@v1

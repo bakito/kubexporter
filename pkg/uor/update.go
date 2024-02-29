@@ -104,7 +104,7 @@ func updateFile(ctx context.Context, config *types.Config, file string, ac *clie
 		}
 		if changed {
 			us.SetOwnerReferences(refs)
-			err := write(config, file, us)
+			err := utils.WriteFile(config.PrintFlags, file, us)
 			if err != nil {
 				return err
 			}
@@ -136,17 +136,4 @@ func findOwner(ctx context.Context, ac *client.ApiClient, owners map[string]*uns
 	}
 	owners[key] = owner
 	return owner, nil
-}
-
-func write(config *types.Config, file string, us *unstructured.Unstructured) error {
-	f, err := os.OpenFile(file, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o666)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	err = config.PrintObj(us, f)
-	if err != nil {
-		return err
-	}
-	return nil
 }
