@@ -2,6 +2,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/bakito/kubexporter)](https://goreportcard.com/report/github.com/bakito/kubexporter)
 [![GitHub Release](https://img.shields.io/github/release/bakito/kubexporter.svg?style=flat)](https://github.com/bakito/kubexporter/releases)
 [![Coverage Status](https://coveralls.io/repos/github/bakito/kubexporter/badge.svg?branch=main)](https://coveralls.io/github/bakito/kubexporter?branch=main)
+
 # KubExporter
 
 ![kubexporter](docs/icons/kubexporter.png)
@@ -17,10 +18,10 @@ Download the latest binary from https://github.com/bakito/kubexporter/releases.
 ### Use as kubectl plugin
 
 Rename the binary to kubectl-exporter.
+
 ```bash
 kubectl exporter ...
 ```
-
 
 ## Usage
 
@@ -71,8 +72,6 @@ Flags:
 
 KubExporter exports by default all resources and allows to exclude unwanted resources.
 The benefit is that new custom resource definitions are automatically considered in the export.
-
-
 
 Example configuration
 
@@ -171,4 +170,21 @@ kubexporter update-owner-references
  FILE                                                                                 OWNER KIND  OWNER NAME                                 UID FROM                              UID TO                               
  cert-manager/cilium.io.CiliumEndpoint.cert-manager-cainjector-7fd8f6bbbf-9nlf2.yaml  Pod         cert-manager-cainjector-7fd8f6bbbf-9nlf2   1d494969-hhhh-4c79-96d4-25d31c66c895  1d494969-db54-4c79-96d4-25d31c66c895 
  cert-manager/cilium.io.CiliumEndpoint.cert-manager-webhook-787cd749dc-7sfvq.yaml     Pod         cert-manager-webhook-787cd749dc-7sfvq-XXX  eeeb48d9-751c-4aa9-9389-6aab845dba1e  <NOT FOUND>      
+```
+
+### Decrypt encrypted values
+
+Exported files with encrypted values can be decrypted with the decrypt command.
+
+The aes key can b provided via arg `--aes-key`, env variable `KUBEXPORTER_AES_KEY`. If not provided the key can be
+entered via password prompt.
+
+1 - n file paths are defined via command arguments.
+
+```shell
+kubexporter decrypt exports/argocd/Secret.argocd-secret.yaml
+
+ FILE                                      NAMESPACE  KIND    NAME           DECRYPTED FIELDS
+ exports/argocd/Secret.argocd-secret.yaml  argocd     Secret  argocd-secret                 5
+
 ```
