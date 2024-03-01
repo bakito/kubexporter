@@ -144,6 +144,13 @@ func (e *exporter) writeIntro() {
 		e.l.Printf("  considering owner references 👑\n")
 	}
 
+	if len(e.config.Masked.KindFields) > 0 {
+		e.l.Printf("  masked fields 🤿 %v\n", e.config.Masked.KindFields)
+	}
+	if len(e.config.Encrypted.KindFields) > 0 {
+		e.l.Printf("  encrypted fields 🔒 %v\n", e.config.Encrypted.KindFields)
+	}
+
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
 	} else if e.config.QueryPageSize != 0 {

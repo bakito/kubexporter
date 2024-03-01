@@ -456,7 +456,7 @@ var _ = Describe("Config", func() {
 
 		It("should read Encrypted.KindFields correctly", func() {
 			Ω(cfg.Encrypted.KindFields).Should(HaveKey("Secret"))
-			Ω(cfg.Encrypted.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
+			Ω(cfg.Encrypted.KindFields["Secret"]).Should(Equal([][]string{{"data"}, {"stringData"}}))
 			Ω(cfg.Encrypted.AesKey).Should(Equal("12345678901234567890123456789012"))
 		})
 	})
@@ -478,6 +478,17 @@ var _ = Describe("Config", func() {
 				Ω(diff).Should(HaveLen(2))
 				Ω(diff["Pod"][0]).Should(Equal([]string{"metadata", "labels"}))
 				Ω(diff["Deployment"][0]).Should(Equal([]string{"metadata", "annotations"}))
+			})
+		})
+		Context("String", func() {
+			It("Should correctly print the kindFields", func() {
+				kf := types.KindFields{
+					"Secret":     [][]string{{"data", "key"}},
+					"Pod":        [][]string{{"metadata", "labels"}},
+					"Deployment": [][]string{{"metadata", "annotations"}},
+				}
+
+				Ω(kf.String()).Should(Equal("Secret: [[data,key]], Pod: [[metadata,labels]], Deployment: [[metadata,annotations]]"))
 			})
 		})
 	})

@@ -13,6 +13,7 @@ encrypted:
   kindFields:
     Secret:
       - [ data ]
+      - [ stringData ]
 masked:
   replacement: '***'
   checksum: md5

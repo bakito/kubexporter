@@ -162,6 +162,22 @@ func (f KindFields) Diff(other KindFields) KindFields {
 	return diff
 }
 
+func (f KindFields) String() string {
+	var kinds []string
+	for k, v := range f {
+		kinds = append(kinds, fmt.Sprintf("%s: [%s]", k, strings.Join(joinAll(v), ", ")))
+	}
+	return strings.Join(kinds, ", ")
+}
+
+func joinAll(in [][]string) []string {
+	var s []string
+	for _, val := range in {
+		s = append(s, fmt.Sprintf("[%s]", strings.Join(val, ",")))
+	}
+	return s
+}
+
 func diffFields(this [][]string, other [][]string) [][]string {
 	removes := make(map[string]bool)
 
