@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 
+	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -80,50 +82,60 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 	}
 	nonceSize := gcm.NonceSize()
 
+	table := render.Table()
+	table.SetHeader([]string{"File", "Namespace", "Kind", "Name", "Decrypted Fields"})
+
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
 		if err != nil {
 			return err
 		}
-		if err := decryptFields(us.Object, gcm, nonceSize); err != nil {
+		if replaced, err := decryptFields(us.Object, gcm, nonceSize); err != nil {
 			return err
+		} else {
+			table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
 		}
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
 		}
 	}
+
+	table.Render()
 	return nil
 }
 
 // transformNestedField transforms the nested field from the obj.
-func decryptFields(obj map[string]interface{}, gcm cipher.AEAD, nonceSize int) error {
-	m := obj
-	for key, value := range m {
+func decryptFields(obj map[string]interface{}, gcm cipher.AEAD, nonceSize int) (int, error) {
+	var replaced int
+	for key, value := range obj {
 		switch e := value.(type) {
 		case map[string]interface{}:
-			if err := decryptFields(e, gcm, nonceSize); err != nil {
-				return err
+			if cnt, err := decryptFields(e, gcm, nonceSize); err != nil {
+				return 0, err
+			} else {
+				replaced += cnt
 			}
 		case string:
 			if strings.HasPrefix(e, prefix) {
 
 				ciphertext, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(e, prefix))
 				if err != nil {
-					return err
+					return 0, err
 				}
 
 				if len(ciphertext) < nonceSize {
-					return errors.New("invalid text size")
+					return 0, errors.New("invalid text size")
 				}
 				nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 				plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 				if err != nil {
-					return err
+					return 0, err
 				}
-				m[key] = string(plaintext)
+				obj[key] = string(plaintext)
+				replaced++
 			}
 		}
 	}
-	return nil
+	return replaced, nil
 }

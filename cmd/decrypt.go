@@ -19,7 +19,6 @@ var (
 		Aliases: []string{"uor"},
 		Short:   "Decrypt secrets in exported resource files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			if k, ok := os.LookupEnv(types.EnvAesKey); ok {
 				aesKey = k
 			}
