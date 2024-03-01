@@ -2,12 +2,8 @@ package types
 
 import (
 	"bytes"
-	"crypto/md5"  // #nosec G501 we are ok with md5
-	"crypto/sha1" // #nosec G505 we are ok with sha1
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -20,7 +16,6 @@ import (
 	"github.com/ghodss/yaml"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
@@ -86,6 +81,9 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		Masked: &Masked{
 			KindFields: KindFields{},
 		},
+		Encrypted: &Encrypted{
+			KindFields: KindFields{},
+		},
 		Excluded: Excluded{
 			Fields:       DefaultExcludedFields,
 			KindFields:   KindFields{},
@@ -93,7 +91,7 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 		},
 		SortSlices:  KindFields{},
 		configFlags: configFlags,
-		printFlags:  printFlags,
+		PrintFlags:  printFlags,
 	}
 }
 
@@ -103,6 +101,7 @@ type Config struct {
 	Included                Included   `json:"included" yaml:"included"`
 	ConsiderOwnerReferences bool       `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
 	Masked                  *Masked    `json:"masked" yaml:"masked"`
+	Encrypted               *Encrypted `json:"encrypted" yaml:"masked"`
 	SortSlices              KindFields `json:"sortSlices" yaml:"sortSlices"`
 	FileNameTemplate        string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
 	ListFileNameTemplate    string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
@@ -124,7 +123,7 @@ type Config struct {
 	includedSet set
 	log         log.YALI
 	configFlags *genericclioptions.ConfigFlags
-	printFlags  *genericclioptions.PrintFlags
+	PrintFlags  *genericclioptions.PrintFlags `json:"-" yaml:"-"`
 }
 
 // Progress type
@@ -138,51 +137,70 @@ type Excluded struct {
 	KindsByField map[string][]FieldValue `json:"kindByField" yaml:"kindByField"`
 }
 
-// Masked masking params
-type Masked struct {
-	Replacement string `json:"replacement" yaml:"replacement"`
-	Checksum    string `json:"checksum" yaml:"checksum"`
-	doSum       func(string) string
-	KindFields  KindFields `json:"kindFields" yaml:"kindFields"`
-}
-
-func (m *Masked) Setup() error {
-	if m.Checksum != "" {
-		switch m.Checksum {
-		case "md5":
-			m.doSum = func(s string) string {
-				// #nosec G401 we are ok with md5
-				return fmt.Sprintf("%x", md5.Sum([]byte(s)))
-			}
-		case "sha1":
-			m.doSum = func(s string) string {
-				// #nosec G401 we are ok with sha1
-				return fmt.Sprintf("%x", sha1.Sum([]byte(s)))
-			}
-		case "sha256":
-			m.doSum = func(s string) string {
-				return fmt.Sprintf("%x", sha256.Sum224([]byte(s)))
-			}
-		default:
-			return fmt.Errorf("invalid checksum %q supported are: [md5/sha1/sha256]", m.Checksum)
-		}
-	}
-	if m.Replacement == "" {
-		m.Replacement = DefaultMaskReplacement
-	}
-	return nil
-}
-
-func (m *Masked) doMask(val interface{}) string {
-	if m.doSum != nil {
-		s := fmt.Sprintf("%v", val)
-		return m.doSum(s)
-	}
-	return m.Replacement
-}
-
 // KindFields map kinds to fields
 type KindFields map[string][][]string
+
+// Diff returns new KindFields with values that are only in the provided argument and not in this
+func (f KindFields) Diff(other KindFields) KindFields {
+	diff := KindFields{}
+	for thisKind, thisFields := range f {
+		if otherFields, ok := other[thisKind]; ok {
+			df := diffFields(thisFields, otherFields)
+			if len(df) > 0 {
+				diff[thisKind] = df
+			}
+			delete(other, thisKind)
+		}
+	}
+
+	for kind, fields := range other {
+		if len(fields) > 0 {
+			diff[kind] = fields
+		}
+	}
+
+	return diff
+}
+
+func (f KindFields) String() string {
+	var kinds []string
+	for k, v := range f {
+		kinds = append(kinds, fmt.Sprintf("%s: [%s]", k, strings.Join(joinAll(v), ", ")))
+	}
+	return strings.Join(kinds, ", ")
+}
+
+func joinAll(in [][]string) []string {
+	var s []string
+	for _, val := range in {
+		s = append(s, fmt.Sprintf("[%s]", strings.Join(val, ",")))
+	}
+	return s
+}
+
+func diffFields(this [][]string, other [][]string) [][]string {
+	removes := make(map[string]bool)
+
+	for _, f := range this {
+		fs := strings.Join(f, ";")
+		for _, o := range other {
+			os := strings.Join(o, ";")
+			if strings.HasPrefix(os, fs) {
+				removes[os] = true
+			}
+		}
+	}
+
+	var diff [][]string
+	for _, o := range other {
+		os := strings.Join(o, ";")
+		if _, ok := removes[os]; !ok {
+			diff = append(diff, o)
+		}
+	}
+
+	return diff
+}
 
 // Included inclusion params
 type Included struct {
@@ -228,18 +246,16 @@ func removeNestedField(obj map[string]interface{}, fields ...string) {
 	delete(m, fields[len(fields)-1])
 }
 
-// MaskFields mask fields for a given resource
-func (c *Config) MaskFields(res *GroupResource, us unstructured.Unstructured) {
-	gk := res.GroupKind()
-	if c.Masked.KindFields != nil && c.Masked.KindFields[gk] != nil {
-		for _, f := range c.Masked.KindFields[gk] {
-			maskNestedField(us.Object, c.Masked, f...)
+func transformNestedFields(kf KindFields, transform func(val interface{}) string, gk string, us unstructured.Unstructured) {
+	if kf != nil && kf[gk] != nil {
+		for _, f := range kf[gk] {
+			transformNestedField(us.Object, transform, f...)
 		}
 	}
 }
 
-// maskNestedField masks the nested field from the obj.
-func maskNestedField(obj map[string]interface{}, mask *Masked, fields ...string) {
+// transformNestedField transforms the nested field from the obj.
+func transformNestedField(obj map[string]interface{}, transform func(val interface{}) string, fields ...string) {
 	m := obj
 	for i, field := range fields[:len(fields)-1] {
 		if x, ok := m[field].(map[string]interface{}); ok {
@@ -248,7 +264,7 @@ func maskNestedField(obj map[string]interface{}, mask *Masked, fields ...string)
 			if x, ok := m[field].([]interface{}); ok {
 				for _, y := range x {
 					if yy, ok := y.(map[string]interface{}); ok {
-						maskNestedField(yy, mask, fields[i+1:]...)
+						transformNestedField(yy, transform, fields[i+1:]...)
 					}
 				}
 			}
@@ -258,10 +274,10 @@ func maskNestedField(obj map[string]interface{}, mask *Masked, fields ...string)
 	switch e := m[fields[len(fields)-1]].(type) {
 	case map[string]interface{}:
 		for k := range e {
-			e[k] = mask.doMask(e[k])
+			e[k] = transform(e[k])
 		}
 	case string:
-		m[fields[len(fields)-1]] = mask.doMask(m[fields[len(fields)-1]])
+		m[fields[len(fields)-1]] = transform(m[fields[len(fields)-1]])
 	}
 }
 
@@ -388,7 +404,7 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 		"Name":      name,
 		"Kind":      res.Kind(),
 		"Group":     res.APIGroup,
-		"Extension": *c.printFlags.OutputFormat,
+		"Extension": *c.PrintFlags.OutputFormat,
 	},
 	)
 
@@ -441,15 +457,6 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// PrintObj print the given object
-func (c *Config) PrintObj(ro runtime.Object, out io.Writer) error {
-	p, err := c.printFlags.ToPrinter()
-	if err != nil {
-		return err
-	}
-	return p.PrintObj(ro, out)
-}
-
 // Logger get the logger
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
@@ -460,8 +467,8 @@ func (c *Config) Logger() log.YALI {
 
 // OutputFormat get the current output format
 func (c *Config) OutputFormat() string {
-	if c.printFlags != nil && c.printFlags.OutputFormat != nil {
-		return *c.printFlags.OutputFormat
+	if c.PrintFlags != nil && c.PrintFlags.OutputFormat != nil {
+		return *c.PrintFlags.OutputFormat
 	}
 	return ""
 }

@@ -1,8 +1,6 @@
 package types_test
 
 import (
-	"bytes"
-	"io"
 	"os"
 
 	"github.com/bakito/kubexporter/pkg/types"
@@ -418,44 +416,6 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Context("PrintObj", func() {
-		var data *unstructured.Unstructured
-		BeforeEach(func() {
-			data = &unstructured.Unstructured{}
-			data.SetUnstructuredContent(map[string]interface{}{
-				"kind": "Pod",
-				"foo":  "bar",
-			})
-		})
-		It("should print the object as yaml", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("yaml")
-			err := config.PrintObj(data, io.Writer(&buf))
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(buf.String()).Should(Equal(`foo: bar
-kind: Pod
-`))
-		})
-		It("should print the object as json", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("json")
-
-			err := config.PrintObj(data, io.Writer(&buf))
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(buf.String()).Should(Equal(`{
-    "foo": "bar",
-    "kind": "Pod"
-}
-`))
-		})
-		It("should fail with unsupported format", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("xyz")
-			err := config.PrintObj(data, io.Writer(&buf))
-			Ω(err).Should(HaveOccurred())
-		})
-	})
-
 	Context("read-config", func() {
 		var cfg *types.Config
 		BeforeEach(func() {
@@ -489,7 +449,47 @@ kind: Pod
 
 		It("should read Masked.KindFields correctly", func() {
 			Ω(cfg.Masked.KindFields).Should(HaveKey("Secret"))
-			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"data"}}))
+			Ω(cfg.Masked.KindFields["Secret"]).Should(Equal([][]string{{"stringData"}}))
+			Ω(cfg.Masked.Replacement).Should(Equal("***"))
+			Ω(cfg.Masked.Checksum).Should(Equal("md5"))
+		})
+
+		It("should read Encrypted.KindFields correctly", func() {
+			Ω(cfg.Encrypted.KindFields).Should(HaveKey("Secret"))
+			Ω(cfg.Encrypted.KindFields["Secret"]).Should(Equal([][]string{{"data"}, {"stringData"}}))
+			Ω(cfg.Encrypted.AesKey).Should(Equal("12345678901234567890123456789012"))
+		})
+	})
+
+	Context("KindFields", func() {
+		Context("Diff", func() {
+			It("The diff should not contain fields covered by the source", func() {
+				source := types.KindFields{
+					"Secret": [][]string{{"data"}},
+					"Pod":    [][]string{{"metadata", "labels", "foo"}},
+				}
+				other := types.KindFields{
+					"Secret":     [][]string{{"data", "key"}},
+					"Pod":        [][]string{{"metadata", "labels"}},
+					"Deployment": [][]string{{"metadata", "annotations"}},
+				}
+
+				diff := source.Diff(other)
+				Ω(diff).Should(HaveLen(2))
+				Ω(diff["Pod"][0]).Should(Equal([]string{"metadata", "labels"}))
+				Ω(diff["Deployment"][0]).Should(Equal([]string{"metadata", "annotations"}))
+			})
+		})
+		Context("String", func() {
+			It("Should correctly print the kindFields", func() {
+				kf := types.KindFields{
+					"Secret":     [][]string{{"data", "key"}},
+					"Pod":        [][]string{{"metadata", "labels"}},
+					"Deployment": [][]string{{"metadata", "annotations"}},
+				}
+
+				Ω(kf.String()).Should(Equal("Secret: [[data,key]], Pod: [[metadata,labels]], Deployment: [[metadata,annotations]]"))
+			})
 		})
 	})
 })

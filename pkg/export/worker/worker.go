@@ -13,6 +13,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/pkg/utils"
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -250,6 +251,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		if !w.config.IsInstanceExcluded(res, u) {
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
+			w.config.EncryptFields(res, u)
 			w.config.SortSliceFields(res, u)
 
 			if _, ok := perNs[u.GetNamespace()]; !ok {
@@ -279,7 +281,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 			continue
 		}
 
-		err = w.config.PrintObj(usl, f)
+		err = utils.PrintObj(w.config.PrintFlags, usl, f)
 		if err != nil {
 			res.Error = err.Error()
 			continue
@@ -306,6 +308,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			w.stats.addNamespace(u.GetNamespace())
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
+			w.config.EncryptFields(res, u)
 			w.config.SortSliceFields(res, u)
 			us := &u
 
@@ -329,7 +332,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 				continue
 			}
 
-			err = w.config.PrintObj(us, f)
+			err = utils.PrintObj(w.config.PrintFlags, us, f)
 			if err != nil {
 				res.Error = err.Error()
 				continue

@@ -93,6 +93,12 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		return nil, err
 	}
 
+	if err := config.Encrypted.Setup(); err != nil {
+		return nil, err
+	}
+
+	config.Encrypted.KindFields = config.Masked.KindFields.Diff(config.Encrypted.KindFields)
+
 	return config, nil
 }
 
@@ -132,4 +138,6 @@ func init() {
 	klog.InitFlags(fs)
 	_ = fs.Parse([]string{"-logtostderr=false"})
 	klog.SetOutput(io.Discard)
+
+	printFlags.AddFlags(decrypt)
 }
