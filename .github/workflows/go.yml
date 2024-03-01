@@ -59,4 +59,4 @@ jobs:
         uses: goreleaser/goreleaser-action@v5
         with:
           version: latest
-          args: --skip-publish --snapshot --clean
+          args: --skip=publish --snapshot --clean
