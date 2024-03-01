@@ -35,7 +35,6 @@ func (e *Encrypted) Setup() (err error) {
 		e.AesKey = k
 	}
 	if e.AesKey != "" {
-
 		e.gcm, err = setupAES(e.AesKey)
 		if err != nil {
 			return err
