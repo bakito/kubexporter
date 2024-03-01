@@ -142,10 +142,19 @@ masked:
   replacement: '***'
   # generate a checksum from the value to be masked value instead of the replacement. (supported 'md5', 'sha1', 'sha256')  
   checksum: ''
-  # kind specific excluded fields with a replacement
+  # kind specific fields that should be masked
   kindFields:
     Secret:
       - [ data ]
+# encrypt certain fields 
+#encrypted:
+#  # the aes key to use to encrypt the field values. The key can also be provided via env variable 'KUBEXPORTER_AES_KEY'
+#  aesKey: '***'
+#  # kind specific fields that should be encrypted. NOTE: if the same fields or a parent branch is also masked, masking wins over encryption.
+#  kindFields:
+#    Secret:
+#      - [ data ]
+
 # sort the slice field value before exporting
 sortSlices:
   User:

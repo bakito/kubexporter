@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	prefix    = "AES@"
+	prefix    = "KUBEXPORTER_AES@"
 	EnvAesKey = "KUBEXPORTER_AES_KEY"
 )
 
