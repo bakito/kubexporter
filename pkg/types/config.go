@@ -140,6 +140,52 @@ type Excluded struct {
 // KindFields map kinds to fields
 type KindFields map[string][][]string
 
+// Diff returns new KindFields with values that are only in the provided argument and not in this
+func (f KindFields) Diff(other KindFields) KindFields {
+	diff := KindFields{}
+	for thisKind, thisFields := range f {
+		if otherFields, ok := other[thisKind]; ok {
+			df := diffFields(thisFields, otherFields)
+			if len(df) > 0 {
+				diff[thisKind] = df
+			}
+			delete(other, thisKind)
+		}
+	}
+
+	for kind, fields := range other {
+		if len(fields) > 0 {
+			diff[kind] = fields
+		}
+	}
+
+	return diff
+}
+
+func diffFields(this [][]string, other [][]string) [][]string {
+	removes := make(map[string]bool)
+
+	for _, f := range this {
+		fs := strings.Join(f, ";")
+		for _, o := range other {
+			os := strings.Join(o, ";")
+			if strings.HasPrefix(os, fs) {
+				removes[os] = true
+			}
+		}
+	}
+
+	var diff [][]string
+	for _, o := range other {
+		os := strings.Join(o, ";")
+		if _, ok := removes[os]; !ok {
+			diff = append(diff, o)
+		}
+	}
+
+	return diff
+}
+
 // Included inclusion params
 type Included struct {
 	Kinds []string `json:"kinds" yaml:"kinds"`

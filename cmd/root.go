@@ -97,6 +97,8 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		return nil, err
 	}
 
+	config.Encrypted.KindFields = config.Masked.KindFields.Diff(config.Encrypted.KindFields)
+
 	return config, nil
 }
 

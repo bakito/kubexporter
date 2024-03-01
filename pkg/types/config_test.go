@@ -460,4 +460,25 @@ var _ = Describe("Config", func() {
 			Ω(cfg.Encrypted.AesKey).Should(Equal("12345678901234567890123456789012"))
 		})
 	})
+
+	Context("KindFields", func() {
+		Context("Diff", func() {
+			It("The diff should not contain fields covered by the source", func() {
+				source := types.KindFields{
+					"Secret": [][]string{{"data"}},
+					"Pod":    [][]string{{"metadata", "labels", "foo"}},
+				}
+				other := types.KindFields{
+					"Secret":     [][]string{{"data", "key"}},
+					"Pod":        [][]string{{"metadata", "labels"}},
+					"Deployment": [][]string{{"metadata", "annotations"}},
+				}
+
+				diff := source.Diff(other)
+				Ω(diff).Should(HaveLen(2))
+				Ω(diff["Pod"][0]).Should(Equal([]string{"metadata", "labels"}))
+				Ω(diff["Deployment"][0]).Should(Equal([]string{"metadata", "annotations"}))
+			})
+		})
+	})
 })
