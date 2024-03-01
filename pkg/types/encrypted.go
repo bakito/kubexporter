@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/bakito/kubexporter/pkg/utils"
@@ -15,7 +16,10 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 )
 
-const prefix = "AES@"
+const (
+	prefix    = "AES@"
+	EnvAesKey = "KUBEXPORTER_AES_KEY"
+)
 
 type Encrypted struct {
 	AesKey     string     `json:"aesKey" yaml:"aesKey"`
@@ -25,6 +29,9 @@ type Encrypted struct {
 }
 
 func (e *Encrypted) Setup() (err error) {
+	if k, ok := os.LookupEnv(EnvAesKey); ok {
+		e.AesKey = k
+	}
 	if e.AesKey != "" {
 		e.gcm, err = setupAES(e.AesKey)
 		if err != nil {
