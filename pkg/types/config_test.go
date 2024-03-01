@@ -488,7 +488,7 @@ var _ = Describe("Config", func() {
 					"Deployment": [][]string{{"metadata", "annotations"}},
 				}
 
-				Ω(kf.String()).Should(Equal("Secret: [[data,key]], Pod: [[metadata,labels]], Deployment: [[metadata,annotations]]"))
+				Ω(kf.String()).Should(Equal("Deployment: [[metadata,annotations]], Pod: [[metadata,labels]], Secret: [[data,key]]"))
 			})
 		})
 	})

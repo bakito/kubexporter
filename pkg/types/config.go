@@ -167,6 +167,7 @@ func (f KindFields) String() string {
 	for k, v := range f {
 		kinds = append(kinds, fmt.Sprintf("%s: [%s]", k, strings.Join(joinAll(v), ", ")))
 	}
+	sort.Strings(kinds)
 	return strings.Join(kinds, ", ")
 }
 
