@@ -35,20 +35,35 @@ func (e *Encrypted) Setup() (err error) {
 		e.AesKey = k
 	}
 	if e.AesKey != "" {
+
 		e.gcm, err = setupAES(e.AesKey)
 		if err != nil {
 			return err
 		}
+
 		e.nonce = make([]byte, e.gcm.NonceSize())
 
 		if _, err = io.ReadFull(rand.Reader, e.nonce); err != nil {
 			return err
 		}
+	} else if len(e.KindFields) > 0 {
+		return fmt.Errorf("encrypted mode needs a valid aesKey."+
+			" please remove the 'encrypted config' or provide the 'aesKey' in the config of via env variable %q",
+			EnvAesKey,
+		)
 	}
 	return nil
 }
 
 func setupAES(key string) (cipher.AEAD, error) {
+	k := len(key)
+	switch k {
+	default:
+		return nil, fmt.Errorf("invalid key size %d: aesKey must be 16, 24 or 32 chars long", k)
+	case 16, 24, 32:
+		break
+	}
+
 	c, err := aes.NewCipher([]byte(key))
 	if err != nil {
 		return nil, err
