@@ -253,7 +253,7 @@ func (e *exporter) printStats() {
 	if e.archive != "" {
 		e.l.Checkf("🗜\tArchive %s\n", e.archive)
 		if len(e.deletedArchives) > 0 {
-			e.l.Checkf("🚮 Deleted old Archives %d\n", len(e.deletedArchives) > 0)
+			e.l.Checkf("🚮 Deleted old Archives %d\n", len(e.deletedArchives))
 		}
 	}
 	e.l.Checkf("📜\tKinds %d\n", e.stats.Kinds)
