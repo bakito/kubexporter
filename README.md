@@ -188,3 +188,8 @@ kubexporter decrypt exports/argocd/Secret.argocd-secret.yaml
  exports/argocd/Secret.argocd-secret.yaml  argocd     Secret  argocd-secret                 5
 
 ```
+#### Decrypt multiple files
+
+```shell
+kubexporter decrypt $(ls exports/argocd/Secret*)
+```
