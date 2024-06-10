@@ -20,7 +20,7 @@ jobs:
         uses: golangci/golangci-lint-action@v6
         with:
           version: latest
-          skip-pkg-cache: true
+          skip-cache: true
   test:
     name: test
     runs-on: ubuntu-latest
