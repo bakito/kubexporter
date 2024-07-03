@@ -169,6 +169,9 @@ func (e *exporter) writeIntro() {
 		if e.config.ArchiveRetentionDays > 0 {
 			e.l.Printf("  delete archives older than %d days 🚮\n", e.config.ArchiveRetentionDays)
 		}
+		if e.config.S3Config != nil {
+			e.l.Printf("  upload to S3 🪣 %s/%s\n", e.config.S3Config.Endpoint, e.config.S3Config.Bucket)
+		}
 	}
 	e.config.Logger().Printf("\nExporting ...\n")
 }

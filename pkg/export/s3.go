@@ -23,17 +23,18 @@ func (e *exporter) uploadS3(ctx context.Context) error {
 		return err
 	}
 
-	deleteOlderThan := e.config.MaxArchiveAge()
-
-	objectCh := minioClient.ListObjects(ctx, cfg.Bucket, minio.ListObjectsOptions{Prefix: e.config.Target})
-	for object := range objectCh {
-		if object.Err == nil {
-			if object.LastModified.Before(deleteOlderThan) {
-				err = minioClient.RemoveObject(ctx, cfg.Bucket, object.Key, minio.RemoveObjectOptions{})
-				if err != nil {
-					return err
+	if e.config.ArchiveRetentionDays > 0 {
+		deleteOlderThan := e.config.MaxArchiveAge()
+		objectCh := minioClient.ListObjects(ctx, cfg.Bucket, minio.ListObjectsOptions{Prefix: e.config.Target})
+		for object := range objectCh {
+			if object.Err == nil {
+				if object.LastModified.Before(deleteOlderThan) {
+					err = minioClient.RemoveObject(ctx, cfg.Bucket, object.Key, minio.RemoveObjectOptions{})
+					if err != nil {
+						return err
+					}
+					e.deletedArchives = append(e.deletedArchives, "s3:"+object.Key)
 				}
-				e.deletedArchives = append(e.deletedArchives, "s3:"+object.Key)
 			}
 		}
 	}
