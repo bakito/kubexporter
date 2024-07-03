@@ -24,13 +24,25 @@ func (e *exporter) uploadS3() error {
 
 	ctx := context.Background()
 
-	_, err = minioClient.FPutObject(ctx, cfg.Bucket, filepath.Base(e.archive), e.archive, minio.PutObjectOptions{
-		ContentType: "application/x-gtar",
-	})
+	_, err = minioClient.FPutObject(ctx, cfg.Bucket, filepath.Base(e.archive), e.archive, minio.PutObjectOptions{ContentType: "application/x-gtar"})
 	if err != nil {
 		return err
 	}
 
+	deleteOlderThan := time.Now().AddDate(0, 0, -e.config.ArchiveRetentionDays)
+
+	objectCh := minioClient.ListObjects(ctx, cfg.Bucket, minio.ListObjectsOptions{Prefix: e.config.Target})
+	for object := range objectCh {
+		if object.Err == nil {
+			if object.LastModified.Before(deleteOlderThan) {
+				err = minioClient.RemoveObject(ctx, cfg.Bucket, object.Key, minio.RemoveObjectOptions{})
+				if err != nil {
+					return err
+				}
+				e.deletedArchives = append(e.deletedArchives, "s3:"+object.Key)
+			}
+		}
+	}
 	return nil
 }
 
