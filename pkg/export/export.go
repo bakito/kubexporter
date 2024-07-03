@@ -115,6 +115,13 @@ func (e *exporter) Export() error {
 				return err
 			}
 		}
+
+		if e.config.S3Config != nil {
+			err = e.uploadS3()
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }

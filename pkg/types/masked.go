@@ -1,7 +1,7 @@
 package types
 
 import (
-	"crypto/md5"  // #nosec G501 we are ok with md5
+	"crypto/md5" // #nosec G501 we are ok with md5
 	"crypto/sha1" // #nosec G505 we are ok with sha1
 	"crypto/sha256"
 	"fmt"
