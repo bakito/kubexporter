@@ -20,3 +20,4 @@ dist
 kubexporter
 gomock_*
 bin
+.config.yaml

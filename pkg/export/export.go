@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"os"
 	"sort"
 	"strconv"
@@ -36,10 +37,10 @@ func NewExporter(config *types.Config) (Exporter, error) {
 
 // Exporter interface
 type Exporter interface {
-	Export() error
+	Export(context.Context) error
 }
 
-func (e *exporter) Export() error {
+func (e *exporter) Export(ctx context.Context) error {
 	e.start = time.Now()
 
 	defer e.printStats()
@@ -89,7 +90,7 @@ func (e *exporter) Export() error {
 		workers = append(workers, worker.New(i, e.config, e.ac, prog, mainBar))
 	}
 
-	s, err := worker.RunExport(workers, resources)
+	s, err := worker.RunExport(ctx, workers, resources)
 	if err != nil {
 		return err
 	}
@@ -117,7 +118,7 @@ func (e *exporter) Export() error {
 		}
 
 		if e.config.S3Config != nil {
-			err = e.uploadS3()
+			err = e.uploadS3(ctx)
 			if err != nil {
 				return err
 			}

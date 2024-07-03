@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -38,7 +39,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		return ex.Export()
+		return ex.Export(context.TODO())
 	},
 }
 
