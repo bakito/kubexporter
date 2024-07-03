@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/Masterminds/sprig"
 	"github.com/bakito/kubexporter/pkg/log"
@@ -125,6 +126,10 @@ type Config struct {
 	log         log.YALI
 	configFlags *genericclioptions.ConfigFlags
 	PrintFlags  *genericclioptions.PrintFlags `json:"-" yaml:"-"`
+}
+
+func (c *Config) MaxArchiveAge() time.Time {
+	return time.Now().AddDate(0, 0, -c.ArchiveRetentionDays)
 }
 
 type S3Config struct {

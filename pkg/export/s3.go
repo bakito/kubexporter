@@ -29,7 +29,7 @@ func (e *exporter) uploadS3() error {
 		return err
 	}
 
-	deleteOlderThan := time.Now().AddDate(0, 0, -e.config.ArchiveRetentionDays)
+	deleteOlderThan := e.config.MaxArchiveAge()
 
 	objectCh := minioClient.ListObjects(ctx, cfg.Bucket, minio.ListObjectsOptions{Prefix: e.config.Target})
 	for object := range objectCh {
