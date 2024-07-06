@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"sync"
 
 	"github.com/bakito/kubexporter/pkg/types"
@@ -8,7 +9,7 @@ import (
 )
 
 // RunExport run the export wit the given workers
-func RunExport(workers []Worker, resources []*types.GroupResource) (*Stats, error) {
+func RunExport(ctx context.Context, workers []Worker, resources []*types.GroupResource) (*Stats, error) {
 	var wg sync.WaitGroup
 
 	poolSize := len(resources)
@@ -18,7 +19,7 @@ func RunExport(workers []Worker, resources []*types.GroupResource) (*Stats, erro
 	out := make(chan *types.GroupResource, poolSize)
 
 	for _, w := range workers {
-		if err := pool.AddWorker(w.GenerateWork(&wg, out)); err != nil {
+		if err := pool.AddWorker(w.GenerateWork(ctx, &wg, out)); err != nil {
 			return nil, err
 		}
 	}

@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"os"
 	"sort"
 	"strconv"
@@ -36,10 +37,10 @@ func NewExporter(config *types.Config) (Exporter, error) {
 
 // Exporter interface
 type Exporter interface {
-	Export() error
+	Export(context.Context) error
 }
 
-func (e *exporter) Export() error {
+func (e *exporter) Export(ctx context.Context) error {
 	e.start = time.Now()
 
 	defer e.printStats()
@@ -89,7 +90,7 @@ func (e *exporter) Export() error {
 		workers = append(workers, worker.New(i, e.config, e.ac, prog, mainBar))
 	}
 
-	s, err := worker.RunExport(workers, resources)
+	s, err := worker.RunExport(ctx, workers, resources)
 	if err != nil {
 		return err
 	}
@@ -111,6 +112,13 @@ func (e *exporter) Export() error {
 
 		if e.config.ArchiveRetentionDays > 0 {
 			err = e.pruneArchives()
+			if err != nil {
+				return err
+			}
+		}
+
+		if e.config.S3Config != nil {
+			err = e.uploadS3(ctx)
 			if err != nil {
 				return err
 			}
@@ -160,6 +168,9 @@ func (e *exporter) writeIntro() {
 		e.l.Printf("  compress as archive ️🗜\n")
 		if e.config.ArchiveRetentionDays > 0 {
 			e.l.Printf("  delete archives older than %d days 🚮\n", e.config.ArchiveRetentionDays)
+		}
+		if e.config.S3Config != nil {
+			e.l.Printf("  upload to S3 🪣 %s/%s\n", e.config.S3Config.Endpoint, e.config.S3Config.Bucket)
 		}
 	}
 	e.config.Logger().Printf("\nExporting ...\n")

@@ -26,7 +26,7 @@ import (
 
 // Worker interface
 type Worker interface {
-	GenerateWork(s *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource)
+	GenerateWork(ctx context.Context, s *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource)
 	Stop() Stats
 }
 
@@ -168,12 +168,11 @@ func (w *worker) postDecorator() decor.Decorator {
 }
 
 // GenerateWork generate the work function
-func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
+func (w *worker) GenerateWork(ctx context.Context, wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
 	return func(res *types.GroupResource) {
 		defer wg.Done()
 		w.stats.Kinds++
 		w.queryFinished = false
-		ctx := context.TODO()
 		w.currentKind = res.GroupKind()
 		w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
 
