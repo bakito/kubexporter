@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"github.com/vbauerster/mpb/v8"
 	"io"
 	"os"
 	"path/filepath"
@@ -14,8 +15,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
-	"github.com/vbauerster/mpb/v5"
-	"github.com/vbauerster/mpb/v5/decor"
+	"github.com/vbauerster/mpb/v8/decor"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -151,7 +151,8 @@ func (w *worker) preDecorator() decor.Decorator {
 		if !w.queryFinished {
 			return fmt.Sprintf("🔍 %2d: %s%s", w.id, w.currentKind, page)
 		}
-		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, w.elapsedDecorator.Decor(s))
+		d, _ := w.elapsedDecorator.Decor(s)
+		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, d)
 	})
 }
 
@@ -160,10 +161,10 @@ func (w *worker) postDecorator() decor.Decorator {
 		if s.Completed {
 			return log.Check
 		}
-		return fmt.Sprintf("%s / %s %s",
-			decor.CurrentNoUnit("").Decor(s),
-			decor.TotalNoUnit("").Decor(s),
-			decor.Percentage().Decor(s))
+		d1, _ := decor.CurrentNoUnit("").Decor(s)
+		d2, _ := decor.TotalNoUnit("").Decor(s)
+		d3, _ := decor.Percentage().Decor(s)
+		return fmt.Sprintf("%s / %s %s", d1, d2, d3)
 	})
 }
 
