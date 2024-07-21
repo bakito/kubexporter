@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"github.com/vbauerster/mpb/v8"
 	"io"
 	"os"
 	"path/filepath"
@@ -15,7 +14,8 @@ import (
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
-	"github.com/vbauerster/mpb/v8/decor"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -130,7 +130,7 @@ func (w *worker) list(ctx context.Context, group, version, kind string, continue
 	}
 	opts := metav1.ListOptions{Continue: continueValue}
 	if !w.config.AsLists {
-		// for lists we do no pagination
+		// for lists, we do no pagination
 		opts.Limit = int64(w.config.QueryPageSize)
 	}
 	return dr.List(ctx, opts)
@@ -151,8 +151,7 @@ func (w *worker) preDecorator() decor.Decorator {
 		if !w.queryFinished {
 			return fmt.Sprintf("🔍 %2d: %s%s", w.id, w.currentKind, page)
 		}
-		d, _ := w.elapsedDecorator.Decor(s)
-		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, d)
+		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, w.elapsedDecorator.Decor(s))
 	})
 }
 
@@ -161,10 +160,10 @@ func (w *worker) postDecorator() decor.Decorator {
 		if s.Completed {
 			return log.Check
 		}
-		d1, _ := decor.CurrentNoUnit("").Decor(s)
-		d2, _ := decor.TotalNoUnit("").Decor(s)
-		d3, _ := decor.Percentage().Decor(s)
-		return fmt.Sprintf("%s / %s %s", d1, d2, d3)
+		return fmt.Sprintf("%s / %s %s",
+			decor.CurrentNoUnit("").Decor(s),
+			decor.TotalNoUnit("").Decor(s),
+			decor.Percentage().Decor(s))
 	})
 }
 
@@ -223,6 +222,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 		}
 	} else {
 		if w.recBar != nil {
+			w.recBar.SetCurrent(0)
 			w.recBar.SetTotal(int64(len(ul.Items)), false)
 		}
 		if w.config.AsLists {
