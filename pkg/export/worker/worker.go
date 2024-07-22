@@ -160,9 +160,6 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
 	w.currentPage = res.Pages + 1
 
-	if res.APIResource.Kind == "TeamMembership" {
-		println()
-	}
 	start := time.Now()
 	if w.prog != nil {
 		opts := []mpb.BarOption{
@@ -171,18 +168,17 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 		}
 		if w.recBar != nil {
 			opts = append(opts, mpb.BarQueueAfter(w.recBar))
-			w.recBar.SetTotal(100, true)
+			w.recBar.SetTotal(w.recBar.Current(), true)
 		}
 		w.recBar = w.prog.AddBar(1, opts...)
 	}
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
-
-	res.QueryDuration += time.Since(start)
-	w.queryFinished = true
-
 	if w.recBar != nil {
 		w.recBar.IncrBy(1)
+		w.recBar.SetTotal(100, true)
 	}
+	res.QueryDuration += time.Since(start)
+	w.queryFinished = true
 
 	start = time.Now()
 
@@ -198,7 +194,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 	} else {
 		if w.prog != nil {
 			l := len(ul.Items)
-			w.recBar.SetTotal(100, true)
+			w.recBar.SetTotal(w.recBar.Current(), true)
 			if l > 0 {
 				opts := []mpb.BarOption{
 					mpb.PrependDecorators(w.preDecoratorExport()),

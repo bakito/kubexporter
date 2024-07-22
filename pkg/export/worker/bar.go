@@ -8,10 +8,6 @@ import (
 	"github.com/vbauerster/mpb/v8/decor"
 )
 
-var (
-	red, green = color.New(color.FgRed), color.New(color.FgGreen)
-)
-
 func (w *worker) preDecoratorList() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
 		page := ""
@@ -44,7 +40,9 @@ func (w *worker) postDecorator() decor.Decorator {
 		d1, _ := decor.CurrentNoUnit("").Decor(s)
 		d2, _ := decor.TotalNoUnit("").Decor(s)
 		d3, _ := decor.Percentage().Decor(s)
-		return fmt.Sprintf("%s / %s %s", d1, d2, d3)
+		str := fmt.Sprintf("%s / %s %s", d1, d2, d3)
+
+		return str
 	})
 }
 
