@@ -13,8 +13,8 @@ import (
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	"github.com/vbauerster/mpb/v5"
-	"github.com/vbauerster/mpb/v5/decor"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
