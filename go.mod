@@ -12,7 +12,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/vardius/worker-pool/v2 v2.1.0
-	github.com/vbauerster/mpb/v6 v6.0.4
+	github.com/vbauerster/mpb/v8 v8.7.4
 	go.uber.org/mock v0.4.0
 	golang.org/x/term v0.22.0
 	k8s.io/api v0.30.3
