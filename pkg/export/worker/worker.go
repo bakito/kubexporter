@@ -14,8 +14,8 @@ import (
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
-	"github.com/vbauerster/mpb/v5"
-	"github.com/vbauerster/mpb/v5/decor"
+	"github.com/vbauerster/mpb/v6"
+	"github.com/vbauerster/mpb/v6/decor"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -305,6 +305,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	for _, u := range ul.Items {
 		if !w.config.IsInstanceExcluded(res, u) {
 			cnt++
+			time.Sleep(time.Millisecond * 100)
 			w.stats.addNamespace(u.GetNamespace())
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
@@ -338,10 +339,10 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 				continue
 			}
 			closeIgnoreError(f)
+		}
 
-			if w.recBar != nil {
-				w.recBar.Increment()
-			}
+		if w.recBar != nil {
+			w.recBar.Increment()
 		}
 	}
 	return cnt
