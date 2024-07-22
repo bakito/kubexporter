@@ -13,8 +13,8 @@ import (
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	"github.com/vbauerster/mpb/v7"
-	"github.com/vbauerster/mpb/v7/decor"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -71,7 +71,7 @@ func (e *exporter) Export() error {
 		mainBar = prog.AddBar(int64(len(resources)),
 			mpb.PrependDecorators(
 				// display our name with one space on the right
-				decor.Name("Resources", decor.WC{W: len("Resources") + 1, C: decor.DidentRight}),
+				decor.Name("Resources", decor.WC{W: len("Resources") + 1, C: decor.DindentRight}),
 				decor.Elapsed(decor.ET_STYLE_GO),
 			),
 			mpb.AppendDecorators(
