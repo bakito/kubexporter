@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"github.com/bakito/kubexporter/pkg/client"
-	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
-	"github.com/vbauerster/mpb/v6"
-	"github.com/vbauerster/mpb/v6/decor"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,6 +40,7 @@ type worker struct {
 	ac               *client.ApiClient
 	queryFinished    bool
 	stats            Stats
+	prog             *mpb.Progress
 }
 
 // Stats worker stats
@@ -90,17 +90,7 @@ func New(id int, config *types.Config, ac *client.ApiClient, prog *mpb.Progress,
 		config:           config,
 		ac:               ac,
 		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-	}
-
-	if prog != nil {
-		w.recBar = prog.AddBar(1,
-			mpb.PrependDecorators(
-				w.preDecorator(),
-			),
-			mpb.AppendDecorators(
-				w.postDecorator(),
-			),
-		)
+		prog:             prog,
 	}
 	return w
 }
@@ -136,37 +126,6 @@ func (w *worker) list(ctx context.Context, group, version, kind string, continue
 	return dr.List(ctx, opts)
 }
 
-func (w *worker) preDecorator() decor.Decorator {
-	return decor.Any(func(s decor.Statistics) string {
-		if s.Completed {
-			return fmt.Sprintf("👷 %2d:", w.id)
-		}
-		if w.queryFinished && s.Total == 0 {
-			return fmt.Sprintf("\U0001F971 %2d: idle", w.id)
-		}
-		page := ""
-		if w.config.QueryPageSize > 0 {
-			page = fmt.Sprintf(" (page %d)", w.currentPage)
-		}
-		if !w.queryFinished {
-			return fmt.Sprintf("🔍 %2d: %s%s", w.id, w.currentKind, page)
-		}
-		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, w.elapsedDecorator.Decor(s))
-	})
-}
-
-func (w *worker) postDecorator() decor.Decorator {
-	return decor.Any(func(s decor.Statistics) string {
-		if s.Completed {
-			return log.Check
-		}
-		return fmt.Sprintf("%s / %s %s",
-			decor.CurrentNoUnit("").Decor(s),
-			decor.TotalNoUnit("").Decor(s),
-			decor.Percentage().Decor(s))
-	})
-}
-
 // GenerateWork generate the work function
 func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
 	return func(res *types.GroupResource) {
@@ -200,15 +159,31 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
 	w.currentPage = res.Pages + 1
-	if w.recBar != nil {
-		w.recBar.SetCurrent(0)
-		w.recBar.SetTotal(0, false)
+
+	if res.APIResource.Kind == "TeamMembership" {
+		println()
 	}
 	start := time.Now()
+	if w.prog != nil {
+		opts := []mpb.BarOption{
+			mpb.PrependDecorators(w.preDecoratorList()),
+			mpb.AppendDecorators(w.postDecorator()),
+		}
+		if w.recBar != nil {
+			opts = append(opts, mpb.BarQueueAfter(w.recBar))
+			w.recBar.SetTotal(100, true)
+		}
+		w.recBar = w.prog.AddBar(1, opts...)
+	}
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
 
 	res.QueryDuration += time.Since(start)
 	w.queryFinished = true
+
+	if w.recBar != nil {
+		w.recBar.IncrBy(1)
+	}
+
 	start = time.Now()
 
 	if err != nil {
@@ -221,9 +196,19 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 			res.Error = "Error:" + err.Error()
 		}
 	} else {
-		if w.recBar != nil {
-			w.recBar.SetCurrent(0)
-			w.recBar.SetTotal(int64(len(ul.Items)), false)
+		if w.prog != nil {
+			l := len(ul.Items)
+			w.recBar.SetTotal(100, true)
+			if l > 0 {
+				opts := []mpb.BarOption{
+					mpb.PrependDecorators(w.preDecoratorExport()),
+					mpb.AppendDecorators(w.postDecorator()),
+				}
+				if w.recBar != nil {
+					opts = append(opts, mpb.BarQueueAfter(w.recBar))
+				}
+				w.recBar = w.prog.AddBar(int64(l), opts...)
+			}
 		}
 		if w.config.AsLists {
 			res.ExportedInstances += w.exportLists(res, ul)
