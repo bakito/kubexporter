@@ -156,6 +156,7 @@ github.com/vardius/worker-pool/v2 v2.1.0 h1:3EICiE8FleVdHAWSPrJCmEA1Ikb1BT3blb32
 github.com/vardius/worker-pool/v2 v2.1.0/go.mod h1:mWRxoOWVI4OgnOWv1Fj0U+JqCNO4xUBd2H6JoUIE58o=
 github.com/vbauerster/mpb/v6 v6.0.4 h1:h6J5zM/2wimP5Hj00unQuV8qbo5EPcj6wbkCqgj7KcY=
 github.com/vbauerster/mpb/v6 v6.0.4/go.mod h1:a/+JT57gqh6Du0Ay5jSR+uBMfXGdlR7VQlGP52fJxLM=
+github.com/vbauerster/mpb/v8 v8.7.4/go.mod h1:r1B5k2Ljj5KJFCekfihbiqyV4VaaRTANYmvWA2btufI=
 github.com/xlab/treeprint v1.2.0 h1:HzHnuAF1plUN2zGlAFHbSQP2qJ0ZAD3XF5XD7OesXRQ=
 github.com/xlab/treeprint v1.2.0/go.mod h1:gj5Gd3gPdKtR1ikdDK6fnFLdmIS0X30kTTuNd/WEJu0=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
