@@ -34,7 +34,8 @@ type worker struct {
 	id               int
 	config           *types.Config
 	mainBar          *mpb.Bar
-	recBar           *mpb.Bar
+	resourceBar      *mpb.Bar
+	prog             *mpb.Progress
 	currentKind      string
 	currentPage      int
 	elapsedDecorator decor.Decorator
@@ -90,26 +91,15 @@ func New(id int, config *types.Config, ac *client.ApiClient, prog *mpb.Progress,
 		config:           config,
 		ac:               ac,
 		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
+		prog:             prog,
 	}
 
-	if prog != nil {
-		w.recBar = prog.AddBar(1,
-			mpb.PrependDecorators(
-				w.preDecorator(),
-			),
-			mpb.AppendDecorators(
-				w.postDecorator(),
-			),
-		)
-	}
 	return w
 }
 
 // Stop end worker
 func (w *worker) Stop() Stats {
-	if w.recBar != nil {
-		w.recBar.SetTotal(100, true)
-	}
+
 	return w.stats
 }
 
@@ -130,26 +120,30 @@ func (w *worker) list(ctx context.Context, group, version, kind string, continue
 	}
 	opts := metav1.ListOptions{Continue: continueValue}
 	if !w.config.AsLists {
-		// for lists we do no pagination
+		// for lists, we do no pagination
 		opts.Limit = int64(w.config.QueryPageSize)
 	}
 	return dr.List(ctx, opts)
 }
 
-func (w *worker) preDecorator() decor.Decorator {
+func (w *worker) preDecoratorSearch() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
-		if s.Completed {
-			return fmt.Sprintf("👷 %2d:", w.id)
+		page := ""
+		if w.config.QueryPageSize > 0 {
+			page = fmt.Sprintf(" (page %d)", w.currentPage)
 		}
+		return fmt.Sprintf("🔍 %2d: %s%s", w.id, w.currentKind, page)
+	})
+}
+
+func (w *worker) preDecoratorExport() decor.Decorator {
+	return decor.Any(func(s decor.Statistics) string {
 		if w.queryFinished && s.Total == 0 {
 			return fmt.Sprintf("\U0001F971 %2d: idle", w.id)
 		}
 		page := ""
 		if w.config.QueryPageSize > 0 {
 			page = fmt.Sprintf(" (page %d)", w.currentPage)
-		}
-		if !w.queryFinished {
-			return fmt.Sprintf("🔍 %2d: %s%s", w.id, w.currentKind, page)
 		}
 		return fmt.Sprintf("👷 %2d: %s%s %s", w.id, w.currentKind, page, w.elapsedDecorator.Decor(s))
 	})
@@ -200,12 +194,24 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
 	w.currentPage = res.Pages + 1
-	if w.recBar != nil {
-		w.recBar.SetCurrent(0)
-		w.recBar.SetTotal(0, false)
+	if w.prog != nil {
+		prevBar := w.resourceBar
+		w.resourceBar = w.prog.AddBar(1,
+			mpb.PrependDecorators(
+				w.preDecoratorSearch(),
+			),
+			mpb.AppendDecorators(
+				w.postDecorator(),
+			),
+			mpb.BarQueueAfter(prevBar, true),
+		)
 	}
 	start := time.Now()
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
+
+	if w.resourceBar != nil {
+		w.resourceBar.IncrBy(1)
+	}
 
 	res.QueryDuration += time.Since(start)
 	w.queryFinished = true
@@ -221,8 +227,17 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 			res.Error = "Error:" + err.Error()
 		}
 	} else {
-		if w.recBar != nil {
-			w.recBar.SetTotal(int64(len(ul.Items)), false)
+		if w.resourceBar != nil && len(ul.Items) > 0 {
+			prevBar := w.resourceBar
+			w.resourceBar = w.prog.AddBar(int64(len(ul.Items)),
+				mpb.PrependDecorators(
+					w.preDecoratorExport(),
+				),
+				mpb.AppendDecorators(
+					w.postDecorator(),
+				),
+				mpb.BarQueueAfter(prevBar, true),
+			)
 		}
 		if w.config.AsLists {
 			res.ExportedInstances += w.exportLists(res, ul)
@@ -288,8 +303,8 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		}
 		closeIgnoreError(f)()
 
-		if w.recBar != nil {
-			w.recBar.IncrBy(len(usl.Items))
+		if w.resourceBar != nil {
+			w.resourceBar.IncrBy(len(usl.Items))
 		}
 		cnt += len(usl.Items)
 	}
@@ -303,9 +318,9 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	names := make(map[string]int)
 	cnt := 0
 	for _, u := range ul.Items {
+		time.Sleep(time.Millisecond * 25)
 		if !w.config.IsInstanceExcluded(res, u) {
 			cnt++
-			time.Sleep(time.Millisecond * 100)
 			w.stats.addNamespace(u.GetNamespace())
 			w.config.FilterFields(res, u)
 			w.config.MaskFields(res, u)
@@ -341,8 +356,8 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			closeIgnoreError(f)
 		}
 
-		if w.recBar != nil {
-			w.recBar.Increment()
+		if w.resourceBar != nil {
+			w.resourceBar.Increment()
 		}
 	}
 	return cnt
