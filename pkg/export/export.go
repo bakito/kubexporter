@@ -150,7 +150,9 @@ func (e *exporter) writeIntro() {
 	if len(e.config.Encrypted.KindFields) > 0 {
 		e.l.Printf("  encrypted fields 🔒 %v\n", e.config.Encrypted.KindFields)
 	}
-
+	if e.config.CreatedWithin > 0 {
+		e.l.Printf("  created within %s ⏱️\n", e.config.CreatedWithin.String())
+	}
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
 	} else if e.config.QueryPageSize != 0 {
@@ -239,7 +241,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	totalRow := []string{total, "", "", "", strconv.Itoa(inst), strconv.Itoa(totalInst), qd.Sub(start).String()}
+	totalRow := []string{total, "", "", "", strconv.Itoa(totalInst), strconv.Itoa(inst), qd.Sub(start).String()}
 	if withPages {
 		totalRow = append(totalRow, strconv.Itoa(pages))
 	}

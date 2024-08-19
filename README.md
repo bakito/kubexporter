@@ -41,6 +41,7 @@ Flags:
       --cluster string                 The name of the kubeconfig cluster to use
       --config string                  config file
       --context string                 The name of the kubeconfig context to use
+      --created-within duration        The max allowed age duration for the resources
       --disable-compression            If true, opt-out of response compression for all requests to the server
   -e, --exclude-kinds strings          Do not export excluded kinds
   -h, --help                           help for kubexporter

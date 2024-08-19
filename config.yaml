@@ -7,6 +7,7 @@ namespace:
 asLists: false
 #queryPageSize: 1000
 clearTarget: true
+#createdWithin: 24h
 worker: 5
 encrypted:
   aesKey: "12345678901234567890123456789012"

@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/Masterminds/sprig"
 	"github.com/bakito/kubexporter/pkg/log"
@@ -97,27 +98,28 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config
 type Config struct {
-	Excluded                Excluded   `json:"excluded" yaml:"excluded"`
-	Included                Included   `json:"included" yaml:"included"`
-	ConsiderOwnerReferences bool       `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
-	Masked                  *Masked    `json:"masked" yaml:"masked"`
-	Encrypted               *Encrypted `json:"encrypted" yaml:"masked"`
-	SortSlices              KindFields `json:"sortSlices" yaml:"sortSlices"`
-	FileNameTemplate        string     `json:"fileNameTemplate" yaml:"fileNameTemplate"`
-	ListFileNameTemplate    string     `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
-	AsLists                 bool       `json:"asLists" yaml:"asLists"`
-	QueryPageSize           int        `json:"queryPageSize" yaml:"queryPageSize"`
-	Target                  string     `json:"target" yaml:"target"`
-	ClearTarget             bool       `json:"clearTarget" yaml:"clearTarget"`
-	Summary                 bool       `json:"summary" yaml:"summary"`
-	Progress                Progress   `json:"progress" yaml:"progress"`
-	Namespace               string     `json:"namespace" yaml:"namespace"`
-	Worker                  int        `json:"worker" yaml:"worker"`
-	Archive                 bool       `json:"archive" yaml:"archive"`
-	ArchiveRetentionDays    int        `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
-	ArchiveTarget           string     `json:"archiveTarget" yaml:"archiveTarget"`
-	Quiet                   bool       `json:"quiet" yaml:"quiet"`
-	Verbose                 bool       `json:"verbose" yaml:"verbose"`
+	Excluded                Excluded      `json:"excluded" yaml:"excluded"`
+	Included                Included      `json:"included" yaml:"included"`
+	CreatedWithin           time.Duration `json:"createdWithin" yaml:"createdWithin"`
+	ConsiderOwnerReferences bool          `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
+	Masked                  *Masked       `json:"masked" yaml:"masked"`
+	Encrypted               *Encrypted    `json:"encrypted" yaml:"masked"`
+	SortSlices              KindFields    `json:"sortSlices" yaml:"sortSlices"`
+	FileNameTemplate        string        `json:"fileNameTemplate" yaml:"fileNameTemplate"`
+	ListFileNameTemplate    string        `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
+	AsLists                 bool          `json:"asLists" yaml:"asLists"`
+	QueryPageSize           int           `json:"queryPageSize" yaml:"queryPageSize"`
+	Target                  string        `json:"target" yaml:"target"`
+	ClearTarget             bool          `json:"clearTarget" yaml:"clearTarget"`
+	Summary                 bool          `json:"summary" yaml:"summary"`
+	Progress                Progress      `json:"progress" yaml:"progress"`
+	Namespace               string        `json:"namespace" yaml:"namespace"`
+	Worker                  int           `json:"worker" yaml:"worker"`
+	Archive                 bool          `json:"archive" yaml:"archive"`
+	ArchiveRetentionDays    int           `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
+	ArchiveTarget           string        `json:"archiveTarget" yaml:"archiveTarget"`
+	Quiet                   bool          `json:"quiet" yaml:"quiet"`
+	Verbose                 bool          `json:"verbose" yaml:"verbose"`
 
 	excludedSet set
 	includedSet set
@@ -335,6 +337,9 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 // IsInstanceExcluded check if the kind instance is excluded
 func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstructured) bool {
 	if c.isExcludedByOwnerReference(us) {
+		return true
+	}
+	if c.CreatedWithin > 0 && us.GetCreationTimestamp().Time.Before(time.Now().Add(-c.CreatedWithin)) {
 		return true
 	}
 	if fvs, ok := c.Excluded.KindsByField[res.GroupKind()]; ok {
