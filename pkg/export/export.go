@@ -9,13 +9,15 @@ import (
 	"time"
 
 	"github.com/bakito/kubexporter/pkg/client"
+	"github.com/bakito/kubexporter/pkg/export/progress"
+	"github.com/bakito/kubexporter/pkg/export/progress/bubbles"
+	"github.com/bakito/kubexporter/pkg/export/progress/mpb"
+	"github.com/bakito/kubexporter/pkg/export/progress/nop"
 	"github.com/bakito/kubexporter/pkg/export/worker"
 	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	"github.com/vbauerster/mpb/v8"
-	"github.com/vbauerster/mpb/v8/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -64,40 +66,41 @@ func (e *exporter) Export(ctx context.Context) error {
 
 	sort.SliceStable(resources, types.Sort(resources))
 
-	var prog *mpb.Progress
+	var prog progress.Progress
 
-	var mainBar *mpb.Bar
-	if e.config.Progress == types.ProgressBar {
-		prog = mpb.New()
-		mainBar = prog.AddBar(int64(len(resources)),
-			mpb.PrependDecorators(
-				// display our name with one space on the right
-				decor.Name("Resources", decor.WC{W: len("Resources") + 1, C: decor.DindentRight}),
-				decor.Elapsed(decor.ET_STYLE_GO),
-			),
-			mpb.AppendDecorators(
-				decor.CurrentNoUnit(""),
-				decor.Name("/"),
-				decor.TotalNoUnit(""),
-				decor.Name(" "),
-				decor.Percentage(),
-			),
-		)
+	switch e.config.Progress {
+	case types.ProgressBar:
+		prog = mpb.NewProgress(len(resources))
+	case types.ProgressBarBubbles:
+		prog = bubbles.NewProgress(len(resources))
+	default:
+		prog = nop.NewProgress()
 	}
 
 	var workers []worker.Worker
 	for i := 0; i < e.config.Worker; i++ {
-		workers = append(workers, worker.New(i, e.config, e.ac, prog, mainBar))
+		workers = append(workers, worker.New(i, e.config, e.ac, prog))
 	}
 
-	s, err := worker.RunExport(ctx, workers, resources)
-	if err != nil {
-		return err
+	var exportErr error
+	var s *worker.Stats
+	if prog.Async() {
+		go func() {
+			s, exportErr = worker.RunExport(ctx, workers, resources)
+			e.stats.Add(s)
+		}()
+	} else {
+		s, exportErr = worker.RunExport(ctx, workers, resources)
+		e.stats.Add(s)
 	}
-	e.stats.Add(s)
 
 	if prog != nil {
-		prog.Wait()
+		if err := prog.Run(); err != nil {
+			return err
+		}
+	}
+	if exportErr != nil {
+		return exportErr
 	}
 
 	if e.config.Summary {

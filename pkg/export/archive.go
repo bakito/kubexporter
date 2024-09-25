@@ -3,6 +3,7 @@ package export
 import (
 	"archive/tar"
 	"compress/gzip"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -105,6 +106,13 @@ func (e *exporter) archiveDirs() (string, string, error) {
 	if e.config.ArchiveTarget != "" {
 		dir = e.config.ArchiveTarget
 	}
+
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		if err = os.MkdirAll(dir, os.ModePerm); err != nil {
+			return "", "", err
+		}
+	}
+
 	return workDir, dir, nil
 }
 
