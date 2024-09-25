@@ -11,10 +11,9 @@ import (
 	"time"
 
 	"github.com/bakito/kubexporter/pkg/client"
+	"github.com/bakito/kubexporter/pkg/export/progress"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
-	"github.com/vbauerster/mpb/v8"
-	"github.com/vbauerster/mpb/v8/decor"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,17 +29,15 @@ type Worker interface {
 }
 
 type worker struct {
-	id               int
-	config           *types.Config
-	mainBar          *mpb.Bar
-	resourceBar      *mpb.Bar
-	prog             *mpb.Progress
-	currentKind      string
-	currentPage      int
-	elapsedDecorator decor.Decorator
-	ac               *client.ApiClient
-	queryFinished    bool
-	stats            Stats
+	id          int
+	config      *types.Config
+	prog        progress.Progress
+	currentKind string
+	currentPage int
+	//	elapsedDecorator decor.Decorator
+	ac            *client.ApiClient
+	queryFinished bool
+	stats         Stats
 }
 
 // Stats worker stats
@@ -83,14 +80,12 @@ func (s *Stats) HasErrors() bool {
 }
 
 // New create a new worker
-func New(id int, config *types.Config, ac *client.ApiClient, prog *mpb.Progress, mainBar *mpb.Bar) Worker {
+func New(id int, config *types.Config, ac *client.ApiClient, prog progress.Progress) Worker {
 	w := &worker{
-		id:               id + 1,
-		mainBar:          mainBar,
-		config:           config,
-		ac:               ac,
-		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-		prog:             prog,
+		id:     id + 1,
+		config: config,
+		ac:     ac,
+		prog:   prog.NewWorker(),
 	}
 
 	return w
@@ -132,7 +127,7 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 		w.queryFinished = false
 		ctx := context.TODO()
 		w.currentKind = res.GroupKind()
-		w.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
+		w.prog.Reset()
 
 		hasMorePages := ""
 		for {
@@ -148,21 +143,19 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 			w.config.Logger().Checkf("%s\n", res.GroupKind())
 		}
 
-		if w.mainBar != nil {
-			w.mainBar.Increment()
-		}
+		w.prog.IncrementMainBar()
 		out <- res
 	}
 }
 
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
 	w.currentPage = res.Pages + 1
-	w.newSearchBar()
+	w.prog.NewSearchBar(w.currentKind, w.config.QueryPageSize, w.currentPage)
 	start := time.Now()
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
 
-	if w.resourceBar != nil {
-		w.resourceBar.IncrBy(1)
+	if w.prog != nil {
+		w.prog.IncrementResourceBarBy(1)
 	}
 
 	res.QueryDuration += time.Since(start)
@@ -179,7 +172,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 			res.Error = "Error:" + err.Error()
 		}
 	} else {
-		w.newExportBar(ul)
+		w.prog.NewExportBar(w.currentKind, w.config.QueryPageSize, w.currentPage, len(ul.Items))
 		if w.config.AsLists {
 			res.ExportedInstances += w.exportLists(res, ul)
 		} else {
@@ -244,9 +237,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		}
 		closeIgnoreError(f)()
 
-		if w.resourceBar != nil {
-			w.resourceBar.IncrBy(len(usl.Items))
-		}
+		w.prog.IncrementResourceBarBy(len(usl.Items))
 		cnt += len(usl.Items)
 	}
 	return cnt
@@ -296,9 +287,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			closeIgnoreError(f)
 		}
 
-		if w.resourceBar != nil {
-			w.resourceBar.Increment()
-		}
+		w.prog.IncrementResourceBarBy(1)
 	}
 	return cnt
 }

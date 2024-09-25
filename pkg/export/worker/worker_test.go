@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/bakito/kubexporter/pkg/client"
+	"github.com/bakito/kubexporter/pkg/export/progress/nop"
 	mock "github.com/bakito/kubexporter/pkg/mocks/client"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/ghodss/yaml"
@@ -71,6 +72,7 @@ var _ = Describe("Worker", func() {
 		w = &worker{
 			config: config,
 			ac:     &client.ApiClient{Client: mockClient},
+			prog:   nop.NewProgress(),
 		}
 	})
 	AfterEach(func() {
