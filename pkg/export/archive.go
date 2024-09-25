@@ -23,7 +23,7 @@ func (e *exporter) pruneArchives() error {
 
 	pattern := regexp.MustCompile(fmt.Sprintf(`^%s-?.*-\d{4}-\d{2}-\d{2}-\d{6}\.tar\.gz$`, filepath.Base(e.config.Target)))
 
-	deleteOlderThan := time.Now().AddDate(0, 0, -e.config.ArchiveRetentionDays)
+	deleteOlderThan := e.config.MaxArchiveAge()
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err

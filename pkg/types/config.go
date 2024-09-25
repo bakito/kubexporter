@@ -120,6 +120,7 @@ type Config struct {
 	Archive                 bool          `json:"archive" yaml:"archive"`
 	ArchiveRetentionDays    int           `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
 	ArchiveTarget           string        `json:"archiveTarget" yaml:"archiveTarget"`
+	S3Config                *S3Config     `json:"s3" yaml:"s3"`
 	Quiet                   bool          `json:"quiet" yaml:"quiet"`
 	Verbose                 bool          `json:"verbose" yaml:"verbose"`
 
@@ -128,6 +129,19 @@ type Config struct {
 	log         log.YALI
 	configFlags *genericclioptions.ConfigFlags
 	PrintFlags  *genericclioptions.PrintFlags `json:"-" yaml:"-"`
+}
+
+func (c *Config) MaxArchiveAge() time.Time {
+	return time.Now().AddDate(0, 0, -c.ArchiveRetentionDays)
+}
+
+type S3Config struct {
+	Endpoint        string `json:"endpoint" yaml:"endpoint"`
+	AccessKeyID     string `json:"accessKeyID" yaml:"accessKeyID"`
+	SecretAccessKey string `json:"secretAccessKey" yaml:"secretAccessKey"`
+	Token           string `json:"token" yaml:"token"`
+	Secure          bool   `json:"secure" yaml:"secure"`
+	Bucket          string `json:"bucket" yaml:"bucket"`
 }
 
 // Progress type

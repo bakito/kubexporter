@@ -13,14 +13,14 @@ encrypted:
   aesKey: "12345678901234567890123456789012"
   kindFields:
     Secret:
-      - [ data ]
-      - [ stringData ]
+      - [data]
+      - [stringData]
 masked:
   replacement: '***'
   checksum: md5
   kindFields:
     Secret:
-      - [ stringData ]
+      - [stringData]
 considerOwnerReferences: true
 excluded:
   kinds:
@@ -49,22 +49,22 @@ excluded:
     - metrics.k8s.io.NodeMetrics
     - coordination.k8s.io.Lease
   fields:
-    - [ status ]
-    - [ metadata, uid ]
-    - [ metadata, selfLink ]
-    - [ metadata, resourceVersion ]
-    - [ metadata, creationTimestamp ]
-    - [ metadata, deletionTimestamp ]
-    - [ metadata, deletionGracePeriodSeconds ]
-    - [ metadata, generation ]
-    - [ metadata, annotations, "kubectl.kubernetes.io/last-applied-configuration" ]
+    - [status]
+    - [metadata, uid]
+    - [metadata, selfLink]
+    - [metadata, resourceVersion]
+    - [metadata, creationTimestamp]
+    - [metadata, deletionTimestamp]
+    - [metadata, deletionGracePeriodSeconds]
+    - [metadata, generation]
+    - [metadata, annotations, "kubectl.kubernetes.io/last-applied-configuration"]
   kindFields:
     Service:
-      - [ spec, clusterIP ]
+      - [spec, clusterIP]
     Secret:
-      - [ metadata, annotations, "openshift.io/token-secret.name" ]
-      - [ metadata, annotations, "openshift.io/token-secret.value" ]
+      - [metadata, annotations, "openshift.io/token-secret.name"]
+      - [metadata, annotations, "openshift.io/token-secret.value"]
   kindByField:
     Secret:
-      - field: [ type ]
-        values: [ 'helm.sh/release', 'helm.sh/release.v1' ]
+      - field: [type]
+        values: ['helm.sh/release', 'helm.sh/release.v1']
