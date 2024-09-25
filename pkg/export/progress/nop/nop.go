@@ -8,6 +8,9 @@ func NewProgress() progress.Progress {
 
 type nilProgress struct{}
 
+func (n *nilProgress) Run() {
+}
+
 func (n *nilProgress) NewSearchBar(_ string, _ int, _ int) {
 }
 

@@ -1,6 +1,7 @@
 package export
 
 import (
+	"github.com/bakito/kubexporter/pkg/export/progress/bubbles"
 	"os"
 	"sort"
 	"strconv"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/export/progress"
-	"github.com/bakito/kubexporter/pkg/export/progress/mpb"
 	"github.com/bakito/kubexporter/pkg/export/progress/nop"
 	"github.com/bakito/kubexporter/pkg/export/worker"
 	"github.com/bakito/kubexporter/pkg/log"
@@ -67,7 +67,7 @@ func (e *exporter) Export() error {
 	var prog progress.Progress
 
 	if e.config.Progress == types.ProgressBar {
-		prog = mpb.NewProgress(len(resources))
+		prog = bubbles.NewProgress(len(resources))
 	} else {
 		prog = nop.NewProgress()
 	}
@@ -76,6 +76,8 @@ func (e *exporter) Export() error {
 	for i := 0; i < e.config.Worker; i++ {
 		workers = append(workers, worker.New(i, e.config, e.ac, prog))
 	}
+
+	prog.Run()
 
 	s, err := worker.RunExport(workers, resources)
 	if err != nil {

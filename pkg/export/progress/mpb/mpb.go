@@ -27,6 +27,9 @@ type mpbProgress struct {
 	resourceBar      *mpb.Bar
 }
 
+func (m *mpbProgress) Run() {
+}
+
 func (m *mpbProgress) NewWorker() progress.Progress {
 	m.workers++
 	return &mpbProgress{
