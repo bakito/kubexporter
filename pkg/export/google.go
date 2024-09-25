@@ -16,7 +16,7 @@ import (
 
 // https://github.com/GoogleCloudPlatform/golang-samples/blob/main/storage/objects/upload_file.go
 // https://github.com/GoogleCloudPlatform/golang-samples/blob/main/storage/objects/list_files_with_prefix.go
-
+//nolint: unused
 func (e *exporter) uploadGoogle(ctx context.Context) error {
 	cfg := e.config.S3Config
 
@@ -58,6 +58,7 @@ func (e *exporter) uploadGoogle(ctx context.Context) error {
 	return nil
 }
 
+//nolint: unused
 func (e *exporter) pruneGoogle(ctx context.Context, client *storage.Client, cfg *types.S3Config) error {
 	deleteOlderThan := e.config.MaxArchiveAge()
 	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
