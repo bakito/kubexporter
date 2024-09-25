@@ -35,6 +35,8 @@ const (
 
 	// ProgressBar progress bar mode
 	ProgressBar = Progress("bar")
+	// ProgressBarBubbles bubbles progress bar mode
+	ProgressBarBubbles = Progress("bubbles")
 	// ProgressSimple simple progress mode
 	ProgressSimple = Progress("simple")
 	// ProgressNone no progress

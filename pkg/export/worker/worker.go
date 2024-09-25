@@ -150,12 +150,12 @@ func (w *worker) GenerateWork(wg *sync.WaitGroup, out chan *types.GroupResource)
 
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
 	w.currentPage = res.Pages + 1
-	w.prog.NewSearchBar(w.currentKind, w.config.QueryPageSize, w.currentPage)
+	w.prog.NewSearchBar(progress.Step{WorkerID: w.id, CurrentKind: w.currentKind, PageSize: w.config.QueryPageSize, CurrentPage: w.currentPage})
 	start := time.Now()
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
 
 	if w.prog != nil {
-		w.prog.IncrementResourceBarBy(1)
+		w.prog.IncrementResourceBarBy(w.id, 1)
 	}
 
 	res.QueryDuration += time.Since(start)
@@ -172,7 +172,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 			res.Error = "Error:" + err.Error()
 		}
 	} else {
-		w.prog.NewExportBar(w.currentKind, w.config.QueryPageSize, w.currentPage, len(ul.Items))
+		w.prog.NewExportBar(progress.Step{WorkerID: w.id, CurrentKind: w.currentKind, PageSize: w.config.QueryPageSize, CurrentPage: w.currentPage, Total: len(ul.Items)})
 		if w.config.AsLists {
 			res.ExportedInstances += w.exportLists(res, ul)
 		} else {
@@ -222,8 +222,11 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		}
 
 		filename = filepath.Join(w.config.Target, filename)
-		_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-
+		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		if err != nil {
+			res.Error = err.Error()
+			continue
+		}
 		f, err := os.Create(filename)
 		if err != nil {
 			res.Error = err.Error()
@@ -237,7 +240,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 		}
 		closeIgnoreError(f)()
 
-		w.prog.IncrementResourceBarBy(len(usl.Items))
+		w.prog.IncrementResourceBarBy(w.id, len(usl.Items))
 		cnt += len(usl.Items)
 	}
 	return cnt
@@ -271,8 +274,11 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			names[namespaceName] = nameCnt + 1
 
 			filename = filepath.Join(w.config.Target, filename)
-			_ = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-
+			err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+			if err != nil {
+				res.Error = err.Error()
+				continue
+			}
 			f, err := os.Create(filename)
 			if err != nil {
 				res.Error = err.Error()
@@ -287,7 +293,7 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 			closeIgnoreError(f)
 		}
 
-		w.prog.IncrementResourceBarBy(1)
+		w.prog.IncrementResourceBarBy(w.id, 1)
 	}
 	return cnt
 }

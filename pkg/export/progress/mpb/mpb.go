@@ -27,7 +27,9 @@ type mpbProgress struct {
 	resourceBar      *mpb.Bar
 }
 
-func (m *mpbProgress) Run() {
+func (m *mpbProgress) Run() error {
+	m.prog.Wait()
+	return nil
 }
 
 func (m *mpbProgress) NewWorker() progress.Progress {
@@ -42,10 +44,6 @@ func (m *mpbProgress) NewWorker() progress.Progress {
 
 func (m *mpbProgress) Reset() {
 	m.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
-}
-
-func (m *mpbProgress) Wait() {
-	m.prog.Wait()
 }
 
 func newMpbMainBar(prog *mpb.Progress, size int) *mpb.Bar {
@@ -66,10 +64,10 @@ func newMpbMainBar(prog *mpb.Progress, size int) *mpb.Bar {
 	return bar
 }
 
-func (m *mpbProgress) NewSearchBar(currentKind string, pageSize int, currentPage int) {
+func (m *mpbProgress) NewSearchBar(step progress.Step) {
 	newBar := m.prog.AddBar(1,
 		mpb.PrependDecorators(
-			m.preDecoratorSearch(currentKind, pageSize, currentPage),
+			m.preDecoratorSearch(step.CurrentKind, step.PageSize, step.CurrentPage),
 		),
 		mpb.AppendDecorators(
 			m.postDecorator(),
@@ -79,11 +77,11 @@ func (m *mpbProgress) NewSearchBar(currentKind string, pageSize int, currentPage
 	m.resourceBar = newBar
 }
 
-func (m *mpbProgress) NewExportBar(currentKind string, pageSize int, currentPage int, size int) {
-	if m.resourceBar != nil && size > 0 {
-		newBar := m.prog.AddBar(int64(size),
+func (m *mpbProgress) NewExportBar(step progress.Step) {
+	if m.resourceBar != nil && step.Total > 0 {
+		newBar := m.prog.AddBar(int64(step.Total),
 			mpb.PrependDecorators(
-				m.preDecoratorExport(currentKind, pageSize, currentPage),
+				m.preDecoratorExport(step.CurrentKind, step.PageSize, step.CurrentPage),
 			),
 			mpb.AppendDecorators(
 				m.postDecorator(),
@@ -128,8 +126,8 @@ func (m *mpbProgress) IncrementMainBar() {
 	m.mainBar.Increment()
 }
 
-func (m *mpbProgress) IncrementResourceBarBy(i int) {
+func (m *mpbProgress) IncrementResourceBarBy(_ int, inc int) {
 	if m.resourceBar != nil {
-		m.resourceBar.IncrBy(i)
+		m.resourceBar.IncrBy(inc)
 	}
 }

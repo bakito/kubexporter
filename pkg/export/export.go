@@ -1,7 +1,7 @@
 package export
 
 import (
-	"github.com/bakito/kubexporter/pkg/export/progress/bubbles"
+	"errors"
 	"os"
 	"sort"
 	"strconv"
@@ -10,6 +10,8 @@ import (
 
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/export/progress"
+	"github.com/bakito/kubexporter/pkg/export/progress/bubbles"
+	"github.com/bakito/kubexporter/pkg/export/progress/mpb"
 	"github.com/bakito/kubexporter/pkg/export/progress/nop"
 	"github.com/bakito/kubexporter/pkg/export/worker"
 	"github.com/bakito/kubexporter/pkg/log"
@@ -66,9 +68,12 @@ func (e *exporter) Export() error {
 
 	var prog progress.Progress
 
-	if e.config.Progress == types.ProgressBar {
+	switch e.config.Progress {
+	case types.ProgressBar:
+		prog = mpb.NewProgress(len(resources))
+	case types.ProgressBarBubbles:
 		prog = bubbles.NewProgress(len(resources))
-	} else {
+	default:
 		prog = nop.NewProgress()
 	}
 
@@ -77,16 +82,20 @@ func (e *exporter) Export() error {
 		workers = append(workers, worker.New(i, e.config, e.ac, prog))
 	}
 
-	prog.Run()
-
-	s, err := worker.RunExport(workers, resources)
-	if err != nil {
-		return err
-	}
-	e.stats.Add(s)
+	var exportErr error
+	go func() {
+		var s *worker.Stats
+		s, exportErr = worker.RunExport(workers, resources)
+		e.stats.Add(s)
+	}()
 
 	if prog != nil {
-		prog.Wait()
+		if err := prog.Run(); err != nil {
+			return err
+		}
+	}
+	if exportErr != nil {
+		return errors.New("exportErr: " + exportErr.Error())
 	}
 
 	if e.config.Summary {
