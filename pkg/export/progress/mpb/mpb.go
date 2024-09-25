@@ -27,6 +27,10 @@ type mpbProgress struct {
 	resourceBar      *mpb.Bar
 }
 
+func (m *mpbProgress) Async() bool {
+	return true
+}
+
 func (m *mpbProgress) Run() error {
 	m.prog.Wait()
 	return nil

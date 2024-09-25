@@ -8,6 +8,10 @@ func NewProgress() progress.Progress {
 
 type nilProgress struct{}
 
+func (n *nilProgress) Async() bool {
+	return false
+}
+
 func (n *nilProgress) Run() error {
 	return nil
 }

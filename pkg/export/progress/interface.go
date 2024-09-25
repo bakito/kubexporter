@@ -1,6 +1,7 @@
 package progress
 
 type Progress interface {
+	Async() bool
 	NewSearchBar(step Step)
 	NewExportBar(step Step)
 	Run() error

@@ -11,7 +11,7 @@ import (
 
 const (
 	padding  = 2
-	maxWidth = 200
+	maxWidth = 150
 
 	mainProgressTitle = "Resources"
 )
@@ -29,6 +29,10 @@ func NewProgress(resources int) progress.Progress {
 type bubblesProgress struct {
 	model   *model
 	program *tea.Program
+}
+
+func (b *bubblesProgress) Async() bool {
+	return true
 }
 
 func (b *bubblesProgress) Run() error {

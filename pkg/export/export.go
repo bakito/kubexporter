@@ -1,7 +1,6 @@
 package export
 
 import (
-	"errors"
 	"os"
 	"sort"
 	"strconv"
@@ -83,11 +82,16 @@ func (e *exporter) Export() error {
 	}
 
 	var exportErr error
-	go func() {
-		var s *worker.Stats
+	var s *worker.Stats
+	if prog.Async() {
+		go func() {
+			s, exportErr = worker.RunExport(workers, resources)
+			e.stats.Add(s)
+		}()
+	} else {
 		s, exportErr = worker.RunExport(workers, resources)
 		e.stats.Add(s)
-	}()
+	}
 
 	if prog != nil {
 		if err := prog.Run(); err != nil {
@@ -95,7 +99,7 @@ func (e *exporter) Export() error {
 		}
 	}
 	if exportErr != nil {
-		return errors.New("exportErr: " + exportErr.Error())
+		return exportErr
 	}
 
 	if e.config.Summary {
