@@ -84,6 +84,9 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 		case "exclude-kinds":
 			sl, _ := cmd.Flags().GetStringSlice(f.Name)
 			config.Excluded.Kinds = sl
+		case "created-within":
+			cw, _ := cmd.Flags().GetDuration(f.Name)
+			config.CreatedWithin = cw
 		case "archive":
 			sl, _ := cmd.Flags().GetBool(f.Name)
 			config.Archive = sl
@@ -124,6 +127,7 @@ func init() {
 	rootCmd.Flags().BoolP("lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
 	rootCmd.Flags().StringSliceP("include-kinds", "i", []string{}, "Export only included kinds, if included kinds are defined, excluded will be ignored")
 	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")
+	rootCmd.Flags().Duration("created-within", 0, "The max allowed age duration for the resources")
 
 	configFlags = genericclioptions.NewConfigFlags(true)
 	configFlags.AddFlags(rootCmd.Flags())

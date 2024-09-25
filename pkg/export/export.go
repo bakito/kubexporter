@@ -14,8 +14,8 @@ import (
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	"github.com/vbauerster/mpb/v5"
-	"github.com/vbauerster/mpb/v5/decor"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
@@ -72,7 +72,7 @@ func (e *exporter) Export(ctx context.Context) error {
 		mainBar = prog.AddBar(int64(len(resources)),
 			mpb.PrependDecorators(
 				// display our name with one space on the right
-				decor.Name("Resources", decor.WC{W: len("Resources") + 1, C: decor.DidentRight}),
+				decor.Name("Resources", decor.WC{W: len("Resources") + 1, C: decor.DindentRight}),
 				decor.Elapsed(decor.ET_STYLE_GO),
 			),
 			mpb.AppendDecorators(
@@ -158,7 +158,9 @@ func (e *exporter) writeIntro() {
 	if len(e.config.Encrypted.KindFields) > 0 {
 		e.l.Printf("  encrypted fields 🔒 %v\n", e.config.Encrypted.KindFields)
 	}
-
+	if e.config.CreatedWithin > 0 {
+		e.l.Printf("  created within %s ⏱️\n", e.config.CreatedWithin.String())
+	}
 	if e.config.AsLists {
 		e.l.Printf("  as lists 📦\n")
 	} else if e.config.QueryPageSize != 0 {
@@ -250,7 +252,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	totalRow := []string{total, "", "", "", strconv.Itoa(inst), strconv.Itoa(totalInst), qd.Sub(start).String()}
+	totalRow := []string{total, "", "", "", strconv.Itoa(totalInst), strconv.Itoa(inst), qd.Sub(start).String()}
 	if withPages {
 		totalRow = append(totalRow, strconv.Itoa(pages))
 	}

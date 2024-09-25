@@ -3,11 +3,16 @@ progress: bar
 archive: true
 archiveRetentionDays: 10
 archiveTarget: .
+s3:
+  endpoint: minio-api.nas.bakito.net:8443
+  accessKeyID: bakito
+  secretAccessKey: X5tdSQUgog4Ma97myld5
+  secure: true
+  bucket: kubexporter2
 namespace:
 asLists: false
 #queryPageSize: 1000
 clearTarget: true
-#createdWithin: 24h
 worker: 5
 encrypted:
   aesKey: "12345678901234567890123456789012"

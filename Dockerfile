@@ -1,4 +1,4 @@
-FROM golang:1.22-bullseye as builder
+FROM golang:1.23-bullseye as builder
 
 WORKDIR /build
 
@@ -7,8 +7,7 @@ RUN apt-get update && apt-get install -y upx
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
-    GOOS=linux \
-    GOARCH=amd64
+    GOOS=linux
 COPY . .
 
 RUN go build -a -installsuffix cgo -ldflags="-w -s -X github.com/bakito/kubexporter/version.Version=${VERSION}" -o kubexporter && \
