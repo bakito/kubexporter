@@ -46,9 +46,13 @@ MOCKGEN ?= $(LOCALBIN)/mockgen
 SEMVER ?= $(LOCALBIN)/semver
 
 ## Tool Versions
+# renovate: packageName=github.com/golangci/golangci-lint/cmd/golangci-lint
 GOLANGCI_LINT_VERSION ?= v1.61.0
+# renovate: packageName=github.com/goreleaser/goreleaser/v2
 GORELEASER_VERSION ?= v2.3.2
+# renovate: packageName=go.uber.org/mock/mockgen
 MOCKGEN_VERSION ?= v0.4.0
+# renovate: packageName=github.com/bakito/semver
 SEMVER_VERSION ?= v1.1.3
 
 ## Tool Installer
@@ -77,7 +81,7 @@ update-toolbox-tools:
 		$(LOCALBIN)/goreleaser \
 		$(LOCALBIN)/mockgen \
 		$(LOCALBIN)/semver
-	toolbox makefile -f $(LOCALDIR)/Makefile \
+	toolbox makefile --renovate -f $(LOCALDIR)/Makefile \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		github.com/goreleaser/goreleaser/v2 \
 		go.uber.org/mock/mockgen@github.com/uber-go/mock \
