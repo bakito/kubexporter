@@ -4,9 +4,9 @@
     {
       "customType": "regex",
       "datasourceTemplate": "go",
-      "description": "Update toolbox tools in Makefile",
+      "description": "Update toolbox tools in .toolbox.mk",
       "fileMatch": [
-        "^Makefile$"
+        "^\\.toolbox\\.mk$"
       ],
       "matchStrings": [
         "# renovate: packageName=(?<packageName>.+?)\\s+.+?_VERSION \\?= (?<currentValue>.+?)\\s"
