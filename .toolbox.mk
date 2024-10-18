@@ -20,7 +20,7 @@ TB_GOLANGCI_LINT_VERSION ?= v1.61.0
 # renovate: packageName=github.com/goreleaser/goreleaser/v2
 TB_GORELEASER_VERSION ?= v2.3.2
 # renovate: packageName=go.uber.org/mock/mockgen
-TB_MOCKGEN_VERSION ?= v0.4.0
+TB_MOCKGEN_VERSION ?= v0.5.0
 # renovate: packageName=github.com/bakito/semver
 TB_SEMVER_VERSION ?= v1.1.3
 
