@@ -8,7 +8,7 @@ require (
 	github.com/charmbracelet/bubbletea v1.1.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.6.0
-	github.com/minio/minio-go/v7 v7.0.78
+	github.com/minio/minio-go/v7 v7.0.79
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo/v2 v2.20.2
 	github.com/onsi/gomega v1.34.2
