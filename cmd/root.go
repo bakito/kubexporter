@@ -104,17 +104,18 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 
 	config.Encrypted.KindFields = config.Masked.KindFields.Diff(config.Encrypted.KindFields)
 
-	fmt.Println("PROGRESS: " + config.Progress)
-
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		fmt.Println("Is Terminal")
-	} else if isatty.IsCygwinTerminal(os.Stdout.Fd()) {
-		fmt.Println("Is Cygwin/MSYS2 Terminal")
-	} else {
-		fmt.Println("Is Not Terminal")
-	}
+	correctProgressForNonTerminalRun(config)
 
 	return config, nil
+}
+
+func correctProgressForNonTerminalRun(config *types.Config) {
+	if config.Progress != types.ProgressNone &&
+		!isatty.IsTerminal(os.Stdout.Fd()) &&
+		!isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		config.Progress = types.ProgressSimple
+		fmt.Println("Switching PROGRESS: " + config.Progress)
+	}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
