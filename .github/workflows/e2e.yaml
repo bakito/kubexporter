@@ -40,12 +40,20 @@ jobs:
           docker push  localhost:5001/kubexporter:e2e
 
       - name: Run Exporter as k8s Job
+        id: run_as_k8s_job
+        continue-on-error: true
         run: |
           kubectl create ns e2e
           kubectl apply -n e2e -f testdata/e2e/job-with-rbac.yaml
           echo "Waiting for Job to be terminated"
-          kubectl wait --for=condition=complete job/kubexporter -n e2e --timeout=30s
+          kubectl wait --for=condition=complete job/kubexporter -n e2e --timeout=300s
       - name: Print k8s logs
         run: |
           echo "## Run Exporter as k8s Job" >> $GITHUB_STEP_SUMMARY
           kubectl logs -n e2e -l e2e=kubexporter --tail=10000 >> $GITHUB_STEP_SUMMARY
+
+      - name: Fail if 'Run Exporter as k8s Job' failed
+        if: steps.run_as_k8s_job.outcome=='failure'
+        run: |
+          echo "Step 'Run Exporter as k8s Job' failed: Check the logs as well as the job summary for errors"
+          exit 1
