@@ -29,5 +29,10 @@ jobs:
           node_image: kindest/node:${{ matrix.k8s_version }}
           kubectl_version: ${{ matrix.k8s_version }}
 
-      - name: Run Exporter
+      - name: Run Exporter from outside the cluster
         run:  go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
+
+      - name: Build the docker image
+        run: |
+          docker build -f Dockerfile --build-arg VERSION=e2e-tests -t localhost:5001/kubexporter:e2e .
+          docker push  localhost:5001/kubexporter:e2e
