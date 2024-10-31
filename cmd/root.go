@@ -113,8 +113,8 @@ func correctProgressForNonTerminalRun(config *types.Config) {
 	if config.Progress != types.ProgressNone &&
 		!isatty.IsTerminal(os.Stdout.Fd()) &&
 		!isatty.IsCygwinTerminal(os.Stdout.Fd()) {
-		config.Progress = types.ProgressSimple
-		config.Logger().Printf("Switching progress to %q in non terminal environment\n", types.ProgressSimple)
+		config.Progress = types.ProgressBar
+		config.Logger().Printf("Switching progress to %q in non terminal environment\n", config.Progress)
 	}
 }
 
