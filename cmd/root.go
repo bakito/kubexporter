@@ -10,6 +10,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/export"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -103,7 +104,18 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 
 	config.Encrypted.KindFields = config.Masked.KindFields.Diff(config.Encrypted.KindFields)
 
+	correctProgressForNonTerminalRun(config)
+
 	return config, nil
+}
+
+func correctProgressForNonTerminalRun(config *types.Config) {
+	if config.Progress != types.ProgressNone &&
+		!isatty.IsTerminal(os.Stdout.Fd()) &&
+		!isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		config.Progress = types.ProgressSimple
+		config.Logger().Printf("Switching progress to %q in non terminal environment\n", config.Progress)
+	}
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
