@@ -170,6 +170,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 		} else {
 			res.Error = "Error:" + err.Error()
 		}
+		return ""
 	} else {
 		w.prog.NewExportBar(progress.Step{WorkerID: w.id, CurrentKind: w.currentKind, PageSize: w.config.QueryPageSize, CurrentPage: w.currentPage, Total: len(ul.Items)})
 		if w.config.AsLists {
