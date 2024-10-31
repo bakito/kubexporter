@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: read-only-sa
+  namespace: e2e
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cluster-read-only
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-only-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-read-only
+subjects:
+  - kind: ServiceAccount
+    name: read-only-sa
+    namespace: e2e
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubexporter
+  namespace: e2e
+spec:
+  template:
+    metadata:
+      labels:
+        e2e: kubexporter
+    spec:
+      serviceAccountName: read-only-sa
+      containers:
+        - name: kubexporter
+          image: localhost:5001/kubexporter:e2e
+          args:
+            - '--progress'
+            - 'bar'
+      restartPolicy: Never
+  backoffLimit: 1

@@ -14,7 +14,7 @@ jobs:
     strategy:
       matrix:
         # https://hub.docker.com/r/kindest/node/tags
-        k8s_version: [ "v1.28.13", "v1.29.8", "v1.30.4" ]
+        k8s_version: ["v1.28.13", "v1.29.8", "v1.30.4"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,9 +30,22 @@ jobs:
           kubectl_version: ${{ matrix.k8s_version }}
 
       - name: Run Exporter from outside the cluster
-        run:  go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
+        run: |
+          echo "## Run Exporter from outside the cluster" >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
 
       - name: Build the docker image
         run: |
           docker build -f Dockerfile --build-arg VERSION=e2e-tests -t localhost:5001/kubexporter:e2e .
           docker push  localhost:5001/kubexporter:e2e
+
+      - name: Run Exporter as k8s Job
+        run: |
+          kubectl create ns e2e
+          kubectl apply -n e2e -f testdata/e2e/job-with-rbac.yaml
+          echo "Waiting for Job to be terminated"
+          kubectl wait --for=condition=complete job/kubexporter -n e2e --timeout=30s
+      - name: Print k8s logs
+        run: |
+          echo "## Run Exporter as k8s Job" >> $GITHUB_STEP_SUMMARY
+          kubectl logs -n e2e -l e2e=kubexporter --tail=10000 >> $GITHUB_STEP_SUMMARY
