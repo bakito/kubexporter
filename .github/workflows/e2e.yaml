@@ -46,7 +46,7 @@ jobs:
           kubectl create ns e2e
           kubectl apply -n e2e -f testdata/e2e/job-with-rbac.yaml
           echo "Waiting for Job to be terminated"
-          kubectl wait --for=condition=complete job/kubexporter -n e2e --timeout=300s
+          kubectl wait --for=condition=complete job/kubexporter -n e2e --timeout=30s
       - name: Print k8s logs
         run: |
           echo "## Run Exporter as k8s Job" >> $GITHUB_STEP_SUMMARY
