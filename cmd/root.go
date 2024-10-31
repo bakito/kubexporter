@@ -10,6 +10,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/export"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -102,6 +103,16 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 	}
 
 	config.Encrypted.KindFields = config.Masked.KindFields.Diff(config.Encrypted.KindFields)
+
+	fmt.Println("PROGRESS: " + config.Progress)
+
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		fmt.Println("Is Terminal")
+	} else if isatty.IsCygwinTerminal(os.Stdout.Fd()) {
+		fmt.Println("Is Cygwin/MSYS2 Terminal")
+	} else {
+		fmt.Println("Is Not Terminal")
+	}
 
 	return config, nil
 }

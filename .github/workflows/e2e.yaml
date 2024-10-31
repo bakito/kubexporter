@@ -30,4 +30,4 @@ jobs:
           kubectl_version: ${{ matrix.k8s_version }}
 
       - name: Run Exporter
-        run:  go run . --config config.yaml --progress simple >> $GITHUB_STEP_SUMMARY
+        run:  go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
