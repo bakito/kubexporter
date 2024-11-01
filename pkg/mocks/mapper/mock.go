@@ -21,6 +21,7 @@ import (
 type MockRESTMapper struct {
 	ctrl     *gomock.Controller
 	recorder *MockRESTMapperMockRecorder
+	isgomock struct{}
 }
 
 // MockRESTMapperMockRecorder is the mock recorder for MockRESTMapper.
@@ -41,40 +42,40 @@ func (m *MockRESTMapper) EXPECT() *MockRESTMapperMockRecorder {
 }
 
 // KindFor mocks base method.
-func (m *MockRESTMapper) KindFor(arg0 schema.GroupVersionResource) (schema.GroupVersionKind, error) {
+func (m *MockRESTMapper) KindFor(resource schema.GroupVersionResource) (schema.GroupVersionKind, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KindFor", arg0)
+	ret := m.ctrl.Call(m, "KindFor", resource)
 	ret0, _ := ret[0].(schema.GroupVersionKind)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // KindFor indicates an expected call of KindFor.
-func (mr *MockRESTMapperMockRecorder) KindFor(arg0 any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) KindFor(resource any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KindFor", reflect.TypeOf((*MockRESTMapper)(nil).KindFor), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KindFor", reflect.TypeOf((*MockRESTMapper)(nil).KindFor), resource)
 }
 
 // KindsFor mocks base method.
-func (m *MockRESTMapper) KindsFor(arg0 schema.GroupVersionResource) ([]schema.GroupVersionKind, error) {
+func (m *MockRESTMapper) KindsFor(resource schema.GroupVersionResource) ([]schema.GroupVersionKind, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "KindsFor", arg0)
+	ret := m.ctrl.Call(m, "KindsFor", resource)
 	ret0, _ := ret[0].([]schema.GroupVersionKind)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // KindsFor indicates an expected call of KindsFor.
-func (mr *MockRESTMapperMockRecorder) KindsFor(arg0 any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) KindsFor(resource any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KindsFor", reflect.TypeOf((*MockRESTMapper)(nil).KindsFor), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KindsFor", reflect.TypeOf((*MockRESTMapper)(nil).KindsFor), resource)
 }
 
 // RESTMapping mocks base method.
-func (m *MockRESTMapper) RESTMapping(arg0 schema.GroupKind, arg1 ...string) (*meta.RESTMapping, error) {
+func (m *MockRESTMapper) RESTMapping(gk schema.GroupKind, versions ...string) (*meta.RESTMapping, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0}
-	for _, a := range arg1 {
+	varargs := []any{gk}
+	for _, a := range versions {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "RESTMapping", varargs...)
@@ -84,17 +85,17 @@ func (m *MockRESTMapper) RESTMapping(arg0 schema.GroupKind, arg1 ...string) (*me
 }
 
 // RESTMapping indicates an expected call of RESTMapping.
-func (mr *MockRESTMapperMockRecorder) RESTMapping(arg0 any, arg1 ...any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) RESTMapping(gk any, versions ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0}, arg1...)
+	varargs := append([]any{gk}, versions...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RESTMapping", reflect.TypeOf((*MockRESTMapper)(nil).RESTMapping), varargs...)
 }
 
 // RESTMappings mocks base method.
-func (m *MockRESTMapper) RESTMappings(arg0 schema.GroupKind, arg1 ...string) ([]*meta.RESTMapping, error) {
+func (m *MockRESTMapper) RESTMappings(gk schema.GroupKind, versions ...string) ([]*meta.RESTMapping, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{arg0}
-	for _, a := range arg1 {
+	varargs := []any{gk}
+	for _, a := range versions {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "RESTMappings", varargs...)
@@ -104,53 +105,53 @@ func (m *MockRESTMapper) RESTMappings(arg0 schema.GroupKind, arg1 ...string) ([]
 }
 
 // RESTMappings indicates an expected call of RESTMappings.
-func (mr *MockRESTMapperMockRecorder) RESTMappings(arg0 any, arg1 ...any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) RESTMappings(gk any, versions ...any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{arg0}, arg1...)
+	varargs := append([]any{gk}, versions...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RESTMappings", reflect.TypeOf((*MockRESTMapper)(nil).RESTMappings), varargs...)
 }
 
 // ResourceFor mocks base method.
-func (m *MockRESTMapper) ResourceFor(arg0 schema.GroupVersionResource) (schema.GroupVersionResource, error) {
+func (m *MockRESTMapper) ResourceFor(input schema.GroupVersionResource) (schema.GroupVersionResource, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceFor", arg0)
+	ret := m.ctrl.Call(m, "ResourceFor", input)
 	ret0, _ := ret[0].(schema.GroupVersionResource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResourceFor indicates an expected call of ResourceFor.
-func (mr *MockRESTMapperMockRecorder) ResourceFor(arg0 any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) ResourceFor(input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceFor", reflect.TypeOf((*MockRESTMapper)(nil).ResourceFor), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceFor", reflect.TypeOf((*MockRESTMapper)(nil).ResourceFor), input)
 }
 
 // ResourceSingularizer mocks base method.
-func (m *MockRESTMapper) ResourceSingularizer(arg0 string) (string, error) {
+func (m *MockRESTMapper) ResourceSingularizer(resource string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourceSingularizer", arg0)
+	ret := m.ctrl.Call(m, "ResourceSingularizer", resource)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResourceSingularizer indicates an expected call of ResourceSingularizer.
-func (mr *MockRESTMapperMockRecorder) ResourceSingularizer(arg0 any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) ResourceSingularizer(resource any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceSingularizer", reflect.TypeOf((*MockRESTMapper)(nil).ResourceSingularizer), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourceSingularizer", reflect.TypeOf((*MockRESTMapper)(nil).ResourceSingularizer), resource)
 }
 
 // ResourcesFor mocks base method.
-func (m *MockRESTMapper) ResourcesFor(arg0 schema.GroupVersionResource) ([]schema.GroupVersionResource, error) {
+func (m *MockRESTMapper) ResourcesFor(input schema.GroupVersionResource) ([]schema.GroupVersionResource, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ResourcesFor", arg0)
+	ret := m.ctrl.Call(m, "ResourcesFor", input)
 	ret0, _ := ret[0].([]schema.GroupVersionResource)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ResourcesFor indicates an expected call of ResourcesFor.
-func (mr *MockRESTMapperMockRecorder) ResourcesFor(arg0 any) *gomock.Call {
+func (mr *MockRESTMapperMockRecorder) ResourcesFor(input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourcesFor", reflect.TypeOf((*MockRESTMapper)(nil).ResourcesFor), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResourcesFor", reflect.TypeOf((*MockRESTMapper)(nil).ResourcesFor), input)
 }

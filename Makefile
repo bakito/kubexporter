@@ -1,8 +1,8 @@
 # Include toolbox tasks
 include ./.toolbox.mk
 
-lint: golangci-lint
-	$(GOLANGCI_LINT) run --fix
+lint: tb.golangci-lint
+	$(TB_GOLANGCI_LINT) run --fix
 
 # Run go mod tidy
 tidy:
@@ -20,17 +20,17 @@ test-ci:
 	@sed -i '/log/d'                     coverage.out
 	go tool cover -func coverage.out
 
-release: semver goreleaser
-	@version=$$($(LOCALBIN)/semver); \
+release: tb.goreleaser tb.semver
+	@version=$$($(TB_SEMVER)); \
 	git tag -s $$version -m"Release $$version"
-	$(GORELEASER) --clean
+	$(TB_GORELEASER) --clean
 
+test-release: tb.goreleaser
+	$(TB_GORELEASER) --skip=publish --snapshot --clean
 
-test-release: goreleaser
-	$(GORELEASER) --skip=publish --snapshot --clean
 
 # generate mocks
-mocks: mockgen
-	$(MOCKGEN) -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
-	$(MOCKGEN) -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
+mocks: tb.mockgen
+	$(TB_MOCKGEN) -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
+	$(TB_MOCKGEN) -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 

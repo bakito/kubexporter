@@ -21,6 +21,7 @@ import (
 type MockInterface struct {
 	ctrl     *gomock.Controller
 	recorder *MockInterfaceMockRecorder
+	isgomock struct{}
 }
 
 // MockInterfaceMockRecorder is the mock recorder for MockInterface.
@@ -41,15 +42,15 @@ func (m *MockInterface) EXPECT() *MockInterfaceMockRecorder {
 }
 
 // Resource mocks base method.
-func (m *MockInterface) Resource(arg0 schema.GroupVersionResource) dynamic.NamespaceableResourceInterface {
+func (m *MockInterface) Resource(resource schema.GroupVersionResource) dynamic.NamespaceableResourceInterface {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Resource", arg0)
+	ret := m.ctrl.Call(m, "Resource", resource)
 	ret0, _ := ret[0].(dynamic.NamespaceableResourceInterface)
 	return ret0
 }
 
 // Resource indicates an expected call of Resource.
-func (mr *MockInterfaceMockRecorder) Resource(arg0 any) *gomock.Call {
+func (mr *MockInterfaceMockRecorder) Resource(resource any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resource", reflect.TypeOf((*MockInterface)(nil).Resource), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resource", reflect.TypeOf((*MockInterface)(nil).Resource), resource)
 }
