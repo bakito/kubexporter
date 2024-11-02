@@ -111,6 +111,7 @@ func readConfig(cmd *cobra.Command, configFlags *genericclioptions.ConfigFlags, 
 
 func correctProgressForNonTerminalRun(config *types.Config) {
 	if config.Progress != types.ProgressNone &&
+		config.Progress != types.ProgressSimple &&
 		!isatty.IsTerminal(os.Stdout.Fd()) &&
 		!isatty.IsCygwinTerminal(os.Stdout.Fd()) {
 		config.Progress = types.ProgressSimple
