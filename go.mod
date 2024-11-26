@@ -5,7 +5,7 @@ go 1.23.1
 require (
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/charmbracelet/bubbles v0.20.0
-	github.com/charmbracelet/bubbletea v1.2.3
+	github.com/charmbracelet/bubbletea v1.2.4
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20
