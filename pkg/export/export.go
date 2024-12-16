@@ -72,7 +72,7 @@ func (e *exporter) Export(ctx context.Context) error {
 	case types.ProgressBar:
 		prog = mpb.NewProgress(len(resources))
 	case types.ProgressBarBubbles:
-		prog = bubbles.NewProgress(len(resources))
+		prog = bubbles.NewProgress(resources)
 	default:
 		prog = nop.NewProgress()
 	}
