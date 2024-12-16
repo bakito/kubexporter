@@ -116,10 +116,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.mainProgress.Width = maxWidth
 		}
 		for _, workerProgress := range m.workerProgress {
-			workerProgress.Width = msg.Width - padding*2 - 4
-			if workerProgress.Width > maxWidth {
-				workerProgress.Width = maxWidth
-			}
+			workerProgress.Width = m.mainProgress.Width
 		}
 		return m, nil
 
