@@ -26,11 +26,18 @@ func NewProgress(resources []*types.GroupResource) progress.Progress {
 	return &bubblesProgress{
 		model: &model{
 			resources:    float64(len(resources)),
-			mainProgress: bp.New(bp.WithScaledGradient("#6B89E8", "#316CE6")),
+			mainProgress: newProgress(),
 			mainPercent:  1 / float64(len(resources)),
 			maxLen:       int(maxLen),
 		},
 	}
+}
+
+func newProgress() bp.Model {
+	return bp.New(
+		bp.WithScaledGradient("#6B89E8", "#316CE6"),
+		bp.WithFillCharacters('█', '░'),
+	)
 }
 
 type bubblesProgress struct {
@@ -65,7 +72,7 @@ func (b *bubblesProgress) Reset() {
 }
 
 func (b *bubblesProgress) NewWorker() progress.Progress {
-	w := bp.New(bp.WithScaledGradient("#6B89E8", "#316CE6"))
+	w := newProgress()
 	b.model.workerProgress = append(b.model.workerProgress, &w)
 	b.model.workerStates = append(b.model.workerStates, &workerState{})
 	return b
