@@ -111,12 +111,9 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.mainProgress.Width = msg.Width - padding*2 - 4
+		m.mainProgress.Width = msg.Width - padding*2 - len(mainProgressTitle) - 3
 		if m.mainProgress.Width > maxWidth {
 			m.mainProgress.Width = maxWidth
-		}
-		for _, workerProgress := range m.workerProgress {
-			workerProgress.Width = m.mainProgress.Width
 		}
 		return m, nil
 
