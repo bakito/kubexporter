@@ -79,7 +79,7 @@ func (b *bubblesProgress) NewWorker() progress.Progress {
 }
 
 func (b *bubblesProgress) IncrementMainBar() {
-	b.program.Send(updateMainMsq(1))
+	b.program.Send(updateMainMsg(1))
 }
 
 func (b *bubblesProgress) IncrementResourceBarBy(id int, inc int) {
@@ -123,7 +123,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
-	case updateMainMsq:
+	case updateMainMsg:
 		m.mainPercent += 1 / m.resources
 		if m.mainPercent > 1.0 {
 			m.mainPercent = 1.0
@@ -180,7 +180,7 @@ func (m *model) View() string {
 }
 
 type (
-	updateMainMsq   int
+	updateMainMsg   int
 	updateWorkerMsq struct {
 		workerID int
 		incr     int
