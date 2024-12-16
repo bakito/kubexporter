@@ -2,9 +2,11 @@ package bubbles
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/bakito/kubexporter/pkg/export/progress"
+	"github.com/bakito/kubexporter/pkg/types"
 	bp "github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -16,14 +18,26 @@ const (
 	mainProgressTitle = "Resources"
 )
 
-func NewProgress(resources int) progress.Progress {
+func NewProgress(resources []*types.GroupResource) progress.Progress {
+	var maxLen float64
+	for _, res := range resources {
+		maxLen = math.Max(maxLen, float64(len(res.GroupKind())))
+	}
 	return &bubblesProgress{
 		model: &model{
-			resources:    float64(resources),
-			mainProgress: bp.New(bp.WithScaledGradient("#6B89E8", "#316CE6")),
-			mainPercent:  1 / float64(resources),
+			resources:    float64(len(resources)),
+			mainProgress: newProgress(),
+			mainPercent:  1 / float64(len(resources)),
+			maxLen:       int(maxLen),
 		},
 	}
+}
+
+func newProgress() bp.Model {
+	return bp.New(
+		bp.WithScaledGradient("#6B89E8", "#316CE6"),
+		bp.WithFillCharacters('█', '░'),
+	)
 }
 
 type bubblesProgress struct {
@@ -58,14 +72,14 @@ func (b *bubblesProgress) Reset() {
 }
 
 func (b *bubblesProgress) NewWorker() progress.Progress {
-	w := bp.New(bp.WithScaledGradient("#6B89E8", "#316CE6"))
+	w := newProgress()
 	b.model.workerProgress = append(b.model.workerProgress, &w)
 	b.model.workerStates = append(b.model.workerStates, &workerState{})
 	return b
 }
 
 func (b *bubblesProgress) IncrementMainBar() {
-	b.program.Send(updateMainMsq(1))
+	b.program.Send(updateMainMsg(1))
 }
 
 func (b *bubblesProgress) IncrementResourceBarBy(id int, inc int) {
@@ -78,6 +92,7 @@ type model struct {
 	mainPercent    float64
 	workerProgress []*bp.Model
 	workerStates   []*workerState
+	maxLen         int
 }
 
 type workerState struct {
@@ -96,19 +111,13 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.mainProgress.Width = msg.Width - padding*2 - 4
+		m.mainProgress.Width = msg.Width - padding*2 - len(mainProgressTitle) - 3
 		if m.mainProgress.Width > maxWidth {
 			m.mainProgress.Width = maxWidth
 		}
-		for _, workerProgress := range m.workerProgress {
-			workerProgress.Width = msg.Width - padding*2 - 4
-			if workerProgress.Width > maxWidth {
-				workerProgress.Width = maxWidth
-			}
-		}
 		return m, nil
 
-	case updateMainMsq:
+	case updateMainMsg:
 		m.mainPercent += 1 / m.resources
 		if m.mainPercent > 1.0 {
 			m.mainPercent = 1.0
@@ -118,20 +127,32 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case searchMsg:
+		if m.workerStates[msg.WorkerID-1].Total == 0 {
+			m.workerStates[msg.WorkerID-1].percent = 1
+		} else {
+			m.workerStates[msg.WorkerID-1].percent = 0
+		}
 		m.workerStates[msg.WorkerID-1].Step = progress.Step(msg)
 		m.workerStates[msg.WorkerID-1].icon = "🔍"
-		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - len(msg.CurrentKind) - 3 + len(mainProgressTitle)
+		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - m.maxLen - 3 + len(mainProgressTitle)
 		return m, nil
 	case exportMsg:
+		if m.workerStates[msg.WorkerID-1].Total == 0 {
+			m.workerStates[msg.WorkerID-1].percent = 1
+		} else {
+			m.workerStates[msg.WorkerID-1].percent = 0
+		}
+
 		m.workerStates[msg.WorkerID-1].Step = progress.Step(msg)
 		m.workerStates[msg.WorkerID-1].icon = "👷"
-		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - len(msg.CurrentKind) - 3 + len(mainProgressTitle)
+		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - m.maxLen - 3 + len(mainProgressTitle)
 		return m, nil
 	case updateWorkerMsq:
 		if m.workerStates[msg.workerID-1].Total == 0 {
 			m.workerStates[msg.workerID-1].percent = 1
 		} else {
-			m.workerStates[msg.workerID-1].percent = m.workerStates[msg.workerID-1].percent + float64(msg.incr/m.workerStates[msg.workerID-1].Total)
+			incr := float64(msg.incr) / float64(m.workerStates[msg.workerID-1].Total)
+			m.workerStates[msg.workerID-1].percent = m.workerStates[msg.workerID-1].percent + incr
 		}
 		return m, nil
 	case exitMsg:
@@ -146,14 +167,14 @@ func (m *model) View() string {
 	pad := strings.Repeat(" ", padding)
 	view := "\n" + pad + fmt.Sprintf("%s: ", mainProgressTitle) + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
 	for i, workerProgress := range m.workerProgress {
-		view += pad + fmt.Sprintf("%s %s: ", m.workerStates[i].icon,
-			m.workerStates[i].CurrentKind) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n"
+		view += pad + fmt.Sprintf("%s %s: %s", m.workerStates[i].icon,
+			m.workerStates[i].CurrentKind, strings.Repeat(" ", m.maxLen-len(m.workerStates[i].CurrentKind))) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n"
 	}
 	return view
 }
 
 type (
-	updateMainMsq   int
+	updateMainMsg   int
 	updateWorkerMsq struct {
 		workerID int
 		incr     int
