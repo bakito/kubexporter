@@ -1,5 +1,5 @@
 summary: true
-progress: bar
+progress: bubbles
 archive: true
 archiveRetentionDays: 10
 archiveTarget: .

@@ -154,15 +154,12 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - m.maxLen - 3 + len(mainProgressTitle)
 		return m, nil
 	case updateWorkerMsq:
-		ws := m.workerStates[msg.workerID-1]
-		fmt.Sprint(ws)
 		if m.workerStates[msg.workerID-1].Total == 0 {
 			m.workerStates[msg.workerID-1].percent = 1
 		} else {
 			incr := float64(msg.incr) / float64(m.workerStates[msg.workerID-1].Total)
 			m.workerStates[msg.workerID-1].percent = m.workerStates[msg.workerID-1].percent + incr
 		}
-		ws = m.workerStates[msg.workerID-1]
 		return m, nil
 	case exitMsg:
 		return m, tea.Quit
