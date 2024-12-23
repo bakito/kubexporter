@@ -167,8 +167,12 @@ func (m *model) View() string {
 	pad := strings.Repeat(" ", padding)
 	view := "\n" + pad + fmt.Sprintf("%s: ", mainProgressTitle) + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
 	for i, workerProgress := range m.workerProgress {
-		view += pad + fmt.Sprintf("%s %s: %s", m.workerStates[i].icon,
-			m.workerStates[i].CurrentKind, strings.Repeat(" ", m.maxLen-len(m.workerStates[i].CurrentKind))) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n"
+		view += pad + fmt.Sprintf(
+			"%s %s: %s",
+			m.workerStates[i].icon,
+			m.workerStates[i].CurrentKind,
+			strings.Repeat(" ", m.maxLen-len(m.workerStates[i].CurrentKind)),
+		) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n"
 	}
 	return view
 }

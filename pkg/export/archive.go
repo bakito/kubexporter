@@ -21,7 +21,9 @@ func (e *exporter) pruneArchives() error {
 		return err
 	}
 
-	pattern := regexp.MustCompile(fmt.Sprintf(`^%s-?.*-\d{4}-\d{2}-\d{2}-\d{6}\.tar\.gz$`, filepath.Base(e.config.Target)))
+	pattern := regexp.MustCompile(
+		fmt.Sprintf(`^%s-?.*-\d{4}-\d{2}-\d{2}-\d{6}\.tar\.gz$`, filepath.Base(e.config.Target)),
+	)
 
 	deleteOlderThan := e.config.MaxArchiveAge()
 	entries, err := os.ReadDir(dir)
@@ -56,7 +58,12 @@ func (e *exporter) tarGz() error {
 
 	var name string
 	if e.config.Namespace != "" {
-		name = fmt.Sprintf("%s-%s-%s.tar.gz", filepath.Base(e.config.Target), e.config.Namespace, time.Now().Format(archiveTimestampPattern))
+		name = fmt.Sprintf(
+			"%s-%s-%s.tar.gz",
+			filepath.Base(e.config.Target),
+			e.config.Namespace,
+			time.Now().Format(archiveTimestampPattern),
+		)
 	} else {
 		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format(archiveTimestampPattern))
 	}

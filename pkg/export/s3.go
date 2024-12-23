@@ -19,7 +19,13 @@ func (e *exporter) uploadS3(ctx context.Context) error {
 		return err
 	}
 
-	_, err = minioClient.FPutObject(ctx, cfg.Bucket, filepath.Base(e.archive), e.archive, minio.PutObjectOptions{ContentType: "application/x-gtar"})
+	_, err = minioClient.FPutObject(
+		ctx,
+		cfg.Bucket,
+		filepath.Base(e.archive),
+		e.archive,
+		minio.PutObjectOptions{ContentType: "application/x-gtar"},
+	)
 	if err != nil {
 		return err
 	}

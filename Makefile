@@ -8,6 +8,9 @@ lint: tb.golangci-lint
 tidy:
 	go mod tidy
 
+fmt: tb.golines tb.gofumpt
+	$(TB_GOLINES) --base-formatter="$(TB_GOFUMPT)" --max-len=120 --write-output .
+
 # Run tests
 test: tidy lint test-ci
 test-ci:

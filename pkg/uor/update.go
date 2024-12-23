@@ -63,7 +63,13 @@ func Update(config *types.Config) error {
 	return nil
 }
 
-func updateFile(ctx context.Context, config *types.Config, file string, ac *client.ApiClient, table *tablewriter.Table) error {
+func updateFile(
+	ctx context.Context,
+	config *types.Config,
+	file string,
+	ac *client.ApiClient,
+	table *tablewriter.Table,
+) error {
 	fileName := strings.Replace(file, config.Target+"/", "", 1)
 	us, err := utils.ReadFile(file)
 	if err != nil {
@@ -113,7 +119,13 @@ func updateFile(ctx context.Context, config *types.Config, file string, ac *clie
 	return nil
 }
 
-func findOwner(ctx context.Context, ac *client.ApiClient, owners map[string]*unstructured.Unstructured, ref *v1.OwnerReference, us *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func findOwner(
+	ctx context.Context,
+	ac *client.ApiClient,
+	owners map[string]*unstructured.Unstructured,
+	ref *v1.OwnerReference,
+	us *unstructured.Unstructured,
+) (*unstructured.Unstructured, error) {
 	key := us.GetNamespace() + "#" + ref.APIVersion + "#" + ref.Name
 	if owner, ok := owners[key]; ok {
 		return owner, nil

@@ -100,29 +100,29 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config
 type Config struct {
-	Excluded                Excluded      `json:"excluded" yaml:"excluded"`
-	Included                Included      `json:"included" yaml:"included"`
-	CreatedWithin           time.Duration `json:"createdWithin" yaml:"createdWithin"`
+	Excluded                Excluded      `json:"excluded"                yaml:"excluded"`
+	Included                Included      `json:"included"                yaml:"included"`
+	CreatedWithin           time.Duration `json:"createdWithin"           yaml:"createdWithin"`
 	ConsiderOwnerReferences bool          `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
-	Masked                  *Masked       `json:"masked" yaml:"masked"`
-	Encrypted               *Encrypted    `json:"encrypted" yaml:"masked"`
-	SortSlices              KindFields    `json:"sortSlices" yaml:"sortSlices"`
-	FileNameTemplate        string        `json:"fileNameTemplate" yaml:"fileNameTemplate"`
-	ListFileNameTemplate    string        `json:"listFileNameTemplate" yaml:"listFileNameTemplate"`
-	AsLists                 bool          `json:"asLists" yaml:"asLists"`
-	QueryPageSize           int           `json:"queryPageSize" yaml:"queryPageSize"`
-	Target                  string        `json:"target" yaml:"target"`
-	ClearTarget             bool          `json:"clearTarget" yaml:"clearTarget"`
-	Summary                 bool          `json:"summary" yaml:"summary"`
-	Progress                Progress      `json:"progress" yaml:"progress"`
-	Namespace               string        `json:"namespace" yaml:"namespace"`
-	Worker                  int           `json:"worker" yaml:"worker"`
-	Archive                 bool          `json:"archive" yaml:"archive"`
-	ArchiveRetentionDays    int           `json:"archiveRetentionDays" yaml:"archiveRetentionDays"`
-	ArchiveTarget           string        `json:"archiveTarget" yaml:"archiveTarget"`
-	S3Config                *S3Config     `json:"s3" yaml:"s3"`
-	Quiet                   bool          `json:"quiet" yaml:"quiet"`
-	Verbose                 bool          `json:"verbose" yaml:"verbose"`
+	Masked                  *Masked       `json:"masked"                  yaml:"masked"`
+	Encrypted               *Encrypted    `json:"encrypted"               yaml:"masked"`
+	SortSlices              KindFields    `json:"sortSlices"              yaml:"sortSlices"`
+	FileNameTemplate        string        `json:"fileNameTemplate"        yaml:"fileNameTemplate"`
+	ListFileNameTemplate    string        `json:"listFileNameTemplate"    yaml:"listFileNameTemplate"`
+	AsLists                 bool          `json:"asLists"                 yaml:"asLists"`
+	QueryPageSize           int           `json:"queryPageSize"           yaml:"queryPageSize"`
+	Target                  string        `json:"target"                  yaml:"target"`
+	ClearTarget             bool          `json:"clearTarget"             yaml:"clearTarget"`
+	Summary                 bool          `json:"summary"                 yaml:"summary"`
+	Progress                Progress      `json:"progress"                yaml:"progress"`
+	Namespace               string        `json:"namespace"               yaml:"namespace"`
+	Worker                  int           `json:"worker"                  yaml:"worker"`
+	Archive                 bool          `json:"archive"                 yaml:"archive"`
+	ArchiveRetentionDays    int           `json:"archiveRetentionDays"    yaml:"archiveRetentionDays"`
+	ArchiveTarget           string        `json:"archiveTarget"           yaml:"archiveTarget"`
+	S3Config                *S3Config     `json:"s3"                      yaml:"s3"`
+	Quiet                   bool          `json:"quiet"                   yaml:"quiet"`
+	Verbose                 bool          `json:"verbose"                 yaml:"verbose"`
 
 	excludedSet set
 	includedSet set
@@ -136,12 +136,12 @@ func (c *Config) MaxArchiveAge() time.Time {
 }
 
 type S3Config struct {
-	Endpoint        string `json:"endpoint" yaml:"endpoint"`
-	AccessKeyID     string `json:"accessKeyID" yaml:"accessKeyID"`
+	Endpoint        string `json:"endpoint"        yaml:"endpoint"`
+	AccessKeyID     string `json:"accessKeyID"     yaml:"accessKeyID"`
 	SecretAccessKey string `json:"secretAccessKey" yaml:"secretAccessKey"`
-	Token           string `json:"token" yaml:"token"`
-	Secure          bool   `json:"secure" yaml:"secure"`
-	Bucket          string `json:"bucket" yaml:"bucket"`
+	Token           string `json:"token"           yaml:"token"`
+	Secure          bool   `json:"secure"          yaml:"secure"`
+	Bucket          string `json:"bucket"          yaml:"bucket"`
 }
 
 // Progress type
@@ -149,9 +149,9 @@ type Progress string
 
 // Excluded exclusion params
 type Excluded struct {
-	Kinds        []string                `json:"kinds" yaml:"kinds"`
-	Fields       [][]string              `json:"fields" yaml:"fields"`
-	KindFields   KindFields              `json:"kindFields" yaml:"kindFields"`
+	Kinds        []string                `json:"kinds"       yaml:"kinds"`
+	Fields       [][]string              `json:"fields"      yaml:"fields"`
+	KindFields   KindFields              `json:"kindFields"  yaml:"kindFields"`
 	KindsByField map[string][]FieldValue `json:"kindByField" yaml:"kindByField"`
 }
 
@@ -228,8 +228,8 @@ type Included struct {
 
 // FieldValue field with value
 type FieldValue struct {
-	Field  []string `json:"field" yaml:"field"`
-	Values []string `json:"values" yaml:"values"   `
+	Field  []string `json:"field"  yaml:"field"`
+	Values []string `json:"values" yaml:"values"`
 }
 
 // FilterFields filter fields for a given resource
@@ -265,7 +265,12 @@ func removeNestedField(obj map[string]interface{}, fields ...string) {
 	delete(m, fields[len(fields)-1])
 }
 
-func transformNestedFields(kf KindFields, transform func(val interface{}) string, gk string, us unstructured.Unstructured) {
+func transformNestedFields(
+	kf KindFields,
+	transform func(val interface{}) string,
+	gk string,
+	us unstructured.Unstructured,
+) {
 	if kf != nil && kf[gk] != nil {
 		for _, f := range kf[gk] {
 			transformNestedField(us.Object, transform, f...)

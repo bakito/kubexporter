@@ -390,7 +390,10 @@ var _ = Describe("Config", func() {
 					"stringSlice": []interface{}{"C", "A", "B", "AA"},
 					"intSlice":    []interface{}{int64(3), int64(1), int64(2), int64(4)},
 					"floatSlice":  []interface{}{1.3, 1.1, 1.2, 1.4},
-					"structSlice": []interface{}{map[string]interface{}{"field": "val2"}, map[string]interface{}{"field": "val1"}},
+					"structSlice": []interface{}{
+						map[string]interface{}{"field": "val2"},
+						map[string]interface{}{"field": "val1"},
+					},
 				},
 			}
 		})
@@ -412,7 +415,9 @@ var _ = Describe("Config", func() {
 		It("should sort the struct slice", func() {
 			config.SortSlices["group.kind"] = [][]string{{"structSlice"}}
 			config.SortSliceFields(res, us)
-			Ω(us.Object["structSlice"]).Should(Equal([]interface{}{map[string]interface{}{"field": "val1"}, map[string]interface{}{"field": "val2"}}))
+			Ω(
+				us.Object["structSlice"],
+			).Should(Equal([]interface{}{map[string]interface{}{"field": "val1"}, map[string]interface{}{"field": "val2"}}))
 		})
 	})
 
@@ -431,20 +436,28 @@ var _ = Describe("Config", func() {
 
 		It("should read Excluded.Fields correctly", func() {
 			Ω(cfg.Excluded.Fields).Should(ContainElement([]string{"status"}))
-			Ω(cfg.Excluded.Fields).Should(ContainElement([]string{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"}))
+			Ω(
+				cfg.Excluded.Fields,
+			).Should(ContainElement([]string{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"}))
 		})
 
 		It("should read Excluded.KindsField correctly", func() {
 			Ω(cfg.Excluded.KindFields).Should(HaveKey("Secret"))
-			Ω(cfg.Excluded.KindFields["Secret"]).Should(ContainElement([]string{"metadata", "annotations", "openshift.io/token-secret.name"}))
-			Ω(cfg.Excluded.KindFields["Secret"]).Should(ContainElement([]string{"metadata", "annotations", "openshift.io/token-secret.value"}))
+			Ω(
+				cfg.Excluded.KindFields["Secret"],
+			).Should(ContainElement([]string{"metadata", "annotations", "openshift.io/token-secret.name"}))
+			Ω(
+				cfg.Excluded.KindFields["Secret"],
+			).Should(ContainElement([]string{"metadata", "annotations", "openshift.io/token-secret.value"}))
 		})
 
 		It("should read Excluded.KindsByField correctly", func() {
 			Ω(cfg.Excluded.KindsByField).Should(HaveKey("Secret"))
 			Ω(cfg.Excluded.KindsByField["Secret"]).Should(HaveLen(1))
 			Ω(cfg.Excluded.KindsByField["Secret"][0].Field).Should(Equal([]string{"type"}))
-			Ω(cfg.Excluded.KindsByField["Secret"][0].Values).Should(Equal([]string{"helm.sh/release", "helm.sh/release.v1"}))
+			Ω(
+				cfg.Excluded.KindsByField["Secret"][0].Values,
+			).Should(Equal([]string{"helm.sh/release", "helm.sh/release.v1"}))
 		})
 
 		It("should read Masked.KindFields correctly", func() {
@@ -488,7 +501,9 @@ var _ = Describe("Config", func() {
 					"Deployment": [][]string{{"metadata", "annotations"}},
 				}
 
-				Ω(kf.String()).Should(Equal("Deployment: [[metadata,annotations]], Pod: [[metadata,labels]], Secret: [[data,key]]"))
+				Ω(
+					kf.String(),
+				).Should(Equal("Deployment: [[metadata,annotations]], Pod: [[metadata,labels]], Secret: [[data,key]]"))
 			})
 		})
 	})

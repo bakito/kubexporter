@@ -24,7 +24,11 @@ import (
 
 // Worker interface
 type Worker interface {
-	GenerateWork(ctx context.Context, s *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource)
+	GenerateWork(
+		ctx context.Context,
+		s *sync.WaitGroup,
+		out chan *types.GroupResource,
+	) func(resource *types.GroupResource)
 	Stop() Stats
 }
 
@@ -97,7 +101,11 @@ func (w *worker) Stop() Stats {
 }
 
 // list resources
-func (w *worker) list(ctx context.Context, group, version, kind string, continueValue string) (*unstructured.UnstructuredList, error) {
+func (w *worker) list(
+	ctx context.Context,
+	group, version, kind string,
+	continueValue string,
+) (*unstructured.UnstructuredList, error) {
 	mapping, err := w.ac.Mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
 	if err != nil {
 		return nil, err
@@ -120,7 +128,11 @@ func (w *worker) list(ctx context.Context, group, version, kind string, continue
 }
 
 // GenerateWork generate the work function
-func (w *worker) GenerateWork(ctx context.Context, wg *sync.WaitGroup, out chan *types.GroupResource) func(resource *types.GroupResource) {
+func (w *worker) GenerateWork(
+	ctx context.Context,
+	wg *sync.WaitGroup,
+	out chan *types.GroupResource,
+) func(resource *types.GroupResource) {
 	return func(res *types.GroupResource) {
 		defer wg.Done()
 		w.stats.Kinds++
@@ -149,7 +161,14 @@ func (w *worker) GenerateWork(ctx context.Context, wg *sync.WaitGroup, out chan 
 
 func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
 	w.currentPage = res.Pages + 1
-	w.prog.NewSearchBar(progress.Step{WorkerID: w.id, CurrentKind: w.currentKind, PageSize: w.config.QueryPageSize, CurrentPage: w.currentPage})
+	w.prog.NewSearchBar(
+		progress.Step{
+			WorkerID:    w.id,
+			CurrentKind: w.currentKind,
+			PageSize:    w.config.QueryPageSize,
+			CurrentPage: w.currentPage,
+		},
+	)
 	start := time.Now()
 	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
 

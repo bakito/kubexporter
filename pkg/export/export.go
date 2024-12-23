@@ -227,7 +227,15 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	withPages := e.config.QueryPageSize > 0
 
 	table := render.Table()
-	header := []string{"Group", "Version", "Kind", "Namespaces", "Total Instances", "Exported Instances", "Query Duration"}
+	header := []string{
+		"Group",
+		"Version",
+		"Kind",
+		"Namespaces",
+		"Total Instances",
+		"Exported Instances",
+		"Query Duration",
+	}
 	if withPages {
 		header = append(header, "Query Pages")
 	}
