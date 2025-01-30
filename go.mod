@@ -14,7 +14,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.22.2
 	github.com/onsi/gomega v1.36.2
 	github.com/spf13/cobra v1.8.1
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.6
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v8 v8.9.1
 	go.uber.org/mock v0.5.0
