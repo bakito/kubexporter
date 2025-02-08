@@ -199,8 +199,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/vardius/worker-pool/v2 v2.1.0 h1:3EICiE8FleVdHAWSPrJCmEA1Ikb1BT3blb32hcaDO2I=
 github.com/vardius/worker-pool/v2 v2.1.0/go.mod h1:mWRxoOWVI4OgnOWv1Fj0U+JqCNO4xUBd2H6JoUIE58o=
-github.com/vbauerster/mpb/v8 v8.9.1 h1:LH5R3lXPfE2e3lIGxN7WNWv3Hl5nWO6LRi2B0L0ERHw=
-github.com/vbauerster/mpb/v8 v8.9.1/go.mod h1:4XMvznPh8nfe2NpnDo1QTPvW9MVkUhbG90mPWvmOzcQ=
+github.com/vbauerster/mpb/v8 v8.9.2 h1:kb91+D643Qg040bbICYtzpjgZ9ypVO/+sjv4Jcm6si4=
+github.com/vbauerster/mpb/v8 v8.9.2/go.mod h1:hxS8Hz4C6ijnppDSIX6LjG8FYJSoPo9iIOcE53Zik0c=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xlab/treeprint v1.2.0 h1:HzHnuAF1plUN2zGlAFHbSQP2qJ0ZAD3XF5XD7OesXRQ=
