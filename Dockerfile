@@ -1,9 +1,9 @@
-FROM golang:1.24-bullseye AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /build
 
 ARG VERSION=main
-RUN apt-get update && apt-get install -y upx
+RUN apk update && apk add upx
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
