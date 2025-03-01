@@ -6,7 +6,7 @@
 
 ```bash
 nix-env -iA nixpkgs.nix-prefetch-git
-nix-prefetch-git --url https://github.com/bakito/kubexporter --rev v0.6.2
+nix-prefetch-git --url https://github.com/bakito/kubexporter --rev v0.6.3
 ```
 
 ## build
@@ -18,6 +18,6 @@ nix-build -A  kubexporter
 ## Test
 
 ```bash
-./result/bin/kubexporter 
+./result/bin/kubexporter --version
 ```
 
