@@ -1,15 +1,12 @@
-# Include toolbox tasks
-include ./.toolbox.mk
-
-lint: tb.golangci-lint
-	$(TB_GOLANGCI_LINT) run --fix
+lint:
+	golangci-lint run --fix
 
 # Run go mod tidy
 tidy:
 	go mod tidy
 
-fmt: tb.golines tb.gofumpt
-	$(TB_GOLINES) --base-formatter="$(TB_GOFUMPT)" --max-len=120 --write-output .
+fmt:
+	golines --base-formatter="gofumpt" --max-len=120 --write-output .
 
 # Run tests
 test: tidy lint test-ci
@@ -23,17 +20,17 @@ test-ci:
 	@sed -i '/log/d'                     coverage.out
 	go tool cover -func coverage.out
 
-release: tb.goreleaser tb.semver
-	@version=$$($(TB_SEMVER)); \
+release:
+	@version=$$(semver); \
 	git tag -s $$version -m"Release $$version"
-	$(TB_GORELEASER) --clean
+	goreleaser --clean
 
-test-release: tb.goreleaser
-	$(TB_GORELEASER) --skip=publish --snapshot --clean
+test-release:
+	goreleaser --skip=publish --snapshot --clean
 
 
 # generate mocks
-mocks: tb.mockgen
-	$(TB_MOCKGEN) -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
-	$(TB_MOCKGEN) -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
+mocks:
+	mockgen -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
+	mockgen -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 

@@ -1,0 +1,14 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.0/.schema/devbox.schema.json",
+  "packages": [
+    "gofumpt@0.7.0",
+    "golangci-lint@1.64.7",
+    "golines@0.12.2",
+    "goreleaser@2.8.0",
+    "mockgen@0.5.0"
+  ],
+  "shell": {
+    "scripts": {
+    }
+  }
+}
