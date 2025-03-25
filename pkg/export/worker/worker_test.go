@@ -5,10 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/bakito/kubexporter/pkg/client"
-	"github.com/bakito/kubexporter/pkg/export/progress/nop"
-	mock "github.com/bakito/kubexporter/pkg/mocks/client"
-	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/ghodss/yaml"
 	"github.com/google/uuid"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,6 +17,11 @@ import (
 	amtypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
+
+	"github.com/bakito/kubexporter/pkg/client"
+	"github.com/bakito/kubexporter/pkg/export/progress/nop"
+	mock "github.com/bakito/kubexporter/pkg/mocks/client"
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
 var _ = Describe("Worker", func() {
@@ -71,7 +72,7 @@ var _ = Describe("Worker", func() {
 
 		w = &worker{
 			config: config,
-			ac:     &client.ApiClient{Client: mockClient},
+			ac:     &client.APIClient{Client: mockClient},
 			prog:   nop.NewProgress(),
 		}
 	})

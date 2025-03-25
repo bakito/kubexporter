@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// Masked masking params
+// Masked masking params.
 type Masked struct {
 	Replacement string     `json:"replacement" yaml:"replacement"`
 	Checksum    string     `json:"checksum"    yaml:"checksum"`
@@ -44,7 +44,7 @@ func (m *Masked) Setup() error {
 	return nil
 }
 
-func (m *Masked) doMask(val interface{}) string {
+func (m *Masked) doMask(val any) string {
 	if m.doSum != nil {
 		s := fmt.Sprintf("%v", val)
 		return m.doSum(s)
@@ -52,7 +52,7 @@ func (m *Masked) doMask(val interface{}) string {
 	return m.Replacement
 }
 
-// MaskFields mask fields for a given resource
+// MaskFields mask fields for a given resource.
 func (c *Config) MaskFields(res *GroupResource, us unstructured.Unstructured) {
 	transformNestedFields(c.Masked.KindFields, c.Masked.doMask, res.GroupKind(), us)
 }

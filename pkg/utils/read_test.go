@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/bakito/kubexporter/pkg/types"
-	"github.com/bakito/kubexporter/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
+
+	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/pkg/utils"
 )
 
 var _ = Describe("Utils", func() {
@@ -26,7 +27,7 @@ var _ = Describe("Utils", func() {
 		var data *unstructured.Unstructured
 		BeforeEach(func() {
 			data = &unstructured.Unstructured{}
-			data.SetUnstructuredContent(map[string]interface{}{
+			data.SetUnstructuredContent(map[string]any{
 				"kind": "Pod",
 				"foo":  "bar",
 			})

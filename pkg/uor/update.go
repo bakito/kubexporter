@@ -6,15 +6,16 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/olekukonko/tablewriter"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
-	"github.com/olekukonko/tablewriter"
-	"k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func Update(config *types.Config) error {
@@ -39,7 +40,7 @@ func Update(config *types.Config) error {
 		return err
 	}
 
-	ac, err := client.NewApiClient(config)
+	ac, err := client.NewAPIClient(config)
 	if err != nil {
 		return err
 	}
@@ -67,7 +68,7 @@ func updateFile(
 	ctx context.Context,
 	config *types.Config,
 	file string,
-	ac *client.ApiClient,
+	ac *client.APIClient,
 	table *tablewriter.Table,
 ) error {
 	fileName := strings.Replace(file, config.Target+"/", "", 1)
@@ -121,9 +122,9 @@ func updateFile(
 
 func findOwner(
 	ctx context.Context,
-	ac *client.ApiClient,
+	ac *client.APIClient,
 	owners map[string]*unstructured.Unstructured,
-	ref *v1.OwnerReference,
+	ref *metav1.OwnerReference,
 	us *unstructured.Unstructured,
 ) (*unstructured.Unstructured, error) {
 	key := us.GetNamespace() + "#" + ref.APIVersion + "#" + ref.Name
@@ -142,7 +143,7 @@ func findOwner(
 	if err != nil {
 		return nil, err
 	}
-	owner, err := ac.Client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, v1.GetOptions{})
+	owner, err := ac.Client.Resource(mapping.Resource).Namespace(us.GetNamespace()).Get(ctx, ref.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}

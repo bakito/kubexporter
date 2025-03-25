@@ -41,7 +41,7 @@ func WriteFile(printFlags *genericclioptions.PrintFlags, file string, us *unstru
 	return nil
 }
 
-// PrintObj print the given object
+// PrintObj print the given object.
 func PrintObj(printFlags *genericclioptions.PrintFlags, ro runtime.Object, out io.Writer) error {
 	p, err := printFlags.ToPrinter()
 	if err != nil {

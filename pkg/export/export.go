@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/export/progress"
 	"github.com/bakito/kubexporter/pkg/export/progress/bubbles"
@@ -18,13 +21,11 @@ import (
 	"github.com/bakito/kubexporter/pkg/render"
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/version"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// NewExporter create a new exporter
+// NewExporter create a new exporter.
 func NewExporter(config *types.Config) (Exporter, error) {
-	ac, err := client.NewApiClient(config)
+	ac, err := client.NewAPIClient(config)
 	if err != nil {
 		return nil, err
 	}
@@ -37,9 +38,19 @@ func NewExporter(config *types.Config) (Exporter, error) {
 	}, nil
 }
 
-// Exporter interface
+// Exporter interface.
 type Exporter interface {
-	Export(context.Context) error
+	Export(ctx context.Context) error
+}
+
+type exporter struct {
+	start           time.Time
+	l               log.YALI
+	config          *types.Config
+	stats           *worker.Stats
+	archive         string
+	deletedArchives []string
+	ac              *client.APIClient
 }
 
 func (e *exporter) Export(ctx context.Context) error {
@@ -78,7 +89,7 @@ func (e *exporter) Export(ctx context.Context) error {
 	}
 
 	var workers []worker.Worker
-	for i := 0; i < e.config.Worker; i++ {
+	for i := range e.config.Worker {
 		workers = append(workers, worker.New(i, e.config, e.ac, prog))
 	}
 
@@ -300,14 +311,4 @@ func (e *exporter) purgeTarget() error {
 	e.l.Printf("Deleting target %q\n", e.config.Target)
 	defer e.l.Checkf("done 🚮\n")
 	return os.RemoveAll(e.config.Target)
-}
-
-type exporter struct {
-	start           time.Time
-	l               log.YALI
-	config          *types.Config
-	stats           *worker.Stats
-	archive         string
-	deletedArchives []string
-	ac              *client.ApiClient
 }

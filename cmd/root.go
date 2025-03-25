@@ -7,15 +7,16 @@ import (
 	"io"
 	"os"
 
-	"github.com/bakito/kubexporter/pkg/export"
-	"github.com/bakito/kubexporter/pkg/types"
-	"github.com/bakito/kubexporter/version"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
+
+	"github.com/bakito/kubexporter/pkg/export"
+	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/version"
 )
 
 var (
@@ -24,7 +25,7 @@ var (
 	printFlags  *genericclioptions.PrintFlags
 )
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:     "kubexporter",
 	Version: version.Version,
@@ -126,7 +127,7 @@ func correctProgressForNonTerminalRun(config *types.Config) {
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		_, _ = fmt.Println(err)
 		os.Exit(1)
 	}
 }

@@ -7,23 +7,23 @@ import (
 )
 
 const (
-	// ColorReset reset color
+	// ColorReset reset color.
 	ColorReset = "\033[0m"
-	// ColorGreen green
+	// ColorGreen green.
 	ColorGreen = "\033[32m"
-	// Check a green check tick
+	// Check a green check tick.
 	Check = ColorGreen + "✓" + ColorReset
 )
 
 var nonASCII = regexp.MustCompile("[[:^ascii:]]")
 
-// YALI yet another logger interface ;)
+// YALI yet another logger interface ;).
 type YALI interface {
-	Printf(format string, a ...interface{})
-	Checkf(format string, a ...interface{})
+	Printf(format string, a ...any)
+	Checkf(format string, a ...any)
 }
 
-// New logger
+// New logger.
 func New(quiet, simple bool) YALI {
 	return &log{
 		quiet:  quiet,
@@ -36,8 +36,8 @@ type log struct {
 	simple bool
 }
 
-// Printf print a message
-func (l *log) Printf(format string, a ...interface{}) {
+// Printf print a message.
+func (l *log) Printf(format string, a ...any) {
 	if !l.quiet {
 		if l.simple {
 			format = strings.ReplaceAll(format, "✓", "-")
@@ -46,11 +46,11 @@ func (l *log) Printf(format string, a ...interface{}) {
 			format = nonASCII.ReplaceAllLiteralString(format, "")
 			format = strings.ReplaceAll(format, "- \t", "\t")
 		}
-		fmt.Printf(format, a...)
+		_, _ = fmt.Printf(format, a...)
 	}
 }
 
-// Checkf print a check message
-func (l *log) Checkf(format string, a ...interface{}) {
+// Checkf print a check message.
+func (l *log) Checkf(format string, a ...any) {
 	l.Printf(fmt.Sprintf("  %s %s", Check, format), a...)
 }

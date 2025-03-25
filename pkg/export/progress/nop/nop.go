@@ -32,5 +32,5 @@ func (n *nilProgress) NewWorker() progress.Progress {
 func (n *nilProgress) IncrementMainBar() {
 }
 
-func (n *nilProgress) IncrementResourceBarBy(_ int, _ int) {
+func (n *nilProgress) IncrementResourceBarBy(_, _ int) {
 }

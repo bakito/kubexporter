@@ -12,10 +12,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bakito/kubexporter/pkg/render"
-	"github.com/bakito/kubexporter/pkg/utils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
+
+	"github.com/bakito/kubexporter/pkg/render"
+	"github.com/bakito/kubexporter/pkg/utils"
 )
 
 const (
@@ -60,7 +61,6 @@ func setupAES(key string) (cipher.AEAD, error) {
 	default:
 		return nil, fmt.Errorf("invalid key size %d: aesKey must be 16, 24 or 32 chars long", k)
 	case 16, 24, 32:
-		break
 	}
 
 	c, err := aes.NewCipher([]byte(key))
@@ -76,7 +76,7 @@ func setupAES(key string) (cipher.AEAD, error) {
 	return gcm, nil
 }
 
-func (e *Encrypted) doEncrypt(val interface{}) string {
+func (e *Encrypted) doEncrypt(val any) string {
 	if e.AesKey == "" {
 		return ""
 	}
@@ -84,7 +84,7 @@ func (e *Encrypted) doEncrypt(val interface{}) string {
 	return prefix + base64.StdEncoding.EncodeToString(e.gcm.Seal(e.nonce, e.nonce, data, nil))
 }
 
-// EncryptFields encrypts fields for a given resource
+// EncryptFields encrypts fields for a given resource.
 func (c *Config) EncryptFields(res *GroupResource, us unstructured.Unstructured) {
 	transformNestedFields(c.Encrypted.KindFields, c.Encrypted.doEncrypt, res.GroupKind(), us)
 }
@@ -104,11 +104,11 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		if err != nil {
 			return err
 		}
-		if replaced, err := decryptFields(us.Object, gcm, nonceSize); err != nil {
+		var replaced int
+		if replaced, err = decryptFields(us.Object, gcm, nonceSize); err != nil {
 			return err
-		} else {
-			table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
 		}
+		table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
@@ -120,19 +120,19 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 }
 
 // transformNestedField transforms the nested field from the obj.
-func decryptFields(obj map[string]interface{}, gcm cipher.AEAD, nonceSize int) (int, error) {
+func decryptFields(obj map[string]any, gcm cipher.AEAD, nonceSize int) (int, error) {
 	var replaced int
 	for key, value := range obj {
 		switch e := value.(type) {
-		case map[string]interface{}:
-			if cnt, err := decryptFields(e, gcm, nonceSize); err != nil {
+		case map[string]any:
+			var cnt int
+			var err error
+			if cnt, err = decryptFields(e, gcm, nonceSize); err != nil {
 				return 0, err
-			} else {
-				replaced += cnt
 			}
+			replaced += cnt
 		case string:
 			if strings.HasPrefix(e, prefix) {
-
 				ciphertext, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(e, prefix))
 				if err != nil {
 					return 0, err

@@ -39,7 +39,7 @@ func (e *exporter) pruneArchives() error {
 			}
 			if f.ModTime().Before(deleteOlderThan) {
 				name := filepath.Join(dir, f.Name())
-				if err = os.Remove(name); err != nil {
+				if err := os.Remove(name); err != nil {
 					return err
 				}
 				matches = append(matches, name)
@@ -74,25 +74,25 @@ func (e *exporter) tarGz() error {
 	if err != nil {
 		return err
 	}
-	defer closeIgnoreError(file)()
+	defer closeIgnoreError(file)
 	// set up the gzip writer
 	gw := gzip.NewWriter(file)
-	defer closeIgnoreError(gw)()
+	defer closeIgnoreError(gw)
 	tw := tar.NewWriter(gw)
-	defer closeIgnoreError(tw)()
+	defer closeIgnoreError(tw)
 
 	walker := func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || filepath.Ext(info.Name()) != fmt.Sprintf(".%s", e.config.OutputFormat()) {
+		if info.IsDir() || filepath.Ext(info.Name()) != "."+e.config.OutputFormat() {
 			return nil
 		}
 		file, err := os.Open(path)
 		if err != nil {
 			return err
 		}
-		defer closeIgnoreError(file)()
+		defer closeIgnoreError(file)
 
 		if err := addFile(tw, workDir, path); err != nil {
 			return err
@@ -103,19 +103,19 @@ func (e *exporter) tarGz() error {
 	return filepath.Walk(e.config.Target, walker)
 }
 
-func (e *exporter) archiveDirs() (string, string, error) {
-	workDir, err := os.Getwd()
+func (e *exporter) archiveDirs() (workDir, dir string, err error) {
+	workDir, err = os.Getwd()
 	if err != nil {
 		return "", "", err
 	}
 
-	dir := e.config.Target
+	dir = e.config.Target
 	if e.config.ArchiveTarget != "" {
 		dir = e.config.ArchiveTarget
 	}
 
 	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
-		if err = os.MkdirAll(dir, os.ModePerm); err != nil {
+		if err := os.MkdirAll(dir, os.ModePerm); err != nil {
 			return "", "", err
 		}
 	}
@@ -131,7 +131,7 @@ func addFile(tw *tar.Writer, workDir, path string) error {
 
 	fPath := filepath.ToSlash(strings.Replace(path, workDir, "", 1))
 
-	defer closeIgnoreError(file)()
+	defer closeIgnoreError(file)
 	if stat, err := file.Stat(); err == nil {
 		// now let's create the header as needed for this file within the tarball
 		header := new(tar.Header)
@@ -151,8 +151,6 @@ func addFile(tw *tar.Writer, workDir, path string) error {
 	return nil
 }
 
-func closeIgnoreError(f io.Closer) func() {
-	return func() {
-		_ = f.Close()
-	}
+func closeIgnoreError(f io.Closer) {
+	_ = f.Close()
 }

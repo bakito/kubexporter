@@ -4,9 +4,10 @@ import (
 	"context"
 	"path/filepath"
 
-	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
+
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
 func (e *exporter) uploadS3(ctx context.Context) error {
