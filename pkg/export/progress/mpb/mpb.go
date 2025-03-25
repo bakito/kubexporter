@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bakito/kubexporter/pkg/export/progress"
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
+
+	"github.com/bakito/kubexporter/pkg/export/progress"
 )
 
 func NewProgress(resources int) progress.Progress {
@@ -96,7 +97,7 @@ func (m *mpbProgress) NewExportBar(step progress.Step) {
 	}
 }
 
-func (m *mpbProgress) preDecoratorSearch(currentKind string, pageSize int, currentPage int) decor.Decorator {
+func (m *mpbProgress) preDecoratorSearch(currentKind string, pageSize, currentPage int) decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
 		page := ""
 		if pageSize > 0 {
@@ -106,7 +107,7 @@ func (m *mpbProgress) preDecoratorSearch(currentKind string, pageSize int, curre
 	})
 }
 
-func (m *mpbProgress) preDecoratorExport(currentKind string, pageSize int, currentPage int) decor.Decorator {
+func (m *mpbProgress) preDecoratorExport(currentKind string, pageSize, currentPage int) decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
 		page := ""
 		if pageSize > 0 {
@@ -130,7 +131,7 @@ func (m *mpbProgress) IncrementMainBar() {
 	m.mainBar.Increment()
 }
 
-func (m *mpbProgress) IncrementResourceBarBy(_ int, inc int) {
+func (m *mpbProgress) IncrementResourceBarBy(_, inc int) {
 	if m.resourceBar != nil {
 		m.resourceBar.IncrBy(inc)
 	}

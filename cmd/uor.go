@@ -1,11 +1,12 @@
 package cmd
 
 import (
-	"github.com/bakito/kubexporter/pkg/uor"
 	"github.com/spf13/cobra"
+
+	"github.com/bakito/kubexporter/pkg/uor"
 )
 
-// updateOwnerReferences
+// updateOwnerReferences.
 var updateOwnerReferences = &cobra.Command{
 	Use:     "update-owner-references",
 	Aliases: []string{"uor"},

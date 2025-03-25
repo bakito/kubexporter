@@ -9,7 +9,7 @@ type Progress interface {
 	NewWorker() Progress
 
 	IncrementMainBar()
-	IncrementResourceBarBy(id int, inc int)
+	IncrementResourceBarBy(id, inc int)
 }
 
 type Step struct {

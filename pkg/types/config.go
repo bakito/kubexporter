@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,42 +14,43 @@ import (
 	"time"
 
 	"github.com/Masterminds/sprig"
-	"github.com/bakito/kubexporter/pkg/log"
 	"github.com/ghodss/yaml"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+
+	"github.com/bakito/kubexporter/pkg/log"
 )
 
 const (
-	// DefaultFileNameTemplate default file name template
+	// DefaultFileNameTemplate default file name template.
 	DefaultFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
-	// DefaultListFileNameTemplate default list file name template
+	// DefaultListFileNameTemplate default list file name template.
 	DefaultListFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Extension}}`
-	// DefaultFormat default output format
+	// DefaultFormat default output format.
 	DefaultFormat = "yaml"
-	// DefaultTarget default export target dir
+	// DefaultTarget default export target dir.
 	DefaultTarget = "exports"
 
-	// ProgressBar progress bar mode
+	// ProgressBar progress bar mode.
 	ProgressBar = Progress("bar")
-	// ProgressBarBubbles bubbles progress bar mode
+	// ProgressBarBubbles bubbles progress bar mode.
 	ProgressBarBubbles = Progress("bubbles")
-	// ProgressSimple simple progress mode
+	// ProgressSimple simple progress mode.
 	ProgressSimple = Progress("simple")
-	// ProgressNone no progress
+	// ProgressNone no progress.
 	ProgressNone = Progress("none")
 
-	// DefaultMaskReplacement Default Mask Replacement
+	// DefaultMaskReplacement Default Mask Replacement.
 	DefaultMaskReplacement = "*****"
 )
 
 var (
 	invalidFileChars = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
-	// DefaultExcludedFields the default field to be excluded
+	// DefaultExcludedFields the default field to be excluded.
 	DefaultExcludedFields = [][]string{
 		{"status"},
 		{"metadata", "uid"},
@@ -62,7 +64,7 @@ var (
 	}
 )
 
-// UpdateFrom the config from the file with given path
+// UpdateFrom the config from the file with given path.
 func UpdateFrom(config *Config, path string) error {
 	b, err := os.ReadFile(path)
 	if err != nil {
@@ -71,7 +73,7 @@ func UpdateFrom(config *Config, path string) error {
 	return yaml.Unmarshal(b, config)
 }
 
-// NewConfig create a new config
+// NewConfig create a new config.
 func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericclioptions.PrintFlags) *Config {
 	return &Config{
 		FileNameTemplate:     DefaultFileNameTemplate,
@@ -98,14 +100,14 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 	}
 }
 
-// Config export config
+// Config export config.
 type Config struct {
 	Excluded                Excluded      `json:"excluded"                yaml:"excluded"`
 	Included                Included      `json:"included"                yaml:"included"`
 	CreatedWithin           time.Duration `json:"createdWithin"           yaml:"createdWithin"`
 	ConsiderOwnerReferences bool          `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
 	Masked                  *Masked       `json:"masked"                  yaml:"masked"`
-	Encrypted               *Encrypted    `json:"encrypted"               yaml:"masked"`
+	Encrypted               *Encrypted    `json:"encrypted"               yaml:"encrypted"`
 	SortSlices              KindFields    `json:"sortSlices"              yaml:"sortSlices"`
 	FileNameTemplate        string        `json:"fileNameTemplate"        yaml:"fileNameTemplate"`
 	ListFileNameTemplate    string        `json:"listFileNameTemplate"    yaml:"listFileNameTemplate"`
@@ -144,10 +146,10 @@ type S3Config struct {
 	Bucket          string `json:"bucket"          yaml:"bucket"`
 }
 
-// Progress type
+// Progress type.
 type Progress string
 
-// Excluded exclusion params
+// Excluded exclusion params.
 type Excluded struct {
 	Kinds        []string                `json:"kinds"       yaml:"kinds"`
 	Fields       [][]string              `json:"fields"      yaml:"fields"`
@@ -155,10 +157,10 @@ type Excluded struct {
 	KindsByField map[string][]FieldValue `json:"kindByField" yaml:"kindByField"`
 }
 
-// KindFields map kinds to fields
+// KindFields map kinds to fields.
 type KindFields map[string][][]string
 
-// Diff returns new KindFields with values that are only in the provided argument and not in this
+// Diff returns new KindFields with values that are only in the provided argument and not in this.
 func (f KindFields) Diff(other KindFields) KindFields {
 	diff := KindFields{}
 	for thisKind, thisFields := range f {
@@ -197,7 +199,7 @@ func joinAll(in [][]string) []string {
 	return s
 }
 
-func diffFields(this [][]string, other [][]string) [][]string {
+func diffFields(this, other [][]string) [][]string {
 	removes := make(map[string]bool)
 
 	for _, f := range this {
@@ -212,8 +214,8 @@ func diffFields(this [][]string, other [][]string) [][]string {
 
 	var diff [][]string
 	for _, o := range other {
-		os := strings.Join(o, ";")
-		if _, ok := removes[os]; !ok {
+		parts := strings.Join(o, ";")
+		if _, ok := removes[parts]; !ok {
 			diff = append(diff, o)
 		}
 	}
@@ -221,18 +223,18 @@ func diffFields(this [][]string, other [][]string) [][]string {
 	return diff
 }
 
-// Included inclusion params
+// Included inclusion params.
 type Included struct {
 	Kinds []string `json:"kinds" yaml:"kinds"`
 }
 
-// FieldValue field with value
+// FieldValue field with value.
 type FieldValue struct {
 	Field  []string `json:"field"  yaml:"field"`
 	Values []string `json:"values" yaml:"values"`
 }
 
-// FilterFields filter fields for a given resource
+// FilterFields filter fields for a given resource.
 func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) {
 	for _, f := range c.Excluded.Fields {
 		removeNestedField(us.Object, f...)
@@ -246,28 +248,30 @@ func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) 
 }
 
 // removeNestedField removes the nested field from the obj.
-func removeNestedField(obj map[string]interface{}, fields ...string) {
+func removeNestedField(obj map[string]any, fields ...string) {
 	m := obj
 	for i, field := range fields[:len(fields)-1] {
-		if x, ok := m[field].(map[string]interface{}); ok {
-			m = x
-		} else {
-			if x, ok := m[field].([]interface{}); ok {
+		var x map[string]any
+		var ok bool
+		if x, ok = m[field].(map[string]any); !ok {
+			if x, ok := m[field].([]any); ok {
 				for _, y := range x {
-					if yy, ok := y.(map[string]interface{}); ok {
+					if yy, ok := y.(map[string]any); ok {
 						removeNestedField(yy, fields[i+1:]...)
 					}
 				}
 			}
 			return
 		}
+
+		m = x
 	}
 	delete(m, fields[len(fields)-1])
 }
 
 func transformNestedFields(
 	kf KindFields,
-	transform func(val interface{}) string,
+	transform func(val any) string,
 	gk string,
 	us unstructured.Unstructured,
 ) {
@@ -279,24 +283,26 @@ func transformNestedFields(
 }
 
 // transformNestedField transforms the nested field from the obj.
-func transformNestedField(obj map[string]interface{}, transform func(val interface{}) string, fields ...string) {
+func transformNestedField(obj map[string]any, transform func(val any) string, fields ...string) {
 	m := obj
 	for i, field := range fields[:len(fields)-1] {
-		if x, ok := m[field].(map[string]interface{}); ok {
-			m = x
-		} else {
-			if x, ok := m[field].([]interface{}); ok {
+		var x map[string]any
+		var ok bool
+		if x, ok = m[field].(map[string]any); !ok {
+			if x, ok := m[field].([]any); ok {
 				for _, y := range x {
-					if yy, ok := y.(map[string]interface{}); ok {
+					if yy, ok := y.(map[string]any); ok {
 						transformNestedField(yy, transform, fields[i+1:]...)
 					}
 				}
 			}
 			return
 		}
+
+		m = x
 	}
 	switch e := m[fields[len(fields)-1]].(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for k := range e {
 			e[k] = transform(e[k])
 		}
@@ -305,7 +311,7 @@ func transformNestedField(obj map[string]interface{}, transform func(val interfa
 	}
 }
 
-// SortSliceFields sort fields for a given resource
+// SortSliceFields sort fields for a given resource.
 func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructured) {
 	gk := res.GroupKind()
 	if c.SortSlices != nil && c.SortSlices[gk] != nil {
@@ -315,14 +321,17 @@ func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructure
 					switch sl[0].(type) {
 					case string:
 						sort.Slice(sl, func(i, j int) bool {
+							//nolint:forcetypeassert
 							return sl[i].(string) < sl[j].(string)
 						})
 					case int64:
 						sort.Slice(sl, func(i, j int) bool {
+							//nolint:forcetypeassert
 							return sl[i].(int64) < sl[j].(int64)
 						})
 					case float64:
 						sort.Slice(sl, func(i, j int) bool {
+							//nolint:forcetypeassert
 							return sl[i].(float64) < sl[j].(float64)
 						})
 					default:
@@ -339,7 +348,7 @@ func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructure
 	}
 }
 
-// IsExcluded check if the group resource is excluded
+// IsExcluded check if the group resource is excluded.
 func (c *Config) IsExcluded(gr *GroupResource) bool {
 	if len(c.Included.Kinds) > 0 {
 		if c.includedSet == nil {
@@ -355,7 +364,7 @@ func (c *Config) IsExcluded(gr *GroupResource) bool {
 	return c.excludedSet.contains(gr.GroupKind())
 }
 
-// IsInstanceExcluded check if the kind instance is excluded
+// IsInstanceExcluded check if the kind instance is excluded.
 func (c *Config) IsInstanceExcluded(res *GroupResource, us unstructured.Unstructured) bool {
 	if c.isExcludedByOwnerReference(us) {
 		return true
@@ -383,7 +392,7 @@ func (c *Config) isExcludedByOwnerReference(us unstructured.Unstructured) bool {
 				APIGroup:        gv.Group,
 				APIVersion:      gv.Version,
 				APIGroupVersion: gv.String(),
-				APIResource:     v1.APIResource{Kind: or.Kind},
+				APIResource:     metav1.APIResource{Kind: or.Kind},
 			}
 
 			if err == nil && c.IsExcluded(r) {
@@ -404,22 +413,22 @@ func matches(us unstructured.Unstructured, field []string, filter string) bool {
 	return false
 }
 
-// FileName generate export file name
+// FileName generate export file name.
 func (c *Config) FileName(res *GroupResource, us *unstructured.Unstructured, index int) (string, error) {
 	name := us.GetName()
 	if index > 0 {
 		// if index > 0 -> same name with different cases -> we add an index
 		name = fmt.Sprintf("%s_%d", us.GetName(), index)
 	}
-	return c.fileName(res, us.GetNamespace(), name, c.FileNameTemplate)
+	return c.fileNameInternal(res, us.GetNamespace(), name, c.FileNameTemplate)
 }
 
-// ListFileName generate export list file name
+// ListFileName generate export list file name.
 func (c *Config) ListFileName(res *GroupResource, namespace string) (string, error) {
-	return c.fileName(res, namespace, "", c.ListFileNameTemplate)
+	return c.fileNameInternal(res, namespace, "", c.ListFileNameTemplate)
 }
 
-func (c *Config) fileName(res *GroupResource, namespace string, name string, templ string) (string, error) {
+func (c *Config) fileNameInternal(res *GroupResource, namespace, name, templ string) (string, error) {
 	t, err := template.New("base").Funcs(sprig.TxtFuncMap()).Parse(templ)
 	if err != nil {
 		return "", err
@@ -437,26 +446,26 @@ func (c *Config) fileName(res *GroupResource, namespace string, name string, tem
 
 	path := tpl.String()
 	var pathElements []string
-	for _, e := range strings.Split(filepath.Clean(filepath.Join(path)), string(os.PathSeparator)) {
+	for _, e := range strings.Split(filepath.Clean(path), string(os.PathSeparator)) {
 		pathElements = append(pathElements, invalidFileChars.ReplaceAllString(e, "_"))
 	}
 	return filepath.Join(pathElements...), err
 }
 
-// Validate validate the config
+// Validate validate the config.
 func (c *Config) Validate() error {
 	if c.FileNameTemplate == "" {
-		return fmt.Errorf("file name template must not be empty")
+		return errors.New("file name template must not be empty")
 	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}, 0); err != nil {
 		return fmt.Errorf("error parsing file name template [%s]", c.FileNameTemplate)
 	}
 	if c.ListFileNameTemplate == "" {
-		return fmt.Errorf("list file name template must not be empty")
+		return errors.New("list file name template must not be empty")
 	} else if _, err := c.ListFileName(&GroupResource{}, ""); err != nil {
 		return fmt.Errorf("error parsing list file name template [%s]", c.ListFileNameTemplate)
 	}
 	if c.Worker <= 0 {
-		return fmt.Errorf("worker must be > 0")
+		return errors.New("worker must be > 0")
 	}
 
 	abs, err := filepath.Abs(c.Target)
@@ -484,7 +493,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// Logger get the logger
+// Logger get the logger.
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
 		c.log = log.New(c.Quiet, c.Progress == ProgressSimple)
@@ -492,7 +501,7 @@ func (c *Config) Logger() log.YALI {
 	return c.log
 }
 
-// OutputFormat get the current output format
+// OutputFormat get the current output format.
 func (c *Config) OutputFormat() string {
 	if c.PrintFlags != nil && c.PrintFlags.OutputFormat != nil {
 		return *c.PrintFlags.OutputFormat
@@ -500,7 +509,7 @@ func (c *Config) OutputFormat() string {
 	return ""
 }
 
-// RestConfig get the current rest config
+// RestConfig get the current rest config.
 func (c *Config) RestConfig() (*rest.Config, error) {
 	// try to find a cube config
 	cfg, err := cmdutil.NewFactory(c.configFlags).ToRESTConfig()

@@ -1,22 +1,23 @@
 package client
 
 import (
-	"github.com/bakito/kubexporter/pkg/types"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
+
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
-type ApiClient struct {
+type APIClient struct {
 	RestConfig      *rest.Config
 	Client          dynamic.Interface
 	Mapper          *restmapper.DeferredDiscoveryRESTMapper
 	DiscoveryClient *discovery.DiscoveryClient
 }
 
-func NewApiClient(config *types.Config) (*ApiClient, error) {
+func NewAPIClient(config *types.Config) (*APIClient, error) {
 	rc, err := config.RestConfig()
 	if err != nil {
 		return nil, err
@@ -33,5 +34,5 @@ func NewApiClient(config *types.Config) (*ApiClient, error) {
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dcl))
-	return &ApiClient{RestConfig: rc, Client: client, Mapper: mapper, DiscoveryClient: dcl}, nil
+	return &APIClient{RestConfig: rc, Client: client, Mapper: mapper, DiscoveryClient: dcl}, nil
 }

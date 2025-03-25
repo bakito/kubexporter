@@ -28,7 +28,7 @@ func readKey() (string, error) {
 		}
 	}()
 
-	fmt.Println("Please the aes key: ")
+	_, _ = fmt.Println("Please the aes key: ")
 	key, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return "", err

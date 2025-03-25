@@ -4,11 +4,12 @@ import (
 	"context"
 	"sync"
 
-	"github.com/bakito/kubexporter/pkg/types"
 	wp "github.com/vardius/worker-pool/v2"
+
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
-// RunExport run the export wit the given workers
+// RunExport run the export wit the given workers.
 func RunExport(ctx context.Context, workers []Worker, resources []*types.GroupResource) (*Stats, error) {
 	var wg sync.WaitGroup
 

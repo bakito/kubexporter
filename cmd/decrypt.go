@@ -3,13 +3,14 @@ package cmd
 import (
 	"os"
 
-	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
+
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
-// decrypt
+// decrypt.
 var (
 	aesKey string
 

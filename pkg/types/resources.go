@@ -9,7 +9,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// GroupResource group resource information
+// GroupResource group resource information.
 type GroupResource struct {
 	APIGroup          string
 	APIGroupVersion   string
@@ -23,8 +23,8 @@ type GroupResource struct {
 	ExportDuration    time.Duration
 }
 
-// Report generate report rows
-func (r GroupResource) Report(withError bool, withPages bool) []string {
+// Report generate report rows.
+func (r GroupResource) Report(withError, withPages bool) []string {
 	row := []string{
 		r.APIGroup,
 		r.APIVersion,
@@ -44,7 +44,7 @@ func (r GroupResource) Report(withError bool, withPages bool) []string {
 	return row
 }
 
-// GroupKind get concatenated group and kind
+// GroupKind get concatenated group and kind.
 func (r GroupResource) GroupKind() string {
 	if r.APIGroup != "" {
 		return fmt.Sprintf("%s.%s", r.APIGroup, r.APIResource.Kind)
@@ -52,19 +52,19 @@ func (r GroupResource) GroupKind() string {
 	return r.APIResource.Kind
 }
 
-// Kind get the kind
+// Kind get the kind.
 func (r GroupResource) Kind() string {
 	return r.APIResource.Kind
 }
 
-// Sort GroupResource
+// Sort GroupResource.
 func Sort(resources []*GroupResource) func(int, int) bool {
 	return func(i, j int) bool {
 		ret := strings.Compare(resources[i].APIGroup, resources[j].APIGroup)
 		if ret > 0 {
 			return false
 		} else if ret == 0 {
-			return strings.Compare(resources[i].APIResource.Kind, resources[j].APIResource.Kind) < 0
+			return resources[i].APIResource.Kind < resources[j].APIResource.Kind
 		}
 		return true
 	}

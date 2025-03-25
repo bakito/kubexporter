@@ -10,19 +10,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bakito/kubexporter/pkg/client"
-	"github.com/bakito/kubexporter/pkg/export/progress"
-	"github.com/bakito/kubexporter/pkg/types"
-	"github.com/bakito/kubexporter/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/bakito/kubexporter/pkg/client"
+	"github.com/bakito/kubexporter/pkg/export/progress"
+	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/pkg/utils"
 )
 
-// Worker interface
+// Worker interface.
 type Worker interface {
 	GenerateWork(
 		ctx context.Context,
@@ -39,12 +40,12 @@ type worker struct {
 	currentKind string
 	currentPage int
 	//	elapsedDecorator decor.Decorator
-	ac            *client.ApiClient
+	ac            *client.APIClient
 	queryFinished bool
 	stats         Stats
 }
 
-// Stats worker stats
+// Stats worker stats.
 type Stats struct {
 	Errors     int
 	namespaces map[string]bool
@@ -53,7 +54,7 @@ type Stats struct {
 	Resources  int
 }
 
-// Add stats
+// Add stats.
 func (s *Stats) Add(o *Stats) {
 	if o != nil {
 		s.Kinds += o.Kinds
@@ -73,18 +74,18 @@ func (s *Stats) addNamespace(ns string) {
 	s.namespaces[ns] = true
 }
 
-// Namespaces get the number of namespaces
+// Namespaces get the number of namespaces.
 func (s *Stats) Namespaces() int {
 	return len(s.namespaces)
 }
 
-// HasErrors true if errors >0
+// HasErrors true if errors >0.
 func (s *Stats) HasErrors() bool {
 	return s.Errors > 0
 }
 
-// New create a new worker
-func New(id int, config *types.Config, ac *client.ApiClient, prog progress.Progress) Worker {
+// New create a new worker.
+func New(id int, config *types.Config, ac *client.APIClient, prog progress.Progress) Worker {
 	w := &worker{
 		id:     id + 1,
 		config: config,
@@ -95,12 +96,12 @@ func New(id int, config *types.Config, ac *client.ApiClient, prog progress.Progr
 	return w
 }
 
-// Stop end worker
+// Stop end worker.
 func (w *worker) Stop() Stats {
 	return w.stats
 }
 
-// list resources
+// list resources.
 func (w *worker) list(
 	ctx context.Context,
 	group, version, kind string,
@@ -127,7 +128,7 @@ func (w *worker) list(
 	return dr.List(ctx, opts)
 }
 
-// GenerateWork generate the work function
+// GenerateWork generate the work function.
 func (w *worker) GenerateWork(
 	ctx context.Context,
 	wg *sync.WaitGroup,
@@ -182,21 +183,29 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 
 	if err != nil {
 		w.stats.Errors++
-		if errors.IsNotFound(err) {
+		switch {
+		case errors.IsNotFound(err):
 			res.Error = "Not Found"
-		} else if errors.IsMethodNotSupported(err) {
+		case errors.IsMethodNotSupported(err):
 			res.Error = "Not Allowed"
-		} else {
-			res.Error = "Error:" + err.Error()
+		default:
+			res.Error = "Error: " + err.Error()
 		}
 		return ""
+	}
+	w.prog.NewExportBar(
+		progress.Step{
+			WorkerID:    w.id,
+			CurrentKind: w.currentKind,
+			PageSize:    w.config.QueryPageSize,
+			CurrentPage: w.currentPage,
+			Total:       len(ul.Items),
+		},
+	)
+	if w.config.AsLists {
+		res.ExportedInstances += w.exportLists(res, ul)
 	} else {
-		w.prog.NewExportBar(progress.Step{WorkerID: w.id, CurrentKind: w.currentKind, PageSize: w.config.QueryPageSize, CurrentPage: w.currentPage, Total: len(ul.Items)})
-		if w.config.AsLists {
-			res.ExportedInstances += w.exportLists(res, ul)
-		} else {
-			res.ExportedInstances += w.exportSingleResources(res, ul)
-		}
+		res.ExportedInstances += w.exportSingleResources(res, ul)
 	}
 	res.ExportDuration += time.Since(start)
 
@@ -216,19 +225,20 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 
 	perNs := make(map[string]*unstructured.UnstructuredList)
 	for _, u := range ul.Items {
-		if !w.config.IsInstanceExcluded(res, u) {
-			w.config.FilterFields(res, u)
-			w.config.MaskFields(res, u)
-			w.config.EncryptFields(res, u)
-			w.config.SortSliceFields(res, u)
-
-			if _, ok := perNs[u.GetNamespace()]; !ok {
-				ul := &unstructured.UnstructuredList{}
-				clone.DeepCopyInto(ul)
-				perNs[u.GetNamespace()] = ul
-			}
-			perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
+		if w.config.IsInstanceExcluded(res, u) {
+			continue
 		}
+		w.config.FilterFields(res, u)
+		w.config.MaskFields(res, u)
+		w.config.EncryptFields(res, u)
+		w.config.SortSliceFields(res, u)
+
+		if _, ok := perNs[u.GetNamespace()]; !ok {
+			ul := &unstructured.UnstructuredList{}
+			clone.DeepCopyInto(ul)
+			perNs[u.GetNamespace()] = ul
+		}
+		perNs[u.GetNamespace()].Items = append(perNs[u.GetNamespace()].Items, u)
 	}
 
 	cnt := 0

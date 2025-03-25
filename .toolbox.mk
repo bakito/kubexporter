@@ -19,8 +19,8 @@ TB_SEMVER ?= $(TB_LOCALBIN)/semver
 ## Tool Versions
 # renovate: packageName=mvdan.cc/gofumpt
 TB_GOFUMPT_VERSION ?= v0.7.0
-# renovate: packageName=github.com/golangci/golangci-lint/cmd/golangci-lint
-TB_GOLANGCI_LINT_VERSION ?= v1.64.8
+# renovate: packageName=github.com/golangci/golangci-lint/v2/cmd/golangci-lint
+TB_GOLANGCI_LINT_VERSION ?= v2.0.1
 # renovate: packageName=github.com/segmentio/golines
 TB_GOLINES_VERSION ?= v0.12.2
 # renovate: packageName=github.com/goreleaser/goreleaser/v2
@@ -38,7 +38,7 @@ $(TB_GOFUMPT): $(TB_LOCALBIN)
 .PHONY: tb.golangci-lint
 tb.golangci-lint: $(TB_GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(TB_GOLANGCI_LINT): $(TB_LOCALBIN)
-	test -s $(TB_LOCALBIN)/golangci-lint || GOBIN=$(TB_LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(TB_GOLANGCI_LINT_VERSION)
+	test -s $(TB_LOCALBIN)/golangci-lint || GOBIN=$(TB_LOCALBIN) go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(TB_GOLANGCI_LINT_VERSION)
 .PHONY: tb.golines
 tb.golines: $(TB_GOLINES) ## Download golines locally if necessary.
 $(TB_GOLINES): $(TB_LOCALBIN)
@@ -72,7 +72,7 @@ tb.reset:
 tb.update: tb.reset
 	toolbox makefile --renovate -f $(TB_LOCALDIR)/Makefile \
 		mvdan.cc/gofumpt@github.com/mvdan/gofumpt \
-		github.com/golangci/golangci-lint/cmd/golangci-lint \
+		github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
 		github.com/segmentio/golines \
 		github.com/goreleaser/goreleaser/v2 \
 		go.uber.org/mock/mockgen@github.com/uber-go/mock \

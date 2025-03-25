@@ -5,10 +5,11 @@ import (
 	"math"
 	"strings"
 
-	"github.com/bakito/kubexporter/pkg/export/progress"
-	"github.com/bakito/kubexporter/pkg/types"
 	bp "github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/bakito/kubexporter/pkg/export/progress"
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
 const (
@@ -26,14 +27,14 @@ func NewProgress(resources []*types.GroupResource) progress.Progress {
 	return &bubblesProgress{
 		model: &model{
 			resources:    float64(len(resources)),
-			mainProgress: newProgress(),
+			mainProgress: newProgressModel(),
 			mainPercent:  1 / float64(len(resources)),
 			maxLen:       int(maxLen),
 		},
 	}
 }
 
-func newProgress() bp.Model {
+func newProgressModel() bp.Model {
 	return bp.New(
 		bp.WithScaledGradient("#6B89E8", "#316CE6"),
 		bp.WithFillCharacters('█', '░'),
@@ -72,7 +73,7 @@ func (b *bubblesProgress) Reset() {
 }
 
 func (b *bubblesProgress) NewWorker() progress.Progress {
-	w := newProgress()
+	w := newProgressModel()
 	b.model.workerProgress = append(b.model.workerProgress, &w)
 	b.model.workerStates = append(b.model.workerStates, &workerState{})
 	return b
@@ -82,7 +83,7 @@ func (b *bubblesProgress) IncrementMainBar() {
 	b.program.Send(updateMainMsg(1))
 }
 
-func (b *bubblesProgress) IncrementResourceBarBy(id int, inc int) {
+func (b *bubblesProgress) IncrementResourceBarBy(id, inc int) {
 	b.program.Send(updateWorkerMsq{workerID: id, incr: inc})
 }
 
@@ -152,7 +153,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.workerStates[msg.workerID-1].percent = 1
 		} else {
 			incr := float64(msg.incr) / float64(m.workerStates[msg.workerID-1].Total)
-			m.workerStates[msg.workerID-1].percent = m.workerStates[msg.workerID-1].percent + incr
+			m.workerStates[msg.workerID-1].percent += incr
 		}
 		return m, nil
 	case exitMsg:
@@ -165,7 +166,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() string {
 	pad := strings.Repeat(" ", padding)
-	view := "\n" + pad + fmt.Sprintf("%s: ", mainProgressTitle) + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
+	view := "\n" + pad + mainProgressTitle + ": " + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
 	for i, workerProgress := range m.workerProgress {
 		view += pad + fmt.Sprintf(
 			"%s %s: %s",

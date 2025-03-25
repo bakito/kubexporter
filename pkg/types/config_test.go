@@ -3,13 +3,14 @@ package types_test
 import (
 	"os"
 
-	"github.com/bakito/kubexporter/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
+
+	"github.com/bakito/kubexporter/pkg/types"
 )
 
 var _ = Describe("Config", func() {
@@ -26,7 +27,7 @@ var _ = Describe("Config", func() {
 		config = types.NewConfig(nil, pf)
 		res = &types.GroupResource{
 			APIGroup: "group",
-			APIResource: v1.APIResource{
+			APIResource: metav1.APIResource{
 				Kind: "kind",
 			},
 		}
@@ -73,9 +74,9 @@ var _ = Describe("Config", func() {
 				Kinds: []string{"foo.Bar"},
 			}
 			us = unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind": "kind",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"namespace": "namespace",
 						"name":      "name",
 					},
@@ -102,14 +103,14 @@ var _ = Describe("Config", func() {
 
 		Context("ConsiderOwnerReferences", func() {
 			BeforeEach(func() {
-				us.SetOwnerReferences([]v1.OwnerReference{{APIVersion: "foo/v1", Kind: "Bar"}})
+				us.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: "foo/v1", Kind: "Bar"}})
 			})
 			It("if enabled it should be excluded if the owner is excluded", func() {
 				config.ConsiderOwnerReferences = true
 				Ω(config.IsInstanceExcluded(res, us)).Should(BeTrue())
 			})
 			It("if enabled it should not be excluded if the owner is not excluded", func() {
-				us.SetOwnerReferences([]v1.OwnerReference{{APIVersion: "foofoo/v1", Kind: "Bar"}})
+				us.SetOwnerReferences([]metav1.OwnerReference{{APIVersion: "foofoo/v1", Kind: "Bar"}})
 				config.ConsiderOwnerReferences = true
 				Ω(config.IsInstanceExcluded(res, us)).Should(BeFalse())
 			})
@@ -127,7 +128,7 @@ var _ = Describe("Config", func() {
 		BeforeEach(func() {
 			res = &types.GroupResource{
 				APIGroup: "group",
-				APIResource: v1.APIResource{
+				APIResource: metav1.APIResource{
 					Kind: "kind",
 				},
 			}
@@ -137,9 +138,9 @@ var _ = Describe("Config", func() {
 			var us *unstructured.Unstructured
 			BeforeEach(func() {
 				us = &unstructured.Unstructured{
-					Object: map[string]interface{}{
+					Object: map[string]any{
 						"kind": "Kind",
-						"metadata": map[string]interface{}{
+						"metadata": map[string]any{
 							"namespace": "namespace",
 							"name":      "name",
 						},
@@ -242,19 +243,19 @@ var _ = Describe("Config", func() {
 				},
 			}
 			us = unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind": "kind",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name":     "name",
 						"uid":      "uid",
 						"revision": "revision",
 					},
-					"spec": map[string]interface{}{
+					"spec": map[string]any{
 						"foo": "bar",
-						"slice": []interface{}{
-							map[string]interface{}{
+						"slice": []any{
+							map[string]any{
 								"a": "A",
-								"b": map[string]interface{}{
+								"b": map[string]any{
 									"ba": "BA",
 									"bb": "BB",
 								},
@@ -284,7 +285,7 @@ var _ = Describe("Config", func() {
 			Ω(sl).Should(HaveLen(1))
 			Ω(sl[0]).ShouldNot(HaveKey("a"))
 			Ω(sl[0]).Should(HaveKey("b"))
-			b, ok := sl[0].(map[string]interface{})["b"].(map[string]interface{})
+			b, ok := sl[0].(map[string]any)["b"].(map[string]any)
 			Ω(ok).Should(BeTrue())
 			Ω(b).Should(HaveKey("ba"))
 			Ω(b).ShouldNot(HaveKey("bb"))
@@ -313,14 +314,14 @@ var _ = Describe("Config", func() {
 				},
 			}
 			us = unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind": "kind",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name":     "name",
 						"uid":      "uid",
 						"revision": "revision",
 					},
-					"data": map[string]interface{}{
+					"data": map[string]any{
 						"a": "A",
 						"b": "BB",
 					},
@@ -334,9 +335,9 @@ var _ = Describe("Config", func() {
 			config.MaskFields(res, us)
 			Ω(us.Object["status"]).Should(Equal("***"))
 			Ω(us.Object["data"]).Should(HaveKey("a"))
-			Ω(us.Object["data"].(map[string]interface{})["a"]).Should(Equal("***"))
+			Ω(us.Object["data"].(map[string]any)["a"]).Should(Equal("***"))
 			Ω(us.Object["data"]).Should(HaveKey("b"))
-			Ω(us.Object["data"].(map[string]interface{})["b"]).Should(Equal("***"))
+			Ω(us.Object["data"].(map[string]any)["b"]).Should(Equal("***"))
 		})
 		It("should generate the md5 checksum of status and all data fields", func() {
 			config.Masked.Checksum = "md5"
@@ -344,9 +345,9 @@ var _ = Describe("Config", func() {
 			config.MaskFields(res, us)
 			Ω(us.Object["status"]).Should(Equal("900150983cd24fb0d6963f7d28e17f72"))
 			Ω(us.Object["data"]).Should(HaveKey("a"))
-			Ω(us.Object["data"].(map[string]interface{})["a"]).Should(Equal("7fc56270e7a70fa81a5935b72eacbe29"))
+			Ω(us.Object["data"].(map[string]any)["a"]).Should(Equal("7fc56270e7a70fa81a5935b72eacbe29"))
 			Ω(us.Object["data"]).Should(HaveKey("b"))
-			Ω(us.Object["data"].(map[string]interface{})["b"]).Should(Equal("9d3d9048db16a7eee539e93e3618cbe7"))
+			Ω(us.Object["data"].(map[string]any)["b"]).Should(Equal("9d3d9048db16a7eee539e93e3618cbe7"))
 		})
 		It("should generate the sha1 checksum of status and all data fields", func() {
 			config.Masked.Checksum = "sha1"
@@ -354,10 +355,10 @@ var _ = Describe("Config", func() {
 			config.MaskFields(res, us)
 			Ω(us.Object["status"]).Should(Equal("a9993e364706816aba3e25717850c26c9cd0d89d"))
 			Ω(us.Object["data"]).Should(HaveKey("a"))
-			Ω(us.Object["data"].(map[string]interface{})["a"]).
+			Ω(us.Object["data"].(map[string]any)["a"]).
 				Should(Equal("6dcd4ce23d88e2ee9568ba546c007c63d9131c1b"))
 			Ω(us.Object["data"]).Should(HaveKey("b"))
-			Ω(us.Object["data"].(map[string]interface{})["b"]).
+			Ω(us.Object["data"].(map[string]any)["b"]).
 				Should(Equal("71c9db717578b9ee49a59e69375c16c0627dffef"))
 		})
 		It("should generate the sha256 checksum of status and all data fields", func() {
@@ -366,10 +367,10 @@ var _ = Describe("Config", func() {
 			config.MaskFields(res, us)
 			Ω(us.Object["status"]).Should(Equal("23097d223405d8228642a477bda255b32aadbce4bda0b3f7e36c9da7"))
 			Ω(us.Object["data"]).Should(HaveKey("a"))
-			Ω(us.Object["data"].(map[string]interface{})["a"]).
+			Ω(us.Object["data"].(map[string]any)["a"]).
 				Should(Equal("5cfe2cddbb9940fb4d8505e25ea77e763a0077693dbb01b1a6aa94f2"))
 			Ω(us.Object["data"]).Should(HaveKey("b"))
-			Ω(us.Object["data"].(map[string]interface{})["b"]).
+			Ω(us.Object["data"].(map[string]any)["b"]).
 				Should(Equal("a6eaa57c9e088b8466692680ab779768f4cf36622bc893aee163be9c"))
 		})
 		It("should fail with an unknown checksum", func() {
@@ -385,14 +386,14 @@ var _ = Describe("Config", func() {
 				"group.kind": {},
 			}
 			us = unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":        "kind",
-					"stringSlice": []interface{}{"C", "A", "B", "AA"},
-					"intSlice":    []interface{}{int64(3), int64(1), int64(2), int64(4)},
-					"floatSlice":  []interface{}{1.3, 1.1, 1.2, 1.4},
-					"structSlice": []interface{}{
-						map[string]interface{}{"field": "val2"},
-						map[string]interface{}{"field": "val1"},
+					"stringSlice": []any{"C", "A", "B", "AA"},
+					"intSlice":    []any{int64(3), int64(1), int64(2), int64(4)},
+					"floatSlice":  []any{1.3, 1.1, 1.2, 1.4},
+					"structSlice": []any{
+						map[string]any{"field": "val2"},
+						map[string]any{"field": "val1"},
 					},
 				},
 			}
@@ -400,24 +401,24 @@ var _ = Describe("Config", func() {
 		It("should sort the string slice", func() {
 			config.SortSlices["group.kind"] = [][]string{{"stringSlice"}}
 			config.SortSliceFields(res, us)
-			Ω(us.Object["stringSlice"]).Should(Equal([]interface{}{"A", "AA", "B", "C"}))
+			Ω(us.Object["stringSlice"]).Should(Equal([]any{"A", "AA", "B", "C"}))
 		})
 		It("should sort the int slice", func() {
 			config.SortSlices["group.kind"] = [][]string{{"intSlice"}}
 			config.SortSliceFields(res, us)
-			Ω(us.Object["intSlice"]).Should(Equal([]interface{}{int64(1), int64(2), int64(3), int64(4)}))
+			Ω(us.Object["intSlice"]).Should(Equal([]any{int64(1), int64(2), int64(3), int64(4)}))
 		})
 		It("should sort the float slice", func() {
 			config.SortSlices["group.kind"] = [][]string{{"floatSlice"}}
 			config.SortSliceFields(res, us)
-			Ω(us.Object["floatSlice"]).Should(Equal([]interface{}{1.1, 1.2, 1.3, 1.4}))
+			Ω(us.Object["floatSlice"]).Should(Equal([]any{1.1, 1.2, 1.3, 1.4}))
 		})
 		It("should sort the struct slice", func() {
 			config.SortSlices["group.kind"] = [][]string{{"structSlice"}}
 			config.SortSliceFields(res, us)
 			Ω(
 				us.Object["structSlice"],
-			).Should(Equal([]interface{}{map[string]interface{}{"field": "val1"}, map[string]interface{}{"field": "val2"}}))
+			).Should(Equal([]any{map[string]any{"field": "val1"}, map[string]any{"field": "val2"}}))
 		})
 	})
 

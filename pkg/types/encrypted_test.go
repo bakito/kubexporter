@@ -75,8 +75,8 @@ var _ = Describe("Config-Encrypted", func() {
 		})
 		Context("EncryptFields", func() {
 			It("should encrypt the Secret data", func() {
-				us := unstructured.Unstructured{Object: map[string]interface{}{
-					"data": map[string]interface{}{
+				us := unstructured.Unstructured{Object: map[string]any{
+					"data": map[string]any{
 						"secret": "don't tell anyone!",
 					},
 				}}
@@ -86,8 +86,8 @@ var _ = Describe("Config-Encrypted", func() {
 			})
 			It("should return an empty string if no key is set", func() {
 				enc.AesKey = ""
-				us := unstructured.Unstructured{Object: map[string]interface{}{
-					"data": map[string]interface{}{
+				us := unstructured.Unstructured{Object: map[string]any{
+					"data": map[string]any{
 						"secret": "don't tell anyone!",
 					},
 				}}
@@ -97,8 +97,8 @@ var _ = Describe("Config-Encrypted", func() {
 			})
 			Context("decryptFields", func() {
 				It("should decrypt the value correctly", func() {
-					us := unstructured.Unstructured{Object: map[string]interface{}{
-						"data": map[string]interface{}{
+					us := unstructured.Unstructured{Object: map[string]any{
+						"data": map[string]any{
 							"secret": "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg==",
 						},
 					}}
@@ -109,8 +109,8 @@ var _ = Describe("Config-Encrypted", func() {
 					Ω(secret).Should(Equal("don't tell anyone!"))
 				})
 				It("should not decrypt if not decrypted", func() {
-					us := unstructured.Unstructured{Object: map[string]interface{}{
-						"data": map[string]interface{}{
+					us := unstructured.Unstructured{Object: map[string]any{
+						"data": map[string]any{
 							"secret": "don't tell anyone!",
 						},
 					}}
