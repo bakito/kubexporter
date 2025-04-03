@@ -12,7 +12,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.89
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/onsi/ginkgo/v2 v2.23.3
-	github.com/onsi/gomega v1.36.3
+	github.com/onsi/gomega v1.37.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/vardius/worker-pool/v2 v2.1.0
