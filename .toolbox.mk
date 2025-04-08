@@ -26,7 +26,7 @@ TB_GOLINES_VERSION ?= v0.12.2
 # renovate: packageName=github.com/goreleaser/goreleaser/v2
 TB_GORELEASER_VERSION ?= v2.8.2
 # renovate: packageName=go.uber.org/mock/mockgen
-TB_MOCKGEN_VERSION ?= v0.5.0
+TB_MOCKGEN_VERSION ?= v0.5.1
 # renovate: packageName=github.com/bakito/semver
 TB_SEMVER_VERSION ?= v1.1.3
 
