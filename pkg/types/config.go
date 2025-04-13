@@ -205,9 +205,9 @@ func diffFields(this, other [][]string) [][]string {
 	for _, f := range this {
 		fs := strings.Join(f, ";")
 		for _, o := range other {
-			os := strings.Join(o, ";")
-			if strings.HasPrefix(os, fs) {
-				removes[os] = true
+			myOS := strings.Join(o, ";")
+			if strings.HasPrefix(myOS, fs) {
+				removes[myOS] = true
 			}
 		}
 	}
