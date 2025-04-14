@@ -18,7 +18,7 @@ TB_SEMVER ?= $(TB_LOCALBIN)/semver
 
 ## Tool Versions
 # renovate: packageName=mvdan.cc/gofumpt
-TB_GOFUMPT_VERSION ?= v0.7.0
+TB_GOFUMPT_VERSION ?= v0.8.0
 # renovate: packageName=github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 TB_GOLANGCI_LINT_VERSION ?= v2.0.2
 # renovate: packageName=github.com/segmentio/golines
