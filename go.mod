@@ -17,7 +17,7 @@ require (
 	github.com/spf13/pflag v1.0.6
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v8 v8.9.3
-	go.uber.org/mock v0.5.1
+	go.uber.org/mock v0.5.2
 	golang.org/x/term v0.31.0
 	k8s.io/api v0.33.0
 	k8s.io/apimachinery v0.33.0
