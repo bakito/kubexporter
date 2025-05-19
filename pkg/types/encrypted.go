@@ -97,7 +97,7 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 	nonceSize := gcm.NonceSize()
 
 	table := render.Table()
-	table.SetHeader([]string{"File", "Namespace", "Kind", "Name", "Decrypted Fields"})
+	table.Header("File", "Namespace", "Kind", "Name", "Decrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
@@ -108,15 +108,16 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		if replaced, err = decryptFields(us.Object, gcm, nonceSize); err != nil {
 			return err
 		}
-		table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
+		if err := table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)}); err != nil {
+			return err
+		}
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
 		}
 	}
 
-	table.Render()
-	return nil
+	return table.Render()
 }
 
 // transformNestedField transforms the nested field from the obj.
