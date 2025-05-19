@@ -6,7 +6,7 @@
       "datasourceTemplate": "go",
       "description": "Update toolbox tools in .toolbox.mk",
       "managerFilePatterns": [
-        "/^\\.toolbox\\.mk$/"
+        ".toolbox.mk"
       ],
       "matchStrings": [
         "# renovate: packageName=(?<packageName>.+?)\\s+.+?_VERSION \\?= (?<currentValue>.+?)\\s"

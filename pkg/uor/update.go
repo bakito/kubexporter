@@ -46,22 +46,23 @@ func Update(config *types.Config) error {
 	}
 
 	table := render.Table()
-	table.SetHeader([]string{"File", "Owner Kind", "Owner Name", "UID From", "UID To"})
+	table.Header("File", "Owner Kind", "Owner Name", "UID From", "UID To")
 
 	ctx := context.TODO()
+	hasRows := false
 	for _, file := range files {
-		err2 := updateFile(ctx, config, file, ac, table)
-		if err2 != nil {
-			return err2
+		rows, err := updateFile(ctx, config, file, ac, table)
+		if err != nil {
+			return err
 		}
+		hasRows = hasRows || rows
 	}
 
-	if table.NumLines() == 0 {
+	if !hasRows {
 		println("No changed owner references found")
-	} else {
-		table.Render()
 	}
-	return nil
+
+	return table.Render()
 }
 
 func updateFile(
@@ -70,15 +71,16 @@ func updateFile(
 	file string,
 	ac *client.APIClient,
 	table *tablewriter.Table,
-) error {
+) (bool, error) {
 	fileName := strings.Replace(file, config.Target+"/", "", 1)
 	us, err := utils.ReadFile(file)
 	if err != nil {
-		return err
+		return false, err
 	}
 	refs := us.GetOwnerReferences()
 	owners := make(map[string]*unstructured.Unstructured)
 	changed := false
+	witContent := false
 	if len(refs) > 0 {
 		for _, ref := range refs {
 			owner, err := findOwner(ctx, ac, owners, &ref, us)
@@ -87,24 +89,30 @@ func updateFile(
 				if errors.IsNotFound(err) {
 					errMsg = "<NOT FOUND>"
 				}
-				table.Append([]string{
+				if err := table.Append(
 					fileName,
 					ref.Kind,
 					ref.Name,
 					string(ref.UID),
 					errMsg,
-				})
+				); err != nil {
+					return false, err
+				}
+				witContent = true
 				continue
 			}
 
 			if ref.UID != owner.GetUID() {
-				table.Append([]string{
+				if err := table.Append(
 					fileName,
 					ref.Kind,
 					ref.Name,
 					string(ref.UID),
 					string(owner.GetUID()),
-				})
+				); err != nil {
+					return false, err
+				}
+				witContent = true
 				ref.UID = owner.GetUID()
 				changed = true
 			}
@@ -113,11 +121,11 @@ func updateFile(
 			us.SetOwnerReferences(refs)
 			err := utils.WriteFile(config.PrintFlags, file, us)
 			if err != nil {
-				return err
+				return false, err
 			}
 		}
 	}
-	return nil
+	return witContent, nil
 }
 
 func findOwner(

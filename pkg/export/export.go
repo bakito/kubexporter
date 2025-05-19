@@ -115,7 +115,9 @@ func (e *exporter) Export(ctx context.Context) error {
 	}
 
 	if e.config.Summary {
-		e.printSummary(resources)
+		if err := e.printSummary(resources); err != nil {
+			return err
+		}
 	}
 
 	if e.config.Archive {
@@ -234,7 +236,7 @@ func allowsList(r metav1.APIResource) bool {
 	return false
 }
 
-func (e *exporter) printSummary(resources []*types.GroupResource) {
+func (e *exporter) printSummary(resources []*types.GroupResource) error {
 	withPages := e.config.QueryPageSize > 0
 
 	table := render.Table()
@@ -254,7 +256,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	if e.config.Verbose && e.stats.HasErrors() {
 		header = append(header, "Error")
 	}
-	table.SetHeader(header)
+	table.Header(header)
 	start := time.Now()
 	qd := start
 	ed := start
@@ -263,7 +265,9 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 	var pages int
 
 	for _, r := range resources {
-		table.Append(r.Report(e.config.Verbose && e.stats.HasErrors(), withPages))
+		if err := table.Append(r.Report(e.config.Verbose && e.stats.HasErrors(), withPages)); err != nil {
+			return err
+		}
 		qd = qd.Add(r.QueryDuration)
 		ed = ed.Add(r.ExportDuration)
 		totalInst += r.Instances
@@ -279,8 +283,10 @@ func (e *exporter) printSummary(resources []*types.GroupResource) {
 		totalRow = append(totalRow, strconv.Itoa(pages))
 	}
 	totalRow = append(totalRow, ed.Sub(start).String())
-	table.Append(totalRow)
-	table.Render()
+	if err := table.Append(totalRow); err != nil {
+		return err
+	}
+	return table.Render()
 }
 
 func (e *exporter) printStats() {
