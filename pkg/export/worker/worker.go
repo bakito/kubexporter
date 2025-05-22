@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -243,36 +242,39 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 
 	cnt := 0
 	for ns, usl := range perNs {
-		w.stats.addNamespace(ns)
-		filename, err := w.config.ListFileName(res, ns)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		filename = filepath.Join(w.config.Target, filename)
-		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		f, err := os.Create(filename)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		err = utils.PrintObj(w.config.PrintFlags, usl, f)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		closeIgnoreError(f)()
-
+		w.exportOneSingleList(res, ns, usl)
 		w.prog.IncrementResourceBarBy(w.id, len(usl.Items))
 		cnt += len(usl.Items)
 	}
 	return cnt
+}
+
+func (w *worker) exportOneSingleList(res *types.GroupResource, ns string, usl *unstructured.UnstructuredList) {
+	w.stats.addNamespace(ns)
+	filename, err := w.config.ListFileName(res, ns)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
+
+	filename = filepath.Join(w.config.Target, filename)
+	err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
+	defer f.Close()
+
+	err = utils.PrintObj(w.config.PrintFlags, usl, f)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
 }
 
 func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
@@ -321,21 +323,15 @@ func (w *worker) exportOneSingleResource(res *types.GroupResource, u unstructure
 			res.Error = err.Error()
 			return false
 		}
+		defer f.Close()
 
 		err = utils.PrintObj(w.config.PrintFlags, us, f)
 		if err != nil {
 			res.Error = err.Error()
 			return false
 		}
-		closeIgnoreError(f)
 		return true
 	}
 
 	return false
-}
-
-func closeIgnoreError(f io.Closer) func() {
-	return func() {
-		_ = f.Close()
-	}
 }
