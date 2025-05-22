@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -243,36 +242,39 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 
 	cnt := 0
 	for ns, usl := range perNs {
-		w.stats.addNamespace(ns)
-		filename, err := w.config.ListFileName(res, ns)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		filename = filepath.Join(w.config.Target, filename)
-		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		f, err := os.Create(filename)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-
-		err = utils.PrintObj(w.config.PrintFlags, usl, f)
-		if err != nil {
-			res.Error = err.Error()
-			continue
-		}
-		closeIgnoreError(f)()
-
+		w.exportOneSingleList(res, ns, usl)
 		w.prog.IncrementResourceBarBy(w.id, len(usl.Items))
 		cnt += len(usl.Items)
 	}
 	return cnt
+}
+
+func (w *worker) exportOneSingleList(res *types.GroupResource, ns string, usl *unstructured.UnstructuredList) {
+	w.stats.addNamespace(ns)
+	filename, err := w.config.ListFileName(res, ns)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
+
+	filename = filepath.Join(w.config.Target, filename)
+	err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
+	f, err := os.Create(filename)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
+	defer f.Close()
+
+	err = utils.PrintObj(w.config.PrintFlags, usl, f)
+	if err != nil {
+		res.Error = err.Error()
+		return
+	}
 }
 
 func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
@@ -282,53 +284,54 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	names := make(map[string]int)
 	cnt := 0
 	for _, u := range ul.Items {
-		if !w.config.IsInstanceExcluded(res, u) {
+		if w.exportOneSingleResource(res, u, names) {
 			cnt++
-			w.stats.addNamespace(u.GetNamespace())
-			w.config.FilterFields(res, u)
-			w.config.MaskFields(res, u)
-			w.config.EncryptFields(res, u)
-			w.config.SortSliceFields(res, u)
-			us := &u
-
-			namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
-			nameCnt := names[namespaceName]
-
-			filename, err := w.config.FileName(res, us, nameCnt)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-
-			names[namespaceName] = nameCnt + 1
-
-			filename = filepath.Join(w.config.Target, filename)
-			err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-			f, err := os.Create(filename)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-
-			err = utils.PrintObj(w.config.PrintFlags, us, f)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-			closeIgnoreError(f)
 		}
-
 		w.prog.IncrementResourceBarBy(w.id, 1)
 	}
 	return cnt
 }
 
-func closeIgnoreError(f io.Closer) func() {
-	return func() {
-		_ = f.Close()
+func (w *worker) exportOneSingleResource(res *types.GroupResource, u unstructured.Unstructured, names map[string]int) bool {
+	if !w.config.IsInstanceExcluded(res, u) {
+		w.stats.addNamespace(u.GetNamespace())
+		w.config.FilterFields(res, u)
+		w.config.MaskFields(res, u)
+		w.config.EncryptFields(res, u)
+		w.config.SortSliceFields(res, u)
+		us := &u
+
+		namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
+		nameCnt := names[namespaceName]
+
+		filename, err := w.config.FileName(res, us, nameCnt)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+
+		names[namespaceName] = nameCnt + 1
+
+		filename = filepath.Join(w.config.Target, filename)
+		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+		f, err := os.Create(filename)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+		defer f.Close()
+
+		err = utils.PrintObj(w.config.PrintFlags, us, f)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+		return true
 	}
+
+	return false
 }
