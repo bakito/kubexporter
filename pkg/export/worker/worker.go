@@ -282,49 +282,56 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	names := make(map[string]int)
 	cnt := 0
 	for _, u := range ul.Items {
-		if !w.config.IsInstanceExcluded(res, u) {
+		if w.exportOneSingleResource(res, u, names) {
 			cnt++
-			w.stats.addNamespace(u.GetNamespace())
-			w.config.FilterFields(res, u)
-			w.config.MaskFields(res, u)
-			w.config.EncryptFields(res, u)
-			w.config.SortSliceFields(res, u)
-			us := &u
-
-			namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
-			nameCnt := names[namespaceName]
-
-			filename, err := w.config.FileName(res, us, nameCnt)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-
-			names[namespaceName] = nameCnt + 1
-
-			filename = filepath.Join(w.config.Target, filename)
-			err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-			f, err := os.Create(filename)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-
-			err = utils.PrintObj(w.config.PrintFlags, us, f)
-			if err != nil {
-				res.Error = err.Error()
-				continue
-			}
-			closeIgnoreError(f)
 		}
-
 		w.prog.IncrementResourceBarBy(w.id, 1)
 	}
 	return cnt
+}
+
+func (w *worker) exportOneSingleResource(res *types.GroupResource, u unstructured.Unstructured, names map[string]int) bool {
+	if !w.config.IsInstanceExcluded(res, u) {
+		w.stats.addNamespace(u.GetNamespace())
+		w.config.FilterFields(res, u)
+		w.config.MaskFields(res, u)
+		w.config.EncryptFields(res, u)
+		w.config.SortSliceFields(res, u)
+		us := &u
+
+		namespaceName := strings.ToLower(fmt.Sprintf("%s.%s", us.GetNamespace(), us.GetName()))
+		nameCnt := names[namespaceName]
+
+		filename, err := w.config.FileName(res, us, nameCnt)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+
+		names[namespaceName] = nameCnt + 1
+
+		filename = filepath.Join(w.config.Target, filename)
+		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+		f, err := os.Create(filename)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+
+		err = utils.PrintObj(w.config.PrintFlags, us, f)
+		if err != nil {
+			res.Error = err.Error()
+			return false
+		}
+		closeIgnoreError(f)
+		return true
+	}
+
+	return false
 }
 
 func closeIgnoreError(f io.Closer) func() {

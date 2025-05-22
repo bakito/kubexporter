@@ -106,8 +106,8 @@ func (m *model) Init() tea.Cmd {
 	return nil
 }
 
-func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msgIn.(type) {
 	case tea.KeyMsg:
 		return m, tea.Quit
 
@@ -128,6 +128,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case searchMsg:
+		m.workerStates[msg.WorkerID-1].Total = msg.Total
 		if m.workerStates[msg.WorkerID-1].Total == 0 {
 			m.workerStates[msg.WorkerID-1].percent = 1
 		} else {
@@ -138,6 +139,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - m.maxLen - 3 + len(mainProgressTitle)
 		return m, nil
 	case exportMsg:
+		m.workerStates[msg.WorkerID-1].Total = msg.Total
 		if m.workerStates[msg.WorkerID-1].Total == 0 {
 			m.workerStates[msg.WorkerID-1].percent = 1
 		} else {
