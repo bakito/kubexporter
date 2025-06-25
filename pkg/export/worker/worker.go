@@ -46,11 +46,12 @@ type worker struct {
 
 // Stats worker stats.
 type Stats struct {
-	Errors     int
-	namespaces map[string]bool
-	Kinds      int
-	Pages      int
-	Resources  int
+	Errors       int
+	namespaces   map[string]bool
+	Kinds        int
+	Pages        int
+	Resources    int
+	ExportedSize int64
 }
 
 // Add stats.
@@ -59,6 +60,7 @@ func (s *Stats) Add(o *Stats) {
 		s.Kinds += o.Kinds
 		s.Pages += o.Pages
 		s.Resources += o.Resources
+		s.ExportedSize += o.ExportedSize
 		s.Errors += o.Errors
 		for ns := range o.namespaces {
 			s.addNamespace(ns)
@@ -148,6 +150,7 @@ func (w *worker) GenerateWork(
 			}
 		}
 		w.stats.Resources += res.ExportedInstances
+		w.stats.ExportedSize += res.ExportedSize
 		w.stats.Pages += res.Pages
 
 		if w.config.Progress == types.ProgressSimple {
@@ -201,11 +204,16 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 			Total:       len(ul.Items),
 		},
 	)
+	var instances int
+	var exportedSize int64
 	if w.config.AsLists {
-		res.ExportedInstances += w.exportLists(res, ul)
+		instances, exportedSize = w.exportLists(res, ul)
 	} else {
-		res.ExportedInstances += w.exportSingleResources(res, ul)
+		instances, exportedSize = w.exportSingleResources(res, ul)
 	}
+	res.ExportedInstances += instances
+	res.ExportedSize += exportedSize
+
 	res.ExportDuration += time.Since(start)
 
 	res.Instances += len(ul.Items)
@@ -214,9 +222,9 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 	return ul.GetContinue()
 }
 
-func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
+func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) (int, int64) {
 	if res == nil || ul == nil {
-		return 0
+		return 0, 0
 	}
 	clone := ul.DeepCopy()
 	clone.Items = nil
@@ -241,58 +249,75 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 	}
 
 	cnt := 0
+	var exportedSize int64
 	for ns, usl := range perNs {
-		w.exportOneSingleList(res, ns, usl)
+		ok, s := w.exportOneSingleList(res, ns, usl)
+		if ok {
+			cnt += len(usl.Items)
+			exportedSize += s
+		}
 		w.prog.IncrementResourceBarBy(w.id, len(usl.Items))
-		cnt += len(usl.Items)
 	}
-	return cnt
+	return cnt, exportedSize
 }
 
-func (w *worker) exportOneSingleList(res *types.GroupResource, ns string, usl *unstructured.UnstructuredList) {
+func (w *worker) exportOneSingleList(res *types.GroupResource, ns string, usl *unstructured.UnstructuredList) (bool, int64) {
 	w.stats.addNamespace(ns)
 	filename, err := w.config.ListFileName(res, ns)
 	if err != nil {
 		res.Error = err.Error()
-		return
+		return false, 0
 	}
 
 	filename = filepath.Join(w.config.Target, filename)
 	err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 	if err != nil {
 		res.Error = err.Error()
-		return
+		return false, 0
 	}
 	f, err := os.Create(filename)
 	if err != nil {
 		res.Error = err.Error()
-		return
+		return false, 0
 	}
 	defer f.Close()
 
 	err = utils.PrintObj(w.config.PrintFlags, usl, f)
 	if err != nil {
 		res.Error = err.Error()
-		return
+		return false, 0
 	}
+	fi, err := f.Stat()
+	if err != nil {
+		res.Error = err.Error()
+		return false, 0
+	}
+	return true, fi.Size()
 }
 
-func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) int {
+func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) (int, int64) {
 	if res == nil || ul == nil {
-		return 0
+		return 0, 0
 	}
 	names := make(map[string]int)
 	cnt := 0
+	var exportedSize int64
 	for _, u := range ul.Items {
-		if w.exportOneSingleResource(res, u, names) {
+		ok, s := w.exportOneSingleResource(res, u, names)
+		if ok {
 			cnt++
+			exportedSize += s
 		}
 		w.prog.IncrementResourceBarBy(w.id, 1)
 	}
-	return cnt
+	return cnt, exportedSize
 }
 
-func (w *worker) exportOneSingleResource(res *types.GroupResource, u unstructured.Unstructured, names map[string]int) bool {
+func (w *worker) exportOneSingleResource(
+	res *types.GroupResource,
+	u unstructured.Unstructured,
+	names map[string]int,
+) (bool, int64) {
 	if !w.config.IsInstanceExcluded(res, u) {
 		w.stats.addNamespace(u.GetNamespace())
 		w.config.FilterFields(res, u)
@@ -307,7 +332,7 @@ func (w *worker) exportOneSingleResource(res *types.GroupResource, u unstructure
 		filename, err := w.config.FileName(res, us, nameCnt)
 		if err != nil {
 			res.Error = err.Error()
-			return false
+			return false, 0
 		}
 
 		names[namespaceName] = nameCnt + 1
@@ -316,22 +341,27 @@ func (w *worker) exportOneSingleResource(res *types.GroupResource, u unstructure
 		err = os.MkdirAll(filepath.Dir(filename), os.ModePerm)
 		if err != nil {
 			res.Error = err.Error()
-			return false
+			return false, 0
 		}
 		f, err := os.Create(filename)
 		if err != nil {
 			res.Error = err.Error()
-			return false
+			return false, 0
 		}
 		defer f.Close()
 
 		err = utils.PrintObj(w.config.PrintFlags, us, f)
 		if err != nil {
 			res.Error = err.Error()
-			return false
+			return false, 0
 		}
-		return true
+		fi, err := f.Stat()
+		if err != nil {
+			res.Error = err.Error()
+			return false, 0
+		}
+		return true, fi.Size()
 	}
 
-	return false
+	return false, 0
 }

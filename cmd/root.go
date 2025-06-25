@@ -79,6 +79,9 @@ func readConfig(
 		case "summary":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.Summary = b
+		case "size":
+			b, _ := cmd.Flags().GetBool(f.Name)
+			config.PrintSize = b
 		case "progress":
 			config.Progress = types.Progress(f.Value.String())
 		case "lists":
@@ -141,6 +144,7 @@ func init() {
 	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
 	rootCmd.Flags().BoolP("verbose", "v", false, "If enabled, errors during export are listed in summary")
 	rootCmd.Flags().Bool("summary", false, "If enabled, a summary is printed")
+	rootCmd.Flags().Bool("size", false, "If enabled, a exported file sizes are printed")
 	rootCmd.Flags().BoolP("archive", "a", false, "If enabled, an archive with the exports is created")
 	rootCmd.Flags().
 		StringP("progress", "p", string(types.ProgressBar), "Progress mode bar|bubbles|simple|none (default bar) ")
