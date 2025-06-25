@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -247,6 +248,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 		"Namespaces",
 		"Total Instances",
 		"Exported Instances",
+		"Exported Size",
 		"Query Duration",
 	}
 	if withPages {
@@ -261,6 +263,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 	qd := start
 	ed := start
 	var inst int
+	var size int64
 	var totalInst int
 	var pages int
 
@@ -272,13 +275,23 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 		ed = ed.Add(r.ExportDuration)
 		totalInst += r.Instances
 		inst += r.ExportedInstances
+		size += r.ExportedSize
 		pages += r.Pages
 	}
 	total := "TOTAL"
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	totalRow := []string{total, "", "", "", strconv.Itoa(totalInst), strconv.Itoa(inst), qd.Sub(start).String()}
+	totalRow := []string{
+		total,
+		"",
+		"",
+		"",
+		strconv.Itoa(totalInst),
+		strconv.Itoa(inst),
+		humanize.Bytes(uint64(size)),
+		qd.Sub(start).String(),
+	}
 	if withPages {
 		totalRow = append(totalRow, strconv.Itoa(pages))
 	}

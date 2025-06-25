@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,12 +19,13 @@ type GroupResource struct {
 	Instances         int
 	ExportedInstances int
 	Pages             int
+	ExportedSize      int64
 	Error             string
 	QueryDuration     time.Duration
 	ExportDuration    time.Duration
 }
 
-// Report generate report rows.
+// Report generates report rows.
 func (r GroupResource) Report(withError, withPages bool) []string {
 	row := []string{
 		r.APIGroup,
@@ -32,6 +34,7 @@ func (r GroupResource) Report(withError, withPages bool) []string {
 		strconv.FormatBool(r.APIResource.Namespaced),
 		strconv.Itoa(r.Instances),
 		strconv.Itoa(r.ExportedInstances),
+		humanize.Bytes(uint64(r.ExportedSize)),
 		r.QueryDuration.String(),
 	}
 	if withPages {
