@@ -46,11 +46,12 @@ type worker struct {
 
 // Stats worker stats.
 type Stats struct {
-	Errors     int
-	namespaces map[string]bool
-	Kinds      int
-	Pages      int
-	Resources  int
+	Errors       int
+	namespaces   map[string]bool
+	Kinds        int
+	Pages        int
+	Resources    int
+	ExportedSize int64
 }
 
 // Add stats.
@@ -59,6 +60,7 @@ func (s *Stats) Add(o *Stats) {
 		s.Kinds += o.Kinds
 		s.Pages += o.Pages
 		s.Resources += o.Resources
+		s.ExportedSize += o.ExportedSize
 		s.Errors += o.Errors
 		for ns := range o.namespaces {
 			s.addNamespace(ns)
@@ -148,6 +150,7 @@ func (w *worker) GenerateWork(
 			}
 		}
 		w.stats.Resources += res.ExportedInstances
+		w.stats.ExportedSize += res.ExportedSize
 		w.stats.Pages += res.Pages
 
 		if w.config.Progress == types.ProgressSimple {

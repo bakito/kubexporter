@@ -26,7 +26,7 @@ type GroupResource struct {
 }
 
 // Report generates report rows.
-func (r GroupResource) Report(withError, withPages bool) []string {
+func (r GroupResource) Report(withSize, withError, withPages bool) []string {
 	row := []string{
 		r.APIGroup,
 		r.APIVersion,
@@ -34,9 +34,11 @@ func (r GroupResource) Report(withError, withPages bool) []string {
 		strconv.FormatBool(r.APIResource.Namespaced),
 		strconv.Itoa(r.Instances),
 		strconv.Itoa(r.ExportedInstances),
-		humanize.Bytes(uint64(r.ExportedSize)),
-		r.QueryDuration.String(),
 	}
+	if withSize {
+		row = append(row, humanize.Bytes(uint64(r.ExportedSize)))
+	}
+	row = append(row, r.QueryDuration.String())
 	if withPages {
 		row = append(row, strconv.Itoa(r.Pages))
 	}

@@ -125,6 +125,7 @@ type Config struct {
 	S3Config                *S3Config     `json:"s3"                      yaml:"s3"`
 	Quiet                   bool          `json:"quiet"                   yaml:"quiet"`
 	Verbose                 bool          `json:"verbose"                 yaml:"verbose"`
+	PrintSize               bool          `json:"printSize"               yaml:"printSize"`
 
 	excludedSet set
 	includedSet set

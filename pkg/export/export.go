@@ -183,6 +183,9 @@ func (e *exporter) writeIntro() {
 	} else if e.config.QueryPageSize != 0 {
 		e.l.Printf("  query page size %d 📃\n", e.config.QueryPageSize)
 	}
+	if e.config.PrintSize {
+		e.l.Printf("  print size ⚖️\n")
+	}
 	if e.config.Archive {
 		e.l.Printf("  compress as archive ️🗜\n")
 		if e.config.ArchiveRetentionDays > 0 {
@@ -248,9 +251,11 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 		"Namespaces",
 		"Total Instances",
 		"Exported Instances",
-		"Exported Size",
-		"Query Duration",
 	}
+	if e.config.PrintSize {
+		header = append(header, "Exported Size")
+	}
+	header = append(header, "Query Duration")
 	if withPages {
 		header = append(header, "Query Pages")
 	}
@@ -268,7 +273,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 	var pages int
 
 	for _, r := range resources {
-		if err := table.Append(r.Report(e.config.Verbose && e.stats.HasErrors(), withPages)); err != nil {
+		if err := table.Append(r.Report(e.config.PrintSize, e.config.Verbose && e.stats.HasErrors(), withPages)); err != nil {
 			return err
 		}
 		qd = qd.Add(r.QueryDuration)
@@ -289,9 +294,11 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 		"",
 		strconv.Itoa(totalInst),
 		strconv.Itoa(inst),
-		humanize.Bytes(uint64(size)),
-		qd.Sub(start).String(),
 	}
+	if e.config.PrintSize {
+		totalRow = append(totalRow, humanize.Bytes(uint64(size)))
+	}
+	totalRow = append(totalRow, qd.Sub(start).String())
 	if withPages {
 		totalRow = append(totalRow, strconv.Itoa(pages))
 	}
@@ -315,6 +322,9 @@ func (e *exporter) printStats() {
 		e.l.Checkf("📃\tQuery Pages %d\n", e.stats.Pages)
 	}
 	e.l.Checkf("🗃\tExported Resources %d\n", e.stats.Resources)
+	if e.config.PrintSize {
+		e.l.Checkf("⚖️\tExported Size %s\n", humanize.Bytes(uint64(e.stats.ExportedSize)))
+	}
 	e.l.Checkf("🏠\tNamespaces %d\n", e.stats.Namespaces())
 	if e.stats.HasErrors() {
 		e.l.Checkf("⚠️\tErrors %d\n", e.stats.Errors)
