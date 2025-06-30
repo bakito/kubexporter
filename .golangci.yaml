@@ -162,6 +162,10 @@ linters:
           disabled: true
         - name: unused-receiver
           disabled: true
+        - name: var-naming
+          disabled: true
+        - name: use-fmt-print
+          disabled: true
     staticcheck:
       checks:
        - 'all'
