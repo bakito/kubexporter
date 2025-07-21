@@ -156,7 +156,7 @@ type Excluded struct {
 	Kinds           []string                `json:"kinds"           yaml:"kinds"`
 	Fields          [][]string              `json:"fields"          yaml:"fields"`
 	KindFields      KindFields              `json:"kindFields"      yaml:"kindFields"`
-	KindsByField    map[string][]FieldValue `json:"kindByField"    yaml:"kindByField"`
+	KindsByField    map[string][]FieldValue `json:"kindByField"     yaml:"kindByField"`
 	PreservedFields PreservedFields         `json:"preservedFields" yaml:"preservedFields"`
 }
 
@@ -265,22 +265,22 @@ func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) 
 					// Navigate to the parent field first
 					m := us.Object
 					for _, field := range excludeField {
-						if x, ok := m[field].(map[string]any); ok {
-							m = x
-						} else {
+						x, ok := m[field].(map[string]any)
+						if !ok {
 							break
 						}
+						m = x
 					}
 
 					// Now navigate to the sub-field
 					subPath := preservedField[len(excludeField):]
 					subM := m
 					for _, pathPart := range subPath[:len(subPath)-1] {
-						if x, ok := subM[pathPart].(map[string]any); ok {
-							subM = x
-						} else {
+						x, ok := subM[pathPart].(map[string]any)
+						if !ok {
 							break
 						}
+						subM = x
 					}
 
 					// Get the final value
@@ -327,7 +327,9 @@ func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) 
 						subPathCheckStr := strings.Join(subPathCheck, ".")
 						if subPathCheckStr == key {
 							// This is the matching preserved field, restore it under the exclude field
-							restorePath := append(excludeField, subPathCheck...)
+							restorePath := make([]string, len(excludeField)+len(subPathCheck))
+							copy(restorePath, excludeField)
+							copy(restorePath[len(excludeField):], subPathCheck)
 							_ = unstructured.SetNestedField(us.Object, value, restorePath...)
 							break
 						}
@@ -361,11 +363,6 @@ func removeNestedField(obj map[string]any, fields ...string) {
 }
 
 // removeNestedFieldWithPreservation removes the nested field from the obj but preserves specified sub-fields.
-func removeNestedFieldWithPreservation(obj map[string]any, excludeFields []string, preservedFields [][]string, preservedValues map[string]any) {
-	// For now, let's use a simpler approach - just remove the field normally
-	// and we'll implement preservation in a separate step
-	removeNestedField(obj, excludeFields...)
-}
 
 func transformNestedFields(
 	kf KindFields,
