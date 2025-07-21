@@ -90,9 +90,10 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 			KindFields: KindFields{},
 		},
 		Excluded: Excluded{
-			Fields:       DefaultExcludedFields,
-			KindFields:   KindFields{},
-			KindsByField: make(map[string][]FieldValue),
+			Fields:          DefaultExcludedFields,
+			KindFields:      KindFields{},
+			KindsByField:    make(map[string][]FieldValue),
+			PreservedFields: PreservedFields{},
 		},
 		SortSlices:  KindFields{},
 		configFlags: configFlags,
@@ -152,10 +153,16 @@ type Progress string
 
 // Excluded exclusion params.
 type Excluded struct {
-	Kinds        []string                `json:"kinds"       yaml:"kinds"`
-	Fields       [][]string              `json:"fields"      yaml:"fields"`
-	KindFields   KindFields              `json:"kindFields"  yaml:"kindFields"`
-	KindsByField map[string][]FieldValue `json:"kindByField" yaml:"kindByField"`
+	Kinds           []string                `json:"kinds"           yaml:"kinds"`
+	Fields          [][]string              `json:"fields"          yaml:"fields"`
+	KindFields      KindFields              `json:"kindFields"      yaml:"kindFields"`
+	KindsByField    map[string][]FieldValue `json:"kindByField"    yaml:"kindByField"`
+	PreservedFields PreservedFields         `json:"preservedFields" yaml:"preservedFields"`
+}
+
+// PreservedFields defines fields that should be preserved when their parent field is excluded.
+type PreservedFields struct {
+	Fields [][]string `json:"fields" yaml:"fields"` // Global preserved fields
 }
 
 // KindFields map kinds to fields.
@@ -237,13 +244,96 @@ type FieldValue struct {
 
 // FilterFields filter fields for a given resource.
 func (c *Config) FilterFields(res *GroupResource, us unstructured.Unstructured) {
+	// First, collect all preserved values before removing fields
+	preservedValues := make(map[string]any)
+
+	// Collect global preserved values
+	for _, excludeField := range c.Excluded.Fields {
+		for _, preservedField := range c.Excluded.PreservedFields.Fields {
+			if len(preservedField) > len(excludeField) {
+				// Check if this preserved field starts with our exclude path
+				isSubField := true
+				for i, excludeFieldPart := range excludeField {
+					if i >= len(preservedField) || preservedField[i] != excludeFieldPart {
+						isSubField = false
+						break
+					}
+				}
+
+				if isSubField {
+					// This is a sub-field we want to preserve
+					// Navigate to the parent field first
+					m := us.Object
+					for _, field := range excludeField {
+						if x, ok := m[field].(map[string]any); ok {
+							m = x
+						} else {
+							break
+						}
+					}
+
+					// Now navigate to the sub-field
+					subPath := preservedField[len(excludeField):]
+					subM := m
+					for _, pathPart := range subPath[:len(subPath)-1] {
+						if x, ok := subM[pathPart].(map[string]any); ok {
+							subM = x
+						} else {
+							break
+						}
+					}
+
+					// Get the final value
+					finalField := subPath[len(subPath)-1]
+					if value, exists := subM[finalField]; exists {
+						preservedKey := strings.Join(subPath, ".")
+						preservedValues[preservedKey] = value
+					}
+				}
+			}
+		}
+	}
+
+	// Now remove the excluded fields
 	for _, f := range c.Excluded.Fields {
 		removeNestedField(us.Object, f...)
 	}
+
+	// Remove kind-specific excluded fields
 	gk := res.GroupKind()
 	if c.Excluded.KindFields != nil && c.Excluded.KindFields[gk] != nil {
 		for _, f := range c.Excluded.KindFields[gk] {
 			removeNestedField(us.Object, f...)
+		}
+	}
+
+	// Finally, restore preserved values
+	for key, value := range preservedValues {
+		// Find the corresponding exclude field for this preserved value
+		for _, excludeField := range c.Excluded.Fields {
+			for _, preservedField := range c.Excluded.PreservedFields.Fields {
+				if len(preservedField) > len(excludeField) {
+					// Check if this preserved field starts with our exclude path
+					isSubField := true
+					for i, excludeFieldPart := range excludeField {
+						if i >= len(preservedField) || preservedField[i] != excludeFieldPart {
+							isSubField = false
+							break
+						}
+					}
+
+					if isSubField {
+						subPathCheck := preservedField[len(excludeField):]
+						subPathCheckStr := strings.Join(subPathCheck, ".")
+						if subPathCheckStr == key {
+							// This is the matching preserved field, restore it under the exclude field
+							restorePath := append(excludeField, subPathCheck...)
+							_ = unstructured.SetNestedField(us.Object, value, restorePath...)
+							break
+						}
+					}
+				}
+			}
 		}
 	}
 }
@@ -268,6 +358,13 @@ func removeNestedField(obj map[string]any, fields ...string) {
 		m = x
 	}
 	delete(m, fields[len(fields)-1])
+}
+
+// removeNestedFieldWithPreservation removes the nested field from the obj but preserves specified sub-fields.
+func removeNestedFieldWithPreservation(obj map[string]any, excludeFields []string, preservedFields [][]string, preservedValues map[string]any) {
+	// For now, let's use a simpler approach - just remove the field normally
+	// and we'll implement preservation in a separate step
+	removeNestedField(obj, excludeFields...)
 }
 
 func transformNestedFields(
