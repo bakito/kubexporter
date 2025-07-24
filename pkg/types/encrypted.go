@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -80,7 +81,16 @@ func (e *Encrypted) doEncrypt(val any) string {
 	if e.AesKey == "" {
 		return ""
 	}
-	data := []byte(fmt.Sprintf("%v", val))
+
+	// Convert to string
+	strVal := fmt.Sprintf("%v", val)
+
+	// Don't encrypt if already encrypted or empty
+	if strings.HasPrefix(strVal, prefix) || strVal == "" {
+		return strVal
+	}
+
+	data := []byte(strVal)
 	return prefix + base64.StdEncoding.EncodeToString(e.gcm.Seal(e.nonce, e.nonce, data, nil))
 }
 
@@ -109,6 +119,51 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 			return err
 		}
 		if err := table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)}); err != nil {
+			return err
+		}
+
+		if err := utils.WriteFile(printFlags, file, us); err != nil {
+			return err
+		}
+	}
+
+	return table.Render()
+}
+
+// Encrypt encrypts secrets in exported resource files.
+func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...string) error {
+	// Create a config with encryption settings for Secrets only
+	// TODO: it could read the config from the file for flexibility
+	config := &Config{
+		Encrypted: &Encrypted{
+			AesKey: aesKey,
+			KindFields: KindFields{
+				"Secret": {{"data"}, {"stringData"}},
+			},
+		},
+	}
+	if err := config.Encrypted.Setup(); err != nil {
+		return err
+	}
+
+	table := render.Table()
+	table.Header("File", "Namespace", "Kind", "Name", "Encrypted Fields")
+
+	for _, file := range files {
+		us, err := utils.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		res := &GroupResource{
+			APIResource: metav1.APIResource{
+				Kind: us.GetKind(),
+			},
+		}
+		config.EncryptFields(res, *us)
+		encryptedCount := countEncryptedFields(us.Object)
+
+		if err := table.Append([]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)}); err != nil {
 			return err
 		}
 
@@ -153,4 +208,20 @@ func decryptFields(obj map[string]any, gcm cipher.AEAD, nonceSize int) (int, err
 		}
 	}
 	return replaced, nil
+}
+
+// countEncryptedFields counts the number of fields that have been encrypted.
+func countEncryptedFields(obj map[string]any) int {
+	var count int
+	for _, value := range obj {
+		switch e := value.(type) {
+		case map[string]any:
+			count += countEncryptedFields(e)
+		case string:
+			if strings.HasPrefix(e, prefix) {
+				count++
+			}
+		}
+	}
+	return count
 }

@@ -1,0 +1,33 @@
+# Gitleaks configuration file
+# This file excludes false positives from test files containing AES keys
+
+[allowlist]
+# Allow AES keys in test files and config
+description = "Allow AES keys in test files and configuration"
+paths = [
+    "**/*_test.go",
+    "**/testdata/**",
+    "**/config.yaml"
+]
+
+# Allow specific test patterns
+[[allowlist.rules]]
+id = "generic-api-key"
+description = "Allow test AES keys"
+regex = '''1234567890123456'''
+
+# Allow base64 encoded test data
+[[allowlist.rules]]
+id = "generic-api-key"
+description = "Allow base64 encoded test data"
+regex = '''dXNlcm5hbWU=|cGFzc3dvcmQ='''
+
+# Allow KUBEXPORTER_AES prefix in test files
+[[allowlist.rules]]
+id = "generic-api-key"
+description = "Allow KUBEXPORTER_AES prefix in test files"
+regex = '''KUBEXPORTER_AES@'''
+paths = [
+    "**/*_test.go",
+    "**/testdata/**"
+]

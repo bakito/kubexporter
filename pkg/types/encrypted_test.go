@@ -124,3 +124,68 @@ var _ = Describe("Config-Encrypted", func() {
 		})
 	})
 })
+
+var _ = Describe("Encrypt", func() {
+	var enc *Encrypted
+	BeforeEach(func() {
+		enc = &Encrypted{
+			AesKey: "1234567890123456",
+			KindFields: map[string][][]string{
+				"Secret": {{"data"}},
+			},
+		}
+		_ = os.Unsetenv(EnvAesKey)
+	})
+	AfterEach(func() {
+		_ = os.Unsetenv(EnvAesKey)
+	})
+	Context("Encrypt", func() {
+		BeforeEach(func() {
+			_ = enc.Setup()
+		})
+		Context("EncryptFields", func() {
+			It("should encrypt the Secret data", func() {
+				config := &Config{
+					Encrypted: enc,
+				}
+				us := unstructured.Unstructured{Object: map[string]any{
+					"data": map[string]any{
+						"secret": "don't tell anyone!",
+					},
+				}}
+				res := &GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}
+				config.EncryptFields(res, us)
+				secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
+				Ω(secret).Should(HavePrefix(prefix))
+			})
+			It("should not encrypt if already encrypted", func() {
+				config := &Config{
+					Encrypted: enc,
+				}
+				us := unstructured.Unstructured{Object: map[string]any{
+					"data": map[string]any{
+						"secret": "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg==",
+					},
+				}}
+				res := &GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}
+				config.EncryptFields(res, us)
+				secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
+				Ω(secret).Should(Equal("KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg=="))
+			})
+			It("should not encrypt empty strings", func() {
+				config := &Config{
+					Encrypted: enc,
+				}
+				us := unstructured.Unstructured{Object: map[string]any{
+					"data": map[string]any{
+						"secret": "",
+					},
+				}}
+				res := &GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}
+				config.EncryptFields(res, us)
+				secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
+				Ω(secret).Should(Equal(""))
+			})
+		})
+	})
+})
