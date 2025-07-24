@@ -99,6 +99,7 @@ func readConfig(
 		case "archive":
 			sl, _ := cmd.Flags().GetBool(f.Name)
 			config.Archive = sl
+		default:
 		}
 	})
 
