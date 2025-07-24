@@ -10,7 +10,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/minio/minio-go/v7 v7.0.94
+	github.com/minio/minio-go/v7 v7.0.95
 	github.com/olekukonko/tablewriter v1.0.8
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.37.0
@@ -73,7 +73,7 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.11 // indirect
 	github.com/liggitt/tabwriter v0.0.0-20181228230101-89fcab3d43de // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
@@ -98,7 +98,7 @@ require (
 	github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6 // indirect
 	github.com/olekukonko/ll v0.0.8 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
-	github.com/philhofer/fwd v1.1.3-0.20240916144458-20a13a1f6b7c // indirect
+	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/rs/xid v1.6.0 // indirect
@@ -109,12 +109,12 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	go.uber.org/automaxprocs v1.6.0 // indirect
-	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/net v0.40.0 // indirect
+	golang.org/x/crypto v0.39.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
-	golang.org/x/text v0.25.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
