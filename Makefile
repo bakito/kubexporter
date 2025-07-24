@@ -18,7 +18,6 @@ test-ci:
 	@sed -i '/pkg\/mocks/d'              coverage.out
 	@sed -i '/pkg\/export\/archive.go/d' coverage.out
 	@sed -i '/pkg\/export\/export.go/d'  coverage.out
-	@sed -i '/cmd/d'                     coverage.out
 	@sed -i '/uor/d'                     coverage.out
 	@sed -i '/log/d'                     coverage.out
 	go tool cover -func coverage.out
