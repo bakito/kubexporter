@@ -68,3 +68,10 @@ excluded:
     Secret:
       - field: [type]
         values: ['helm.sh/release', 'helm.sh/release.v1']
+  # fields that should be preserved even when their parent field is excluded
+  # TODO: add kind-specific preserved fields for more fine-grained control
+  preservedFields:
+    # global preserved fields - these will be preserved when their parent field is excluded
+    fields:
+      - [status, loadBalancer, ingress]  # preserve status.loadBalancer.ingress when status is excluded
+

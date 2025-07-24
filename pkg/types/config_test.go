@@ -508,4 +508,258 @@ var _ = Describe("Config", func() {
 			})
 		})
 	})
+
+	Context("PreservedFields", func() {
+		var (
+			config *types.Config
+			pf     *genericclioptions.PrintFlags
+			res    *types.GroupResource
+		)
+
+		BeforeEach(func() {
+			pf = &genericclioptions.PrintFlags{
+				OutputFormat:       ptr.To(types.DefaultFormat),
+				JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
+			}
+			config = types.NewConfig(nil, pf)
+			res = &types.GroupResource{
+				APIGroup: "group",
+				APIResource: metav1.APIResource{
+					Kind: "kind",
+				},
+			}
+		})
+
+		Context("FilterFields with preserved fields", func() {
+			It("should preserve specified fields when excluding status", func() {
+				config.Excluded = types.Excluded{
+					Fields: [][]string{
+						{"status"},
+					},
+					PreservedFields: types.PreservedFields{
+						Fields: [][]string{
+							{"status", "loadBalancer", "ingress"},
+							{"status", "conditions"},
+						},
+					},
+				}
+
+				us := unstructured.Unstructured{
+					Object: map[string]any{
+						"kind": "kind",
+						"metadata": map[string]any{
+							"name": "test-resource",
+						},
+						"status": map[string]any{
+							"phase": "Running",
+							"conditions": []any{
+								map[string]any{
+									"type":   "Ready",
+									"status": "True",
+								},
+							},
+							"loadBalancer": map[string]any{
+								"ingress": []any{
+									map[string]any{
+										"ip": "192.168.1.100",
+									},
+								},
+								"other": "should-be-removed",
+							},
+							"other": "should-be-removed",
+						},
+					},
+				}
+
+				config.FilterFields(res, us)
+
+				// status should exist with preserved fields
+				Ω(us.Object).Should(HaveKey("status"))
+				status, ok := us.Object["status"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+
+				// Check that preserved fields are present
+				Ω(status).Should(HaveKey("loadBalancer"))
+				loadBalancer, ok := status["loadBalancer"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+				Ω(loadBalancer).Should(HaveKey("ingress"))
+				ingress, ok := loadBalancer["ingress"].([]any)
+				Ω(ok).Should(BeTrue())
+				Ω(ingress).Should(HaveLen(1))
+
+				// Check that conditions are preserved
+				Ω(status).Should(HaveKey("conditions"))
+				conditions, ok := status["conditions"].([]any)
+				Ω(ok).Should(BeTrue())
+				Ω(conditions).Should(HaveLen(1))
+
+				// Check that non-preserved fields are removed
+				Ω(loadBalancer).ShouldNot(HaveKey("other"))
+				Ω(status).ShouldNot(HaveKey("other"))
+				Ω(status).ShouldNot(HaveKey("phase"))
+			})
+
+			It("should preserve fields when excluding status", func() {
+				config.Excluded = types.Excluded{
+					Fields: [][]string{
+						{"status"},
+					},
+					PreservedFields: types.PreservedFields{
+						Fields: [][]string{
+							{"status", "phase"},
+							{"status", "containerStatuses"},
+						},
+					},
+				}
+
+				us := unstructured.Unstructured{
+					Object: map[string]any{
+						"kind": "kind",
+						"metadata": map[string]any{
+							"name": "test-pod",
+						},
+						"status": map[string]any{
+							"phase": "Running",
+							"containerStatuses": []any{
+								map[string]any{
+									"name":  "container1",
+									"ready": true,
+								},
+							},
+							"other": "should-be-removed",
+						},
+					},
+				}
+
+				config.FilterFields(res, us)
+
+				// status should be preserved with specified fields
+				Ω(us.Object).Should(HaveKey("status"))
+				status, ok := us.Object["status"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+
+				// Check that preserved fields are present
+				Ω(status).Should(HaveKey("phase"))
+				Ω(status["phase"]).Should(Equal("Running"))
+
+				Ω(status).Should(HaveKey("containerStatuses"))
+				containerStatuses, ok := status["containerStatuses"].([]any)
+				Ω(ok).Should(BeTrue())
+				Ω(containerStatuses).Should(HaveLen(1))
+
+				// Check that non-preserved fields are removed
+				Ω(status).ShouldNot(HaveKey("other"))
+			})
+
+			It("should handle nested preserved fields correctly", func() {
+				config.Excluded = types.Excluded{
+					Fields: [][]string{
+						{"metadata", "annotations"},
+					},
+					PreservedFields: types.PreservedFields{
+						Fields: [][]string{
+							{"metadata", "annotations", "custom.annotation"},
+							{"metadata", "annotations", "important.label"},
+						},
+					},
+				}
+
+				us := unstructured.Unstructured{
+					Object: map[string]any{
+						"kind": "kind",
+						"metadata": map[string]any{
+							"name": "test-resource",
+							"annotations": map[string]any{
+								"custom.annotation": "preserved-value",
+								"important.label":   "also-preserved",
+								"kubectl.kubernetes.io/last-applied-configuration": "should-be-removed",
+								"other.annotation": "should-be-removed",
+							},
+						},
+					},
+				}
+
+				config.FilterFields(res, us)
+
+				// annotations should be removed and restored with preserved fields
+				metadata, ok := us.Object["metadata"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+				Ω(metadata).Should(HaveKey("annotations"))
+
+				annotations, ok := metadata["annotations"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+
+				// Check that preserved annotations are present
+				Ω(annotations).Should(HaveKey("custom.annotation"))
+				Ω(annotations["custom.annotation"]).Should(Equal("preserved-value"))
+
+				Ω(annotations).Should(HaveKey("important.label"))
+				Ω(annotations["important.label"]).Should(Equal("also-preserved"))
+
+				// Check that non-preserved annotations are removed
+				Ω(annotations).ShouldNot(HaveKey("kubectl.kubernetes.io/last-applied-configuration"))
+				Ω(annotations).ShouldNot(HaveKey("other.annotation"))
+			})
+
+			It("should work with multiple excluded fields", func() {
+				config.Excluded = types.Excluded{
+					Fields: [][]string{
+						{"status"},
+						{"metadata", "annotations"},
+					},
+					PreservedFields: types.PreservedFields{
+						Fields: [][]string{
+							{"status", "loadBalancer", "ingress"},
+							{"metadata", "annotations", "custom.annotation"},
+						},
+					},
+				}
+
+				us := unstructured.Unstructured{
+					Object: map[string]any{
+						"kind": "kind",
+						"metadata": map[string]any{
+							"name": "test-resource",
+							"annotations": map[string]any{
+								"custom.annotation": "preserved-value",
+								"other.annotation":  "should-be-removed",
+							},
+						},
+						"status": map[string]any{
+							"loadBalancer": map[string]any{
+								"ingress": []any{
+									map[string]any{
+										"ip": "192.168.1.100",
+									},
+								},
+								"other": "should-be-removed",
+							},
+							"other": "should-be-removed",
+						},
+					},
+				}
+
+				config.FilterFields(res, us)
+
+				// Check status preservation
+				Ω(us.Object).Should(HaveKey("status"))
+				status, ok := us.Object["status"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+				Ω(status).Should(HaveKey("loadBalancer"))
+				loadBalancer, ok := status["loadBalancer"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+				Ω(loadBalancer).Should(HaveKey("ingress"))
+				Ω(loadBalancer).ShouldNot(HaveKey("other"))
+
+				// Check annotations preservation
+				metadata, ok := us.Object["metadata"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+				Ω(metadata).Should(HaveKey("annotations"))
+				annotations, ok := metadata["annotations"].(map[string]any)
+				Ω(ok).Should(BeTrue())
+				Ω(annotations).Should(HaveKey("custom.annotation"))
+				Ω(annotations).ShouldNot(HaveKey("other.annotation"))
+			})
+		})
+	})
 })
