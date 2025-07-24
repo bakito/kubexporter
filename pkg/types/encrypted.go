@@ -58,9 +58,9 @@ func (e *Encrypted) Setup() (err error) {
 func setupAES(key string) (cipher.AEAD, error) {
 	k := len(key)
 	switch k {
+	case 16, 24, 32:
 	default:
 		return nil, fmt.Errorf("invalid key size %d: aesKey must be 16, 24 or 32 chars long", k)
-	case 16, 24, 32:
 	}
 
 	c, err := aes.NewCipher([]byte(key))
