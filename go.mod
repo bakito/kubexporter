@@ -11,7 +11,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/minio/minio-go/v7 v7.0.95
-	github.com/olekukonko/tablewriter v1.0.8
+	github.com/olekukonko/tablewriter v1.0.9
 	github.com/onsi/ginkgo/v2 v2.23.4
 	github.com/onsi/gomega v1.38.0
 	github.com/spf13/cobra v1.9.1
@@ -95,8 +95,8 @@ require (
 	github.com/muesli/termenv v0.16.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mxk/go-flowrate v0.0.0-20140419014527-cca7078d478f // indirect
-	github.com/olekukonko/errors v0.0.0-20250405072817-4e6d85265da6 // indirect
-	github.com/olekukonko/ll v0.0.8 // indirect
+	github.com/olekukonko/errors v1.1.0 // indirect
+	github.com/olekukonko/ll v0.0.9 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
