@@ -2,6 +2,8 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/bakito/kubexporter)](https://goreportcard.com/report/github.com/bakito/kubexporter)
 [![GitHub Release](https://img.shields.io/github/release/bakito/kubexporter.svg?style=flat)](https://github.com/bakito/kubexporter/releases)
 [![Coverage Status](https://coveralls.io/repos/github/bakito/kubexporter/badge.svg?branch=main)](https://coveralls.io/github/bakito/kubexporter?branch=main)
+[![Static Badge](https://img.shields.io/badge/try_me-on_Killercoda-black)](https://killercoda.com/bakito/scenario/kubernetes-kubexporter)
+
 
 # KubExporter
 
