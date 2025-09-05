@@ -22,7 +22,7 @@ TB_GORELEASER_VERSION ?= v2.11.2
 # renovate: packageName=go.uber.org/mock/mockgen
 TB_MOCKGEN_VERSION ?= v0.6.0
 # renovate: packageName=github.com/bakito/semver
-TB_SEMVER_VERSION ?= v1.1.5
+TB_SEMVER_VERSION ?= v1.1.7
 
 ## Tool Installer
 .PHONY: tb.golangci-lint
