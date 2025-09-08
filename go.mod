@@ -19,7 +19,7 @@ require (
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v8 v8.10.2
 	go.uber.org/mock v0.6.0
-	golang.org/x/term v0.34.0
+	golang.org/x/term v0.35.0
 	k8s.io/api v0.34.0
 	k8s.io/apimachinery v0.34.0
 	k8s.io/cli-runtime v0.34.0
@@ -115,7 +115,7 @@ require (
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
+	golang.org/x/sys v0.36.0 // indirect
 	golang.org/x/text v0.28.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.36.0 // indirect
