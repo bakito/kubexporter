@@ -8,11 +8,15 @@ TB_LOCALBIN ?= $(TB_LOCALDIR)/bin
 $(TB_LOCALBIN):
 	if [ ! -e $(TB_LOCALBIN) ]; then mkdir -p $(TB_LOCALBIN); fi
 
+# Helper functions
+STRIP_V = $(patsubst v%,%,$(1))
+
 ## Tool Binaries
 TB_GOLANGCI_LINT ?= $(TB_LOCALBIN)/golangci-lint
 TB_GORELEASER ?= $(TB_LOCALBIN)/goreleaser
 TB_MOCKGEN ?= $(TB_LOCALBIN)/mockgen
 TB_SEMVER ?= $(TB_LOCALBIN)/semver
+TB_SYFT ?= $(TB_LOCALBIN)/syft
 
 ## Tool Versions
 # renovate: packageName=github.com/golangci/golangci-lint/v2
@@ -23,6 +27,9 @@ TB_GORELEASER_VERSION ?= v2.12.7
 TB_MOCKGEN_VERSION ?= v0.6.0
 # renovate: packageName=github.com/bakito/semver
 TB_SEMVER_VERSION ?= v1.1.7
+# renovate: packageName=github.com/anchore/syft/cmd/syft
+TB_SYFT_VERSION ?= v1.36.0
+TB_SYFT_VERSION_NUM ?= $(call STRIP_V,$(TB_SYFT_VERSION))
 
 ## Tool Installer
 .PHONY: tb.golangci-lint
@@ -41,6 +48,10 @@ tb.mockgen: ## Download mockgen locally if necessary.
 tb.semver: ## Download semver locally if necessary.
 	@test -s $(TB_SEMVER) || \
 		GOBIN=$(TB_LOCALBIN) go install github.com/bakito/semver@$(TB_SEMVER_VERSION)
+.PHONY: tb.syft
+tb.syft: ## Download syft locally if necessary.
+	@test -s $(TB_SYFT) && $(TB_SYFT) --version | grep -q $(TB_SYFT_VERSION_NUM) || \
+		GOBIN=$(TB_LOCALBIN) go install github.com/anchore/syft/cmd/syft@$(TB_SYFT_VERSION)
 
 ## Reset Tools
 .PHONY: tb.reset
@@ -49,7 +60,8 @@ tb.reset:
 		$(TB_GOLANGCI_LINT) \
 		$(TB_GORELEASER) \
 		$(TB_MOCKGEN) \
-		$(TB_SEMVER)
+		$(TB_SEMVER) \
+		$(TB_SYFT)
 
 ## Update Tools
 .PHONY: tb.update
@@ -58,5 +70,6 @@ tb.update: tb.reset
 		github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
 		github.com/goreleaser/goreleaser/v2 \
 		go.uber.org/mock/mockgen@github.com/uber-go/mock \
-		github.com/bakito/semver
+		github.com/bakito/semver \
+		github.com/anchore/syft/cmd/syft?--version
 ## toolbox - end
