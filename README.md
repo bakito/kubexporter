@@ -17,6 +17,8 @@ The configuration allows customization on which resources and which fields to ex
 
 Download the latest binary from https://github.com/bakito/kubexporter/releases.
 
+[![Packaging status](https://repology.org/badge/vertical-allrepos/kubexporter.svg)](https://repology.org/project/kubexporter/versions)
+
 ### Use as kubectl plugin
 
 Rename the binary to kubectl-exporter.
