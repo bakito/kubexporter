@@ -169,14 +169,16 @@ func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 func (m *model) View() string {
 	pad := strings.Repeat(" ", padding)
 	view := "\n" + pad + mainProgressTitle + ": " + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
+	var viewSb172 strings.Builder
 	for i, workerProgress := range m.workerProgress {
-		view += pad + fmt.Sprintf(
+		_, _ = viewSb172.WriteString(pad + fmt.Sprintf(
 			"%s %s: %s",
 			m.workerStates[i].icon,
 			m.workerStates[i].CurrentKind,
 			strings.Repeat(" ", m.maxLen-len(m.workerStates[i].CurrentKind)),
-		) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n"
+		) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n")
 	}
+	view += viewSb172.String()
 	return view
 }
 
