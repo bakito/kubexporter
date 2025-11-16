@@ -19,7 +19,7 @@ require (
 	github.com/vardius/worker-pool/v2 v2.1.0
 	github.com/vbauerster/mpb/v8 v8.11.2
 	go.uber.org/mock v0.6.0
-	golang.org/x/term v0.36.0
+	golang.org/x/term v0.37.0
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/cli-runtime v0.34.1
