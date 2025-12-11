@@ -89,31 +89,15 @@ progress: bar
 archive: true
 # S3 Configuration to upload the archive to an S3 compatible storage
 #s3:
-#  endpoint:
-#  accessKeyID:
-#  secretAccessKey:
-#  token:
-#  secure: true
-#  bucket:
-# GCS Configuration to upload the archive to a GCS bucket
+#  endpoint: <your-s3-endpoint>
+#  accessKeyID: <your-access-key-id>
+#  secretAccessKey: <your-secret-access-key>
+#  token: <your-session-token> # Optional
+#  secure: true # Use HTTPS (default)
+#  bucket: <your-bucket-name>
 #gcs:
-#  bucket:
+#  bucket: <your-bucket-name>
 
-### GCS Authentication
-
-Authentication to Google Cloud Storage is handled automatically via [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials).
-
-You can configure ADC in one of the following ways:
-
-*   **Service Account Key File:** Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of the JSON file that contains your service account key.
-    ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
-    ```
-*   **gcloud CLI:** Authenticate with the gcloud CLI.
-    ```bash
-    gcloud auth application-default login
-    ```
-*   **Workload Identity (Recommended for GKE):** When running in a GKE cluster, the recommended way to authenticate is by using Workload Identity. This allows your Kubernetes pod to impersonate a Google Service Account without needing to handle service account keys.
 # define a single namespace (default all)
 namespace:
 # define the number of parallel worker
