@@ -140,6 +140,12 @@ func (e *exporter) Export(ctx context.Context) error {
 				return err
 			}
 		}
+		if e.config.GCSConfig != nil {
+			err = e.uploadGCS(ctx)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -193,6 +199,9 @@ func (e *exporter) writeIntro() {
 		}
 		if e.config.S3Config != nil {
 			e.l.Printf("  upload to S3 🪣 %s/%s\n", e.config.S3Config.Endpoint, e.config.S3Config.Bucket)
+		}
+		if e.config.GCSConfig != nil {
+			e.l.Printf("  upload to GCS 🪣 %s\n", e.config.GCSConfig.Bucket)
 		}
 	}
 	e.config.Logger().Printf("\nExporting ...\n")

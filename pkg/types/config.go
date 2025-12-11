@@ -124,6 +124,7 @@ type Config struct {
 	ArchiveRetentionDays    int           `json:"archiveRetentionDays"    yaml:"archiveRetentionDays"`
 	ArchiveTarget           string        `json:"archiveTarget"           yaml:"archiveTarget"`
 	S3Config                *S3Config     `json:"s3"                      yaml:"s3"`
+	GCSConfig               *GCSConfig    `json:"gcs"                     yaml:"gcs"`
 	Quiet                   bool          `json:"quiet"                   yaml:"quiet"`
 	Verbose                 bool          `json:"verbose"                 yaml:"verbose"`
 	PrintSize               bool          `json:"printSize"               yaml:"printSize"`
@@ -146,6 +147,10 @@ type S3Config struct {
 	Token           string `json:"token"           yaml:"token"`
 	Secure          bool   `json:"secure"          yaml:"secure"`
 	Bucket          string `json:"bucket"          yaml:"bucket"`
+}
+
+type GCSConfig struct {
+	Bucket string `json:"bucket" yaml:"bucket"`
 }
 
 // Progress type.
