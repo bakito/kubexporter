@@ -21,3 +21,4 @@ kubexporter
 gomock_*
 bin
 .config.yaml
+snapcraft.login
