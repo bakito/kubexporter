@@ -28,7 +28,12 @@ release: tb.goreleaser tb.semver tb.syft
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 2
 
 test-release: tb.goreleaser tb.syft
-	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --skip=publish --snapshot --clean --parallelism 2
+	@TB_GORELEASER_ARGS="--skip=publish --snapshot --clean --parallelism 2"; \
+	TB_GORELEASER_EXTRA_ARGS=""; \
+	if ! command -v snapcraft >/dev/null 2>&1; then \
+		TB_GORELEASER_EXTRA_ARGS="--skip=snapcraft"; \
+	fi; \
+	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) $${TB_GORELEASER_ARGS} $${TB_GORELEASER_EXTRA_ARGS}
 
 
 # generate mocks
