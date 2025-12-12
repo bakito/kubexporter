@@ -5,9 +5,12 @@
 [![Static Badge](https://img.shields.io/badge/try_me-on_Killercoda-black)](https://killercoda.com/bakito/scenario/kubernetes-kubexporter)
 
 
+<div align="right">
+  <img src="docs/icons/kubexporter.png" alt="kubexporter" width="100"/>
+</div>
+
 # KubExporter
 
-![kubexporter](docs/icons/kubexporter.png)
 
 KubExporter allows you to export resources from kubernetes as yaml/json files.
 
@@ -18,6 +21,16 @@ The configuration allows customization on which resources and which fields to ex
 Download the latest binary from https://github.com/bakito/kubexporter/releases.
 
 [![Packaging status](https://repology.org/badge/vertical-allrepos/kubexporter.svg)](https://repology.org/project/kubexporter/versions)
+
+### Brew
+
+```bash
+# Add the tap
+brew tap bakito/tap
+
+# install kubexporter 
+brew install --cask kubexporter
+```
 
 ### Use as kubectl plugin
 
