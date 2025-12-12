@@ -11,7 +11,6 @@
 
 # KubExporter
 
-
 KubExporter allows you to export resources from kubernetes as yaml/json files.
 
 The configuration allows customization on which resources and which fields to exclude.
@@ -30,6 +29,12 @@ brew tap bakito/tap
 
 # install kubexporter 
 brew install --cask kubexporter
+```
+
+### Snap
+
+```bash
+sudo snap install kubexporter
 ```
 
 ### Use as kubectl plugin
@@ -143,27 +148,27 @@ excluded:
     - extensions.ReplicaSet
   # list fields that should be removed for all resources before exported; slices are also traversed
   fields:
-    - [ status ]
-    - [ metadata, uid ]
-    - [ metadata, selfLink ]
-    - [ metadata, resourceVersion ]
-    - [ metadata, creationTimestamp ]
-    - [ metadata, generation ]
-    - [ metadata, annotations, "kubectl.kubernetes.io/last-applied-configuration" ]
+    - [status]
+    - [metadata, uid]
+    - [metadata, selfLink]
+    - [metadata, resourceVersion]
+    - [metadata, creationTimestamp]
+    - [metadata, generation]
+    - [metadata, annotations, "kubectl.kubernetes.io/last-applied-configuration"]
   # kind specific excluded fields
   kindFields:
     Service:
-      - [ spec, clusterIP ]
+      - [spec, clusterIP]
   # allows to exclude single instances with certain field values
   kindByField:
     Service:
-      - field: [ metadata, name ]
+      - field: [metadata, name]
         # the value is compared to the string representation of the actual kind value
-        values: [ exclude-me-1, exclude-me-2 ]
+        values: [exclude-me-1, exclude-me-2]
     Secret:
-      - field: [ type ]
+      - field: [type]
         # exclude helm secrets
-        values: [ 'helm.sh/release', 'helm.sh/release.v1' ]
+        values: ['helm.sh/release', 'helm.sh/release.v1']
 # excludes resources if the owner reference kind is excluded
 considerOwnerReferences: false
 # mask certain fields 
@@ -175,7 +180,7 @@ masked:
   # kind specific fields that should be masked
   kindFields:
     Secret:
-      - [ data ]
+      - [data]
 # encrypt certain fields 
 #encrypted:
 #  # the aes key to use to encrypt the field values. The key can also be provided via env variable 'KUBEXPORTER_AES_KEY'
@@ -188,9 +193,8 @@ masked:
 # sort the slice field value before exporting
 sortSlices:
   User:
-    - [ roles ]
+    - [roles]
 ```
-
 
 ### S3
 
@@ -198,18 +202,20 @@ You can configure `kubexporter` to upload the created archive to an S3 compatibl
 
 The following fields are available for S3 configuration:
 
-*   `endpoint`: The S3 endpoint.
-*   `accessKeyID`: The access key ID.
-*   `secretAccessKey`: The secret access key.
-*   `token`: The session token (optional).
-*   `secure`: Set to `true` for HTTPS, `false` for HTTP.
-*   `bucket`: The name of the S3 bucket.
+* `endpoint`: The S3 endpoint.
+* `accessKeyID`: The access key ID.
+* `secretAccessKey`: The secret access key.
+* `token`: The session token (optional).
+* `secure`: Set to `true` for HTTPS, `false` for HTTP.
+* `bucket`: The name of the S3 bucket.
 
 #### Authentication
 
-Credentials must be provided in the config file. Environment variables are not automatically used if these fields are set (even if empty).
+Credentials must be provided in the config file. Environment variables are not automatically used if these fields are
+set (even if empty).
 
 Example:
+
 ```yaml
 s3:
   endpoint: <your-s3-endpoint>
@@ -226,25 +232,30 @@ You can configure `kubexporter` to upload the created archive to a GCS bucket.
 
 The following fields are available for GCS configuration:
 
-*   `bucket`: The name of the GCS bucket.
+* `bucket`: The name of the GCS bucket.
 
 #### Authentication
 
-Authentication to Google Cloud Storage is handled automatically via [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials).
+Authentication to Google Cloud Storage is handled automatically
+via [Application Default Credentials (ADC)](https://cloud.google.com/docs/authentication/application-default-credentials).
 
 You can configure ADC in one of the following ways:
 
-*   **Service Account Key File:** Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of the JSON file that contains your service account key.
-    ```bash
-    export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
-    ```
-*   **gcloud CLI:** Authenticate with the gcloud CLI.
-    ```bash
-    gcloud auth application-default login
-    ```
-*   **Workload Identity (Recommended for GKE):** When running in a GKE cluster, the recommended way to authenticate is by using Workload Identity. This allows your Kubernetes pod to impersonate a Google Service Account without needing to handle service account keys.
+* **Service Account Key File:** Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of the JSON
+  file that contains your service account key.
+  ```bash
+  export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keyfile.json"
+  ```
+* **gcloud CLI:** Authenticate with the gcloud CLI.
+  ```bash
+  gcloud auth application-default login
+  ```
+* **Workload Identity (Recommended for GKE):** When running in a GKE cluster, the recommended way to authenticate is by
+  using Workload Identity. This allows your Kubernetes pod to impersonate a Google Service Account without needing to
+  handle service account keys.
 
 Example:
+
 ```yaml
 gcs:
   bucket: <your-bucket-name>
@@ -278,6 +289,7 @@ kubexporter decrypt exports/argocd/Secret.argocd-secret.yaml
  exports/argocd/Secret.argocd-secret.yaml  argocd     Secret  argocd-secret                 5
 
 ```
+
 #### Decrypt multiple files
 
 ```shell
