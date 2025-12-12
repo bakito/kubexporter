@@ -67,6 +67,7 @@ snapcrafts:
     base: core22
     license: Apache-2.0
     publish: true
+    icon: ./docs/icons/kubexporter.png
     apps:
       kubexporter:
         command: kubexporter
