@@ -2,26 +2,53 @@ version: 2
 # This is an example goreleaser.yaml file with some sane defaults.
 # Make sure to check the documentation at http://goreleaser.com
 builds:
-- env:
-  - CGO_ENABLED=0
-  ldflags:
-    - -s -w -X github.com/bakito/kubexporter/version.Version={{.Version}}
-  goos:
-  - linux
-  - windows
-  - darwin
-  goarch:
-    - 386
-    - amd64
+  - id: default
+    env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/bakito/kubexporter/version.Version={{.Version}}
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - 386
+      - amd64
+
+# Ensure archives exist, as Homebrew/Snap/Chocolatey typically package from archives.
+archives:
+  - id: default
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    files:
+      - LICENSE
+      - README.md
+
 checksum:
   name_template: 'checksums.txt'
+
 snapshot:
-  version_template: "{{ .Tag }}-next"
+  version_template: "{{ .Version }}-next"
+
 changelog:
   sort: asc
   filters:
     exclude:
-    - '^docs:'
-    - '^test:'
+      - '^docs:'
+      - '^test:'
+
 sboms:
   - artifacts: archive
+
+homebrew_casks:
+  - name: kubexporter
+    homepage: "https://github.com/bakito/kubexporter"
+    description: "Export Kubernetes resources for backup and migration."
+    repository:
+      owner: "bakito"
+      name: "homebrew-tap"
