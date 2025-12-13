@@ -14,6 +14,7 @@ builds:
     goarch:
       - 386
       - amd64
+      - arm64
 
 # Ensure archives exist, as Homebrew/Snap/Chocolatey typically package from archives.
 archives:
