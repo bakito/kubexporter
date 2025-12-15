@@ -3,7 +3,8 @@ FROM golang:1.25-alpine AS builder
 WORKDIR /build
 
 ARG VERSION=main
-RUN apk update && apk add upx
+
+RUN apk update && apk add upx ca-certificates tzdata
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \
@@ -21,4 +22,6 @@ LABEL maintainer="bakito <github@bakito.ch>"
 USER 1001
 ENTRYPOINT ["/opt/go/kubexporter"]
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=builder /usr/share/zoneinfo/ /usr/share/zoneinfo/
 COPY --from=builder /build/kubexporter /opt/go/kubexporter
