@@ -257,7 +257,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 		"Group",
 		"Version",
 		"Kind",
-		"Namespaces",
+		"Namespaced",
 		"Total Instances",
 		"Exported Instances",
 	}
