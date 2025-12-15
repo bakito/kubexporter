@@ -106,10 +106,8 @@ func (e *exporter) Export(ctx context.Context) error {
 		e.stats.Add(s)
 	}
 
-	if prog != nil {
-		if err := prog.Run(); err != nil {
-			return err
-		}
+	if err := prog.Run(); err != nil {
+		return err
 	}
 	if exportErr != nil {
 		return exportErr
