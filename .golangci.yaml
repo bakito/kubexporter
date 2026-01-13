@@ -133,8 +133,6 @@ linters:
           exclude: [""]
           arguments:
             - allowedPackages: ["github.com/onsi/ginkgo/v2", "github.com/onsi/gomega"]
-        - name: empty-block
-          disabled: true
         - name: exported
           disabled: true
         - name: filename-format
@@ -144,28 +142,20 @@ linters:
           disabled: true
         - name: function-length
           disabled: true
-        - name: function-result-limit
-          disabled: true
-        - name: import-shadowing
-          disabled: true
         - name: line-length-limit
-          disabled: true
-        - name: max-control-nesting
-          disabled: true
+          disabled: false
+          arguments:
+           - &lineLength 128
         - name: max-public-structs
-          disabled: true
-        - name: nested-structs
           disabled: true
         - name: package-comments
           disabled: true
-        - name: unused-parameter
-          disabled: true
-        - name: unused-receiver
-          disabled: true
         - name: var-naming
           disabled: true
-        - name: use-fmt-print
-          disabled: true
+        - name: unhandled-error
+          arguments:
+            - '^fmt\.(Fp|P)?rint(f|ln)?$'
+            - '^(bytes\.Buffer|string\.Writer|strings\.Builder)\.Write(Byte|Rune|String)?$'
     staticcheck:
       checks:
        - 'all'
@@ -209,5 +199,5 @@ formatters:
       local-prefixes:
         - github.com/bakito/kubexporter
     golines:
-      max-len: 128
+      max-len: *lineLength
       tab-len: 4

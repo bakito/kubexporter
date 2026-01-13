@@ -46,7 +46,7 @@ type bubblesProgress struct {
 	program *tea.Program
 }
 
-func (b *bubblesProgress) Async() bool {
+func (*bubblesProgress) Async() bool {
 	return true
 }
 
@@ -68,7 +68,7 @@ func (b *bubblesProgress) NewExportBar(step progress.Step) {
 	b.program.Send(exportMsg(step))
 }
 
-func (b *bubblesProgress) Reset() {
+func (*bubblesProgress) Reset() {
 	// not applicable
 }
 
@@ -102,7 +102,7 @@ type workerState struct {
 	icon    string
 }
 
-func (m *model) Init() tea.Cmd {
+func (*model) Init() tea.Cmd {
 	return nil
 }
 
@@ -171,7 +171,7 @@ func (m *model) View() string {
 	view := "\n" + pad + mainProgressTitle + ": " + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
 	var viewSb172 strings.Builder
 	for i, workerProgress := range m.workerProgress {
-		_, _ = viewSb172.WriteString(pad + fmt.Sprintf(
+		viewSb172.WriteString(pad + fmt.Sprintf(
 			"%s %s: %s",
 			m.workerStates[i].icon,
 			m.workerStates[i].CurrentKind,

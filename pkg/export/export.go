@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sort"
 	"strconv"
@@ -317,7 +318,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 }
 
 func (e *exporter) printStats() {
-	println()
+	fmt.Println()
 	if e.archive != "" {
 		e.l.Checkf("🗜\tArchive %s\n", e.archive)
 		if len(e.deletedArchives) > 0 {

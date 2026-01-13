@@ -30,7 +30,7 @@ var rootCmd = &cobra.Command{
 	Use:     "kubexporter",
 	Version: version.Version,
 	Short:   "easily export kubernetes resources",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {
 			return err
@@ -131,7 +131,7 @@ func correctProgressForNonTerminalRun(config *types.Config) {
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		_, _ = fmt.Println(err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
@@ -152,7 +152,8 @@ func init() {
 	rootCmd.Flags().
 		BoolP("lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
 	rootCmd.Flags().
-		StringSliceP("include-kinds", "i", []string{}, "Export only included kinds, if included kinds are defined, excluded will be ignored")
+		StringSliceP("include-kinds", "i", []string{},
+			"Export only included kinds, if included kinds are defined, excluded will be ignored")
 	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")
 	rootCmd.Flags().Duration("created-within", 0, "The max allowed age duration for the resources")
 

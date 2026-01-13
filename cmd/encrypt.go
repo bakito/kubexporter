@@ -17,7 +17,7 @@ var (
 	encrypt = &cobra.Command{
 		Use:   "encrypt <file-path(s)>",
 		Short: "Encrypt secrets in exported resource files",
-		RunE: func(cmd *cobra.Command, args []string) (err error) {
+		RunE: func(_ *cobra.Command, args []string) (err error) {
 			if k, ok := os.LookupEnv(types.EnvAesKey); ok {
 				encryptAesKey = k
 			}

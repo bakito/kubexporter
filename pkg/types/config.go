@@ -27,9 +27,11 @@ import (
 
 const (
 	// DefaultFileNameTemplate default file name template.
-	DefaultFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
+	DefaultFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}` +
+		`{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
 	// DefaultListFileNameTemplate default list file name template.
-	DefaultListFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Extension}}`
+	DefaultListFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}` +
+		`{{.Kind}}.{{.Extension}}`
 	// DefaultFormat default output format.
 	DefaultFormat = "yaml"
 	// DefaultTarget default export target dir.

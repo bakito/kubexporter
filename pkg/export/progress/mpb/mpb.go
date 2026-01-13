@@ -28,7 +28,7 @@ type mpbProgress struct {
 	resourceBar      *mpb.Bar
 }
 
-func (m *mpbProgress) Async() bool {
+func (*mpbProgress) Async() bool {
 	return true
 }
 
@@ -98,7 +98,7 @@ func (m *mpbProgress) NewExportBar(step progress.Step) {
 }
 
 func (m *mpbProgress) preDecoratorSearch(currentKind string, pageSize, currentPage int) decor.Decorator {
-	return decor.Any(func(s decor.Statistics) string {
+	return decor.Any(func(decor.Statistics) string {
 		page := ""
 		if pageSize > 0 {
 			page = fmt.Sprintf(" (page %d)", currentPage)
@@ -118,7 +118,7 @@ func (m *mpbProgress) preDecoratorExport(currentKind string, pageSize, currentPa
 	})
 }
 
-func (m *mpbProgress) postDecorator() decor.Decorator {
+func (*mpbProgress) postDecorator() decor.Decorator {
 	return decor.Any(func(s decor.Statistics) string {
 		d1, _ := decor.CurrentNoUnit("").Decor(s)
 		d2, _ := decor.TotalNoUnit("").Decor(s)

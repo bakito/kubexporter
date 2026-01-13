@@ -2,6 +2,7 @@ package uor
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -59,7 +60,7 @@ func Update(config *types.Config) error {
 	}
 
 	if !hasRows {
-		println("No changed owner references found")
+		fmt.Println("No changed owner references found")
 	}
 
 	return table.Render()

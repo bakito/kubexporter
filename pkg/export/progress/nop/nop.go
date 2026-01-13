@@ -8,29 +8,29 @@ func NewProgress() progress.Progress {
 
 type nilProgress struct{}
 
-func (n *nilProgress) Async() bool {
+func (*nilProgress) Async() bool {
 	return false
 }
 
-func (n *nilProgress) Run() error {
+func (*nilProgress) Run() error {
 	return nil
 }
 
-func (n *nilProgress) NewSearchBar(_ progress.Step) {
+func (*nilProgress) NewSearchBar(_ progress.Step) {
 }
 
-func (n *nilProgress) NewExportBar(_ progress.Step) {
+func (*nilProgress) NewExportBar(_ progress.Step) {
 }
 
-func (n *nilProgress) Reset() {
+func (*nilProgress) Reset() {
 }
 
 func (n *nilProgress) NewWorker() progress.Progress {
 	return n
 }
 
-func (n *nilProgress) IncrementMainBar() {
+func (*nilProgress) IncrementMainBar() {
 }
 
-func (n *nilProgress) IncrementResourceBarBy(_, _ int) {
+func (*nilProgress) IncrementResourceBarBy(_, _ int) {
 }

@@ -11,7 +11,7 @@ var updateOwnerReferences = &cobra.Command{
 	Use:     "update-owner-references",
 	Aliases: []string{"uor"},
 	Short:   "Update owner references of an export against the current cluster",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {
 			return err
