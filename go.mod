@@ -3,7 +3,7 @@ module github.com/bakito/kubexporter
 go 1.25.5
 
 require (
-	cloud.google.com/go/storage v1.59.1
+	cloud.google.com/go/storage v1.59.2
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbletea v1.3.10
