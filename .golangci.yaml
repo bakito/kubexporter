@@ -156,6 +156,8 @@ linters:
           arguments:
             - '^fmt\.(Fp|P)?rint(f|ln)?$'
             - '^(bytes\.Buffer|string\.Writer|strings\.Builder)\.Write(Byte|Rune|String)?$'
+        - name: enforce-switch-style
+          disabled: true
     staticcheck:
       checks:
        - 'all'
