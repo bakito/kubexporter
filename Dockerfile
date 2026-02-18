@@ -31,7 +31,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     upx -q kubexporter
 
 # Final application image
-FROM --platform=$TARGETPLATFORM scratch
+FROM scratch
 WORKDIR /opt/go
 
 LABEL maintainer="bakito <github@bakito.ch>"
