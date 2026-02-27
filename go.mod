@@ -5,7 +5,7 @@ go 1.26
 require (
 	cloud.google.com/go/storage v1.60.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
-	github.com/charmbracelet/bubbles v1.0.0
+	github.com/charmbracelet/bubbles/v2 v2.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ghodss/yaml v1.0.0
