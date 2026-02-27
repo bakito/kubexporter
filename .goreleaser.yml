@@ -54,25 +54,3 @@ homebrew_casks:
     repository:
       owner: "bakito"
       name: "homebrew-tap"
-
-# --- Snap support (Linux) ---
-# sudo snap install snapcraft --classic
-# export PATH="$PATH:/snap/bin"
-# snapcraft --version
-
-snapcrafts:
-  - name: kubexporter
-    summary: "Export Kubernetes resources for backup and migration."
-    description: "kubexporter exports Kubernetes resources for backup and migration."
-    grade: stable
-    confinement: strict
-    base: core22
-    license: Apache-2.0
-    publish: true
-    icon: ./docs/icons/kubexporter.png
-    apps:
-      kubexporter:
-        command: kubexporter
-        plugs:
-          - home
-          - network
