@@ -5,8 +5,9 @@ import (
 	"math"
 	"strings"
 
-	bp "github.com/charmbracelet/bubbles/progress"
-	tea "github.com/charmbracelet/bubbletea"
+	bp "charm.land/bubbles/v2/progress"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/bakito/kubexporter/pkg/export/progress"
 	"github.com/bakito/kubexporter/pkg/types"
@@ -36,7 +37,8 @@ func NewProgress(resources []*types.GroupResource) progress.Progress {
 
 func newProgressModel() bp.Model {
 	return bp.New(
-		bp.WithScaledGradient("#6B89E8", "#316CE6"),
+		bp.WithColors(lipgloss.Color("#6B89E8"), lipgloss.Color("#316CE6")),
+		bp.WithScaled(true),
 		bp.WithFillCharacters('█', '░'),
 	)
 }
@@ -108,13 +110,13 @@ func (*model) Init() tea.Cmd {
 
 func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msgIn.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		return m, tea.Quit
 
 	case tea.WindowSizeMsg:
-		m.mainProgress.Width = msg.Width - padding*2 - len(mainProgressTitle) - 3
-		if m.mainProgress.Width > maxWidth {
-			m.mainProgress.Width = maxWidth
+		m.mainProgress.SetWidth(msg.Width - padding*2 - len(mainProgressTitle) - 3)
+		if m.mainProgress.Width() > maxWidth {
+			m.mainProgress.SetWidth(maxWidth)
 		}
 		return m, nil
 
@@ -136,7 +138,7 @@ func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.workerStates[msg.WorkerID-1].Step = progress.Step(msg)
 		m.workerStates[msg.WorkerID-1].icon = "🔍"
-		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - m.maxLen - 3 + len(mainProgressTitle)
+		m.workerProgress[msg.WorkerID-1].SetWidth(m.mainProgress.Width() - m.maxLen - 3 + len(mainProgressTitle))
 		return m, nil
 	case exportMsg:
 		m.workerStates[msg.WorkerID-1].Total = msg.Total
@@ -148,7 +150,7 @@ func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 
 		m.workerStates[msg.WorkerID-1].Step = progress.Step(msg)
 		m.workerStates[msg.WorkerID-1].icon = "👷"
-		m.workerProgress[msg.WorkerID-1].Width = m.mainProgress.Width - m.maxLen - 3 + len(mainProgressTitle)
+		m.workerProgress[msg.WorkerID-1].SetWidth(m.mainProgress.Width() - m.maxLen - 3 + len(mainProgressTitle))
 		return m, nil
 	case updateWorkerMsq:
 		if m.workerStates[msg.workerID-1].Total == 0 {
@@ -166,7 +168,7 @@ func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (m *model) View() string {
+func (m *model) View() tea.View {
 	pad := strings.Repeat(" ", padding)
 	view := "\n" + pad + mainProgressTitle + ": " + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
 	var viewSb172 strings.Builder
@@ -179,7 +181,7 @@ func (m *model) View() string {
 		) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n")
 	}
 	view += viewSb172.String()
-	return view
+	return tea.NewView(view)
 }
 
 type (
