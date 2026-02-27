@@ -31,12 +31,6 @@ brew tap bakito/tap
 brew install --cask kubexporter
 ```
 
-### Snap
-
-```bash
-sudo snap install kubexporter
-```
-
 ### Use as kubectl plugin
 
 Rename the binary to kubectl-exporter.
