@@ -36,6 +36,8 @@ test-release: tb.goreleaser tb.syft
 	fi; \
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) $${TB_GORELEASER_ARGS} $${TB_GORELEASER_EXTRA_ARGS}
 
+check-vulnerabilities:
+	go run golang.org/x/vuln/cmd/govulncheck@latest -show verbose,color ./...
 
 # generate mocks
 mocks: tb.mockgen
