@@ -31,6 +31,7 @@ jobs:
         uses: bakito/kind-with-registry-action@main
         with:
           node_image: kindest/node:${{ matrix.k8s_version }}
+          kind_cluster_name: e2e
           kubectl_version: ${{ matrix.k8s_version }}
 
       - name: Run Exporter from outside the cluster
@@ -40,8 +41,8 @@ jobs:
 
       - name: Build the docker image
         run: |
-          docker build -f Dockerfile --build-arg VERSION=e2e-tests -t localhost:5001/kubexporter:e2e .
-          docker push  localhost:5001/kubexporter:e2e
+          docker build -f Dockerfile --build-arg VERSION=e2e-tests -t kubexporter:e2e .
+          kind load docker-image kubexporter:e2e --name e2e
 
       - name: Run Exporter as k8s Job
         id: run_as_k8s_job
