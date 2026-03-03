@@ -40,7 +40,8 @@ spec:
       serviceAccountName: read-only-sa
       containers:
         - name: kubexporter
-          image: localhost:5001/kubexporter:e2e
+          image: kubexporter:e2e
+          imagePullPolicy: IfNotPresent
           args:
             - '--progress'
             - 'bar'
