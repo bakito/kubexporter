@@ -35,7 +35,6 @@ jobs:
         uses: bakito/kind-with-registry-action@main
         with:
           node_image: kindest/node:${{ matrix.k8s_version }}
-          kind_cluster_name: e2e
           kubectl_version: ${{ matrix.k8s_version }}
           docker_image_name: kubexporter:e2e
 
