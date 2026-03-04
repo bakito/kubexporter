@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         # https://hub.docker.com/r/kindest/node/tags
-        k8s_version: [ "v1.32.8", "v1.33.4" , "v1.34.0" ]
+        k8s_version: [ "v1.33.7", "v1.34.3", "v1.35.1"]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,22 +27,22 @@ jobs:
         with:
           go-version-file: "go.mod"
 
+      - name: Build the docker image
+        run: |
+          docker build -f Dockerfile --build-arg VERSION=e2e-tests -t kubexporter:e2e .
+
       - name: Install kind with registry
         uses: bakito/kind-with-registry-action@main
         with:
           node_image: kindest/node:${{ matrix.k8s_version }}
           kind_cluster_name: e2e
           kubectl_version: ${{ matrix.k8s_version }}
+          docker_image_name: kubexporter:e2e
 
       - name: Run Exporter from outside the cluster
         run: |
           echo "## Run Exporter from outside the cluster" >> $GITHUB_STEP_SUMMARY
           go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
-
-      - name: Build the docker image
-        run: |
-          docker build -f Dockerfile --build-arg VERSION=e2e-tests -t kubexporter:e2e .
-          kind load docker-image kubexporter:e2e --name e2e
 
       - name: Run Exporter as k8s Job
         id: run_as_k8s_job
