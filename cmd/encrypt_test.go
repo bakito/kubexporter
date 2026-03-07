@@ -2,19 +2,15 @@ package cmd
 
 import (
 	"os"
+	"strings"
+	"testing"
 
 	"github.com/spf13/cobra"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Encrypt Command", func() {
-	var testFile string
-
-	BeforeEach(func() {
-		testFile = "temp-secret.yaml"
-		testContent := `apiVersion: v1
+func TestEncryptCommand(t *testing.T) {
+	testFile := "temp-secret-encrypt.yaml"
+	testContent := `apiVersion: v1
 kind: Secret
 metadata:
   name: test-secret 
@@ -27,35 +23,49 @@ stringData:
   api-key: "secret-api-key-123"
   token: "my-secret-token"`
 
-		err := os.WriteFile(testFile, []byte(testContent), 0o644)
-		Expect(err).NotTo(HaveOccurred())
-	})
+	err := os.WriteFile(testFile, []byte(testContent), 0o644)
+	if err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+	defer os.Remove(testFile)
 
-	AfterEach(func() {
-		os.Remove(testFile)
-	})
-
-	It("should encrypt and decrypt a file", func() {
+	t.Run("should encrypt and decrypt a file", func(t *testing.T) {
 		cmd := &cobra.Command{}
 		cmd.AddCommand(encrypt)
 		cmd.AddCommand(decrypt)
 		cmd.SetArgs([]string{"encrypt", testFile, "--aes-key", "1234567890123456"})
 
 		err := cmd.Execute()
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error during encrypt: %v", err)
+		}
 
 		content, err := os.ReadFile(testFile)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(content)).To(ContainSubstring("KUBEXPORTER_AES@"))
+		if err != nil {
+			t.Fatalf("failed to read test file: %v", err)
+		}
+		if !strings.Contains(string(content), "KUBEXPORTER_AES@") {
+			t.Error("expected content to be encrypted")
+		}
 
 		cmd.SetArgs([]string{"decrypt", testFile, "--aes-key", "1234567890123456"})
 		err = cmd.Execute()
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error during decrypt: %v", err)
+		}
 
 		content, err = os.ReadFile(testFile)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(string(content)).To(ContainSubstring("apiVersion: v1"))
-		Expect(string(content)).To(ContainSubstring("kind: Secret"))
-		Expect(string(content)).To(ContainSubstring("secret-api-key-123"))
+		if err != nil {
+			t.Fatalf("failed to read test file: %v", err)
+		}
+		if !strings.Contains(string(content), "apiVersion: v1") {
+			t.Error("expected apiVersion: v1")
+		}
+		if !strings.Contains(string(content), "kind: Secret") {
+			t.Error("expected kind: Secret")
+		}
+		if !strings.Contains(string(content), "secret-api-key-123") {
+			t.Error("expected secret-api-key-123")
+		}
 	})
-})
+}

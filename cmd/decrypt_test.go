@@ -2,23 +2,15 @@ package cmd
 
 import (
 	"os"
+	"strings"
+	"testing"
 
 	"github.com/spf13/cobra"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Decrypt Command", func() {
-	var testFile string
-	var testContent string
-
-	BeforeEach(func() {
-		// Create a temporary test file
-		testFile = "temp-secret.yaml"
-
-		// Create test content with encrypted data
-		testContent = `apiVersion: v1
+func TestDecryptCommand(t *testing.T) {
+	testFile := "temp-secret-decrypt.yaml"
+	testContent := `apiVersion: v1
 kind: Secret
 metadata:
   name: test-secret
@@ -31,31 +23,41 @@ stringData:
   api-key: KUBEXPORTER_AES@f6MMcnyTt4Tm4zGooBVt0vT6QS6H3RFI6AR8sM7D8/ElvOzygKsuM3ZT5nCfmg==
   token: KUBEXPORTER_AES@f6MMcnyTt4Tm4zGovgkj0/TtHiqDmUhM5hg/X5Nsgw07ZtUsFnYpG4OnGg==`
 
-		err := os.WriteFile(testFile, []byte(testContent), 0o644)
-		Expect(err).NotTo(HaveOccurred())
-	})
+	err := os.WriteFile(testFile, []byte(testContent), 0o644)
+	if err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+	defer os.Remove(testFile)
 
-	AfterEach(func() {
-		os.Remove(testFile)
-	})
-
-	It("should decrypt the file successfully", func() {
+	t.Run("should decrypt the file successfully", func(t *testing.T) {
 		cmd := &cobra.Command{}
 		cmd.AddCommand(decrypt)
 		cmd.SetArgs([]string{"decrypt", testFile, "--aes-key", "1234567890123456"})
 
 		err := cmd.Execute()
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			t.Errorf("unexpected error during decrypt: %v", err)
+		}
 
-		// Verify the file was decrypted
 		content, err := os.ReadFile(testFile)
-		Expect(err).NotTo(HaveOccurred())
+		if err != nil {
+			t.Fatalf("failed to read test file: %v", err)
+		}
 
-		// Check that encrypted fields were decrypted
-		Expect(string(content)).To(ContainSubstring("dXNlcm5hbWU=")) // base64 encoded "username"
-		Expect(string(content)).To(ContainSubstring("cGFzc3dvcmQ=")) // base64 encoded "password"
-		Expect(string(content)).To(ContainSubstring("secret-api-key-123"))
-		Expect(string(content)).To(ContainSubstring("my-secret-token"))
-		Expect(string(content)).NotTo(ContainSubstring("KUBEXPORTER_AES@"))
+		if !strings.Contains(string(content), "dXNlcm5hbWU=") {
+			t.Error("expected dXNlcm5hbWU= (username)")
+		}
+		if !strings.Contains(string(content), "cGFzc3dvcmQ=") {
+			t.Error("expected cGFzc3dvcmQ= (password)")
+		}
+		if !strings.Contains(string(content), "secret-api-key-123") {
+			t.Error("expected secret-api-key-123")
+		}
+		if !strings.Contains(string(content), "my-secret-token") {
+			t.Error("expected my-secret-token")
+		}
+		if strings.Contains(string(content), "KUBEXPORTER_AES@") {
+			t.Error("expected no KUBEXPORTER_AES@ prefix")
+		}
 	})
-})
+}
