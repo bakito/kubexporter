@@ -1,3 +1,4 @@
+# managed by https://github.com/bakito/github-files sync action
 version: '2'
 linters:
   enable:
@@ -12,7 +13,6 @@ linters:
     - dupword
     - durationcheck
     - err113
-    - errchkjson
     - errname
     - errorlint
     - exptostd
@@ -66,8 +66,8 @@ linters:
     - asasalint
     - contextcheck
     - cyclop
-    - depguard
     - dupl
+    - errchkjson
     - exhaustive
     - exhaustruct
     - forbidigo
@@ -110,10 +110,10 @@ linters:
         - unnamedResult
         - whyNoLint
     govet:
+      enable-all: true
       disable:
         - fieldalignment
         - shadow
-      enable-all: true
     misspell:
       locale: US
     revive:
@@ -128,11 +128,13 @@ linters:
         - name: deep-exit
           disabled: true
         - name: dot-imports
-          severity: warning
           disabled: false
+          severity: warning
           exclude: [""]
           arguments:
             - allowedPackages: ["github.com/onsi/ginkgo/v2", "github.com/onsi/gomega"]
+        - name: enforce-switch-style
+          disabled: true
         - name: exported
           disabled: true
         - name: filename-format
@@ -142,26 +144,28 @@ linters:
           disabled: true
         - name: function-length
           disabled: true
+        - name: function-result-limit
+          disabled: true
+        - name: import-shadowing
+          disabled: true
         - name: line-length-limit
-          disabled: false
-          arguments:
-           - &lineLength 128
+          disabled: true
         - name: max-public-structs
           disabled: true
         - name: package-comments
           disabled: true
-        - name: var-naming
+        - name: package-naming
           disabled: true
         - name: unhandled-error
           arguments:
             - '^fmt\.(Fp|P)?rint(f|ln)?$'
             - '^(bytes\.Buffer|string\.Writer|strings\.Builder)\.Write(Byte|Rune|String)?$'
-        - name: enforce-switch-style
+        - name: var-naming
           disabled: true
     staticcheck:
       checks:
-       - 'all'
-       - '-ST1000'
+        - 'all'
+        - '-ST1000'
   exclusions:
     generated: lax
     presets:
@@ -176,11 +180,11 @@ linters:
           - forbidigo
         path: ^internal/cmds/
       - linters:
-          - forcetypeassert
-        path: _test\.go$
-      - linters:
           - forbidigo
         path: assets/scripts/generate-commit.go
+      - linters:
+          - forcetypeassert
+        path: _test\.go$
 formatters:
   enable:
     - gci
@@ -190,16 +194,15 @@ formatters:
     - golines
   settings:
     gci:
+      custom-order: true
       sections:
         - standard
         - default
-        - prefix(github.com/bakito/kubexporter)
-    gofumpt:
-      module-path: github.com/bakito/kubexporter
-      extra-rules: true
-    goimports:
-      local-prefixes:
-        - github.com/bakito/kubexporter
+        - prefix(github.com/bakito)
+        - blank
+        - dot
+    gofmt:
+      simplify: true
     golines:
-      max-len: *lineLength
+      max-len: 128
       tab-len: 4
