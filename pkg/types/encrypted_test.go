@@ -76,85 +76,80 @@ func TestEncrypted_Setup(t *testing.T) {
 }
 
 func TestConfig_EncryptFields(t *testing.T) {
-	setup := func() *Config {
-		enc := &Encrypted{
-			AesKey: "1234567890123456",
-			KindFields: map[string][][]string{
-				"Secret": {{"data"}},
+	tests := []struct {
+		name     string
+		aesKey   string
+		input    string
+		validate func(t *testing.T, got string)
+	}{
+		{
+			name:   "should encrypt the Secret data",
+			aesKey: "1234567890123456",
+			input:  "don't tell anyone!",
+			validate: func(t *testing.T, got string) {
+				t.Helper()
+				if !strings.HasPrefix(got, prefix) {
+					t.Errorf("expected secret to have prefix %q, but got %q", prefix, got)
+				}
 			},
-		}
-		_ = enc.Setup()
-		config := &Config{
-			Encrypted: enc,
-		}
-		return config
+		},
+		{
+			name:   "should return an empty string if no key is set",
+			aesKey: "",
+			input:  "don't tell anyone!",
+			validate: func(t *testing.T, got string) {
+				t.Helper()
+				if got != "" {
+					t.Errorf("expected empty secret, but got %q", got)
+				}
+			},
+		},
+		{
+			name:   "should not encrypt if already encrypted",
+			aesKey: "1234567890123456",
+			input:  "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg==",
+			validate: func(t *testing.T, got string) {
+				t.Helper()
+				expected := "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg=="
+				if got != expected {
+					t.Errorf("expected %q, but got %q", expected, got)
+				}
+			},
+		},
+		{
+			name:   "should not encrypt empty strings",
+			aesKey: "1234567890123456",
+			input:  "",
+			validate: func(t *testing.T, got string) {
+				t.Helper()
+				if got != "" {
+					t.Errorf("expected empty secret, but got %q", got)
+				}
+			},
+		},
 	}
 
-	t.Run("should encrypt the Secret data", func(t *testing.T) {
-		config := setup()
-		us := unstructured.Unstructured{Object: map[string]any{
-			"data": map[string]any{
-				"secret": "don't tell anyone!",
-			},
-		}}
-		config.EncryptFields(&GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}, us)
-		secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
-		if !strings.HasPrefix(secret, prefix) {
-			t.Errorf("expected secret to have prefix %q, but got %q", prefix, secret)
-		}
-	})
-
-	t.Run("should return an empty string if no key is set", func(t *testing.T) {
-		configNoKey := &Config{
-			Encrypted: &Encrypted{
-				AesKey: "",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			enc := &Encrypted{
+				AesKey: tt.aesKey,
 				KindFields: map[string][][]string{
 					"Secret": {{"data"}},
 				},
-			},
-		}
-		us := unstructured.Unstructured{Object: map[string]any{
-			"data": map[string]any{
-				"secret": "don't tell anyone!",
-			},
-		}}
-		configNoKey.EncryptFields(&GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}, us)
-		secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
-		if secret != "" {
-			t.Errorf("expected empty secret, but got %q", secret)
-		}
-	})
+			}
+			_ = enc.Setup()
+			config := &Config{Encrypted: enc}
 
-	t.Run("should not encrypt if already encrypted", func(t *testing.T) {
-		config := setup()
-		val := "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg=="
-		us := unstructured.Unstructured{Object: map[string]any{
-			"data": map[string]any{
-				"secret": val,
-			},
-		}}
-		res := &GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}
-		config.EncryptFields(res, us)
-		secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
-		if secret != val {
-			t.Errorf("expected secret %q, but got %q", val, secret)
-		}
-	})
-
-	t.Run("should not encrypt empty strings", func(t *testing.T) {
-		config := setup()
-		us := unstructured.Unstructured{Object: map[string]any{
-			"data": map[string]any{
-				"secret": "",
-			},
-		}}
-		res := &GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}
-		config.EncryptFields(res, us)
-		secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
-		if secret != "" {
-			t.Errorf("expected empty secret, but got %q", secret)
-		}
-	})
+			us := unstructured.Unstructured{Object: map[string]any{
+				"data": map[string]any{
+					"secret": tt.input,
+				},
+			}}
+			config.EncryptFields(&GroupResource{APIResource: metav1.APIResource{Kind: "Secret"}}, us)
+			secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
+			tt.validate(t, secret)
+		})
+	}
 }
 
 func TestDecryptFields(t *testing.T) {
@@ -163,41 +158,44 @@ func TestDecryptFields(t *testing.T) {
 	}
 	_ = enc.Setup()
 
-	t.Run("should decrypt the value correctly", func(t *testing.T) {
-		us := unstructured.Unstructured{Object: map[string]any{
-			"data": map[string]any{
-				"secret": "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg==",
-			},
-		}}
-		cnt, err := decryptFields(us.Object, enc.gcm, len(enc.nonce))
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if cnt != 1 {
-			t.Errorf("expected 1 decrypted field, but got %d", cnt)
-		}
-		secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
-		if secret != "don't tell anyone!" {
-			t.Errorf("expected decrypted secret \"don't tell anyone!\", but got %q", secret)
-		}
-	})
+	tests := []struct {
+		name          string
+		input         string
+		expected      string
+		expectedCount int
+	}{
+		{
+			name:          "should decrypt the value correctly",
+			input:         "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg==",
+			expected:      "don't tell anyone!",
+			expectedCount: 1,
+		},
+		{
+			name:          "should not decrypt if not encrypted",
+			input:         "don't tell anyone!",
+			expected:      "don't tell anyone!",
+			expectedCount: 0,
+		},
+	}
 
-	t.Run("should not decrypt if not encrypted", func(t *testing.T) {
-		us := unstructured.Unstructured{Object: map[string]any{
-			"data": map[string]any{
-				"secret": "don't tell anyone!",
-			},
-		}}
-		cnt, err := decryptFields(us.Object, enc.gcm, len(enc.nonce))
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if cnt != 0 {
-			t.Errorf("expected 0 decrypted fields, but got %d", cnt)
-		}
-		secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
-		if secret != "don't tell anyone!" {
-			t.Errorf("expected secret \"don't tell anyone!\", but got %q", secret)
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			us := unstructured.Unstructured{Object: map[string]any{
+				"data": map[string]any{
+					"secret": tt.input,
+				},
+			}}
+			cnt, err := decryptFields(us.Object, enc.gcm, len(enc.nonce))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if cnt != tt.expectedCount {
+				t.Errorf("expected %d decrypted field, but got %d", tt.expectedCount, cnt)
+			}
+			secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
+			if secret != tt.expected {
+				t.Errorf("expected %q, but got %q", tt.expected, secret)
+			}
+		})
+	}
 }

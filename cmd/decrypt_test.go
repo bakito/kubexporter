@@ -29,35 +29,45 @@ stringData:
 	}
 	defer os.Remove(testFile)
 
-	t.Run("should decrypt the file successfully", func(t *testing.T) {
-		cmd := &cobra.Command{}
-		cmd.AddCommand(decrypt)
-		cmd.SetArgs([]string{"decrypt", testFile, "--aes-key", "1234567890123456"})
+	tests := []struct {
+		name     string
+		aesKey   string
+		validate func(t *testing.T, testFile string)
+	}{
+		{
+			name:   "should decrypt the file successfully",
+			aesKey: "1234567890123456",
+			validate: func(t *testing.T, testFile string) {
+				t.Helper()
+				content, err := os.ReadFile(testFile)
+				if err != nil {
+					t.Fatalf("failed to read test file: %v", err)
+				}
 
-		err := cmd.Execute()
-		if err != nil {
-			t.Errorf("unexpected error during decrypt: %v", err)
-		}
+				for _, s := range []string{"dXNlcm5hbWU=", "cGFzc3dvcmQ=", "secret-api-key-123", "my-secret-token"} {
+					if !strings.Contains(string(content), s) {
+						t.Errorf("expected content to contain %q", s)
+					}
+				}
+				if strings.Contains(string(content), "KUBEXPORTER_AES@") {
+					t.Error("expected no KUBEXPORTER_AES@ prefix")
+				}
+			},
+		},
+	}
 
-		content, err := os.ReadFile(testFile)
-		if err != nil {
-			t.Fatalf("failed to read test file: %v", err)
-		}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.AddCommand(decrypt)
+			cmd.SetArgs([]string{"decrypt", testFile, "--aes-key", tt.aesKey})
 
-		if !strings.Contains(string(content), "dXNlcm5hbWU=") {
-			t.Error("expected dXNlcm5hbWU= (username)")
-		}
-		if !strings.Contains(string(content), "cGFzc3dvcmQ=") {
-			t.Error("expected cGFzc3dvcmQ= (password)")
-		}
-		if !strings.Contains(string(content), "secret-api-key-123") {
-			t.Error("expected secret-api-key-123")
-		}
-		if !strings.Contains(string(content), "my-secret-token") {
-			t.Error("expected my-secret-token")
-		}
-		if strings.Contains(string(content), "KUBEXPORTER_AES@") {
-			t.Error("expected no KUBEXPORTER_AES@ prefix")
-		}
-	})
+			if err := cmd.Execute(); err != nil {
+				t.Errorf("unexpected error during decrypt: %v", err)
+			}
+			if tt.validate != nil {
+				tt.validate(t, testFile)
+			}
+		})
+	}
 }

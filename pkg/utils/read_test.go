@@ -14,49 +14,54 @@ import (
 )
 
 func TestPrintObj(t *testing.T) {
-	pf := &genericclioptions.PrintFlags{
-		OutputFormat:       ptr.To(types.DefaultFormat),
-		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
-	}
-
 	data := &unstructured.Unstructured{}
 	data.SetUnstructuredContent(map[string]any{
 		"kind": "Pod",
 		"foo":  "bar",
 	})
 
-	t.Run("should print the object as yaml", func(t *testing.T) {
-		var buf bytes.Buffer
-		pf.OutputFormat = new("yaml")
-		err := utils.PrintObj(pf, data, io.Writer(&buf))
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		expected := "foo: bar\nkind: Pod\n"
-		if buf.String() != expected {
-			t.Errorf("expected %q, but got %q", expected, buf.String())
-		}
-	})
+	tests := []struct {
+		name     string
+		format   string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "should print the object as yaml",
+			format:   "yaml",
+			expected: "foo: bar\nkind: Pod\n",
+		},
+		{
+			name:     "should print the object as json",
+			format:   "json",
+			expected: "{\n    \"foo\": \"bar\",\n    \"kind\": \"Pod\"\n}\n",
+		},
+		{
+			name:    "should fail with unsupported format",
+			format:  "xyz",
+			wantErr: true,
+		},
+	}
 
-	t.Run("should print the object as json", func(t *testing.T) {
-		var buf bytes.Buffer
-		pf.OutputFormat = new("json")
-		err := utils.PrintObj(pf, data, io.Writer(&buf))
-		if err != nil {
-			t.Errorf("unexpected error: %v", err)
-		}
-		expected := "{\n    \"foo\": \"bar\",\n    \"kind\": \"Pod\"\n}\n"
-		if buf.String() != expected {
-			t.Errorf("expected %q, but got %q", expected, buf.String())
-		}
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pf := &genericclioptions.PrintFlags{
+				OutputFormat:       new(tt.format),
+				JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
+			}
+			if tt.format == "" {
+				pf.OutputFormat = ptr.To(types.DefaultFormat)
+			}
 
-	t.Run("should fail with unsupported format", func(t *testing.T) {
-		var buf bytes.Buffer
-		pf.OutputFormat = new("xyz")
-		err := utils.PrintObj(pf, data, io.Writer(&buf))
-		if err == nil {
-			t.Error("expected error")
-		}
-	})
+			var buf bytes.Buffer
+			err := utils.PrintObj(pf, data, io.Writer(&buf))
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PrintObj() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && buf.String() != tt.expected {
+				t.Errorf("PrintObj() = %q, want %q", buf.String(), tt.expected)
+			}
+		})
+	}
 }
