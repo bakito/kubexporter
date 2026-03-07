@@ -3,7 +3,6 @@ package types
 import (
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -60,17 +59,4 @@ func (r GroupResource) GroupKind() string {
 // Kind get the kind.
 func (r GroupResource) Kind() string {
 	return r.APIResource.Kind
-}
-
-// Sort GroupResource.
-func Sort(resources []*GroupResource) func(int, int) bool {
-	return func(i, j int) bool {
-		ret := strings.Compare(resources[i].APIGroup, resources[j].APIGroup)
-		if ret > 0 {
-			return false
-		} else if ret == 0 {
-			return resources[i].APIResource.Kind < resources[j].APIResource.Kind
-		}
-		return true
-	}
 }

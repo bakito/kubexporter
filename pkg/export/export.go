@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -77,7 +77,13 @@ func (e *exporter) Export(ctx context.Context) error {
 		return nil
 	}
 
-	sort.SliceStable(resources, types.Sort(resources))
+	slices.SortStableFunc(resources, func(a, b *types.GroupResource) int {
+		ret := strings.Compare(a.APIGroup, b.APIGroup)
+		if ret != 0 {
+			return ret
+		}
+		return strings.Compare(a.APIResource.Kind, b.APIResource.Kind)
+	})
 
 	var prog progress.Progress
 
@@ -240,12 +246,7 @@ func (e *exporter) listResources() ([]*types.GroupResource, error) {
 }
 
 func allowsList(r metav1.APIResource) bool {
-	for _, v := range r.Verbs {
-		if v == "list" {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(r.Verbs, "list")
 }
 
 func (e *exporter) printSummary(resources []*types.GroupResource) error {

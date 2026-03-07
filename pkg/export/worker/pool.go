@@ -39,8 +39,7 @@ func RunExport(ctx context.Context, workers []Worker, resources []*types.GroupRe
 	pool.Stop()
 	st := &Stats{}
 	for _, w := range workers {
-		s := w.Stop()
-		st.Add(&s)
+		st.Add(new(w.Stop()))
 	}
 	return st, nil
 }

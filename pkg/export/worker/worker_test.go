@@ -7,8 +7,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/google/uuid"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	gm "go.uber.org/mock/gomock"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +20,9 @@ import (
 	"github.com/bakito/kubexporter/pkg/export/progress/nop"
 	mock "github.com/bakito/kubexporter/pkg/mocks/client"
 	"github.com/bakito/kubexporter/pkg/types"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Worker", func() {

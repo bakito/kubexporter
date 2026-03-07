@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
@@ -202,7 +202,7 @@ func (f KindFields) String() string {
 	for k, v := range f {
 		kinds = append(kinds, fmt.Sprintf("%s: [%s]", k, strings.Join(joinAll(v), ", ")))
 	}
-	sort.Strings(kinds)
+	slices.Sort(kinds)
 	return strings.Join(kinds, ", ")
 }
 
@@ -422,25 +422,25 @@ func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructure
 				if len(sl) > 0 {
 					switch sl[0].(type) {
 					case string:
-						sort.Slice(sl, func(i, j int) bool {
+						slices.SortFunc(sl, func(a, b any) int {
 							//nolint:forcetypeassert
-							return sl[i].(string) < sl[j].(string)
+							return strings.Compare(a.(string), b.(string))
 						})
 					case int64:
-						sort.Slice(sl, func(i, j int) bool {
+						slices.SortFunc(sl, func(a, b any) int {
 							//nolint:forcetypeassert
-							return sl[i].(int64) < sl[j].(int64)
+							return int(a.(int64)) - int(b.(int64))
 						})
 					case float64:
-						sort.Slice(sl, func(i, j int) bool {
+						slices.SortFunc(sl, func(a, b any) int {
 							//nolint:forcetypeassert
-							return sl[i].(float64) < sl[j].(float64)
+							return int(a.(float64)) - int(b.(float64))
 						})
 					default:
-						sort.Slice(sl, func(i, j int) bool {
-							a, _ := json.Marshal(sl[i])
-							b, _ := json.Marshal(sl[j])
-							return string(a) < string(b)
+						slices.SortFunc(sl, func(a, b any) int {
+							aa, _ := json.Marshal(a)
+							bb, _ := json.Marshal(b)
+							return bytes.Compare(aa, bb)
 						})
 					}
 					_ = unstructured.SetNestedSlice(us.Object, sl, f...)
@@ -548,7 +548,7 @@ func (c *Config) fileNameInternal(res *GroupResource, namespace, name, templ str
 
 	path := tpl.String()
 	var pathElements []string
-	for _, e := range strings.Split(filepath.Clean(path), string(os.PathSeparator)) {
+	for e := range strings.SplitSeq(filepath.Clean(path), string(os.PathSeparator)) {
 		pathElements = append(pathElements, invalidFileChars.ReplaceAllString(e, "_"))
 	}
 	return filepath.Join(pathElements...), err

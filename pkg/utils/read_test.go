@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"io"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
 
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Utils", func() {
@@ -34,7 +35,7 @@ var _ = Describe("Utils", func() {
 		})
 		It("should print the object as yaml", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("yaml")
+			pf.OutputFormat = new("yaml")
 			err := utils.PrintObj(pf, data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
 			Ω(buf.String()).Should(Equal(`foo: bar
@@ -43,7 +44,7 @@ kind: Pod
 		})
 		It("should print the object as json", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("json")
+			pf.OutputFormat = new("json")
 
 			err := utils.PrintObj(pf, data, io.Writer(&buf))
 			Ω(err).ShouldNot(HaveOccurred())
@@ -55,7 +56,7 @@ kind: Pod
 		})
 		It("should fail with unsupported format", func() {
 			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("xyz")
+			pf.OutputFormat = new("xyz")
 			err := utils.PrintObj(pf, data, io.Writer(&buf))
 			Ω(err).Should(HaveOccurred())
 		})
