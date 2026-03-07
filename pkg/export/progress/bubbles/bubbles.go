@@ -75,8 +75,7 @@ func (*bubblesProgress) Reset() {
 }
 
 func (b *bubblesProgress) NewWorker() progress.Progress {
-	w := newProgressModel()
-	b.model.workerProgress = append(b.model.workerProgress, &w)
+	b.model.workerProgress = append(b.model.workerProgress, new(newProgressModel()))
 	b.model.workerStates = append(b.model.workerStates, &workerState{})
 	return b
 }

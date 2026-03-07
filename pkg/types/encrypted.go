@@ -192,8 +192,8 @@ func decryptFields(obj map[string]any, gcm cipher.AEAD, nonceSize int) (int, err
 			}
 			replaced += cnt
 		case string:
-			if strings.HasPrefix(e, prefix) {
-				ciphertext, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(e, prefix))
+			if after, ok := strings.CutPrefix(e, prefix); ok {
+				ciphertext, err := base64.StdEncoding.DecodeString(after)
 				if err != nil {
 					return 0, err
 				}

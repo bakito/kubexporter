@@ -2,22 +2,15 @@ package cmd
 
 import (
 	"os"
+	"strings"
+	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 )
 
-var _ = Describe("Decrypt Command", func() {
-	var testFile string
-	var testContent string
-
-	BeforeEach(func() {
-		// Create a temporary test file
-		testFile = "temp-secret.yaml"
-
-		// Create test content with encrypted data
-		testContent = `apiVersion: v1
+func TestDecryptCommand(t *testing.T) {
+	testFile := "temp-secret-decrypt.yaml"
+	testContent := `apiVersion: v1
 kind: Secret
 metadata:
   name: test-secret
@@ -30,31 +23,51 @@ stringData:
   api-key: KUBEXPORTER_AES@f6MMcnyTt4Tm4zGooBVt0vT6QS6H3RFI6AR8sM7D8/ElvOzygKsuM3ZT5nCfmg==
   token: KUBEXPORTER_AES@f6MMcnyTt4Tm4zGovgkj0/TtHiqDmUhM5hg/X5Nsgw07ZtUsFnYpG4OnGg==`
 
-		err := os.WriteFile(testFile, []byte(testContent), 0o644)
-		Expect(err).NotTo(HaveOccurred())
-	})
+	err := os.WriteFile(testFile, []byte(testContent), 0o644)
+	if err != nil {
+		t.Fatalf("failed to write test file: %v", err)
+	}
+	defer os.Remove(testFile)
 
-	AfterEach(func() {
-		os.Remove(testFile)
-	})
+	tests := []struct {
+		name     string
+		aesKey   string
+		validate func(t *testing.T, testFile string)
+	}{
+		{
+			name:   "should decrypt the file successfully",
+			aesKey: "1234567890123456",
+			validate: func(t *testing.T, testFile string) {
+				t.Helper()
+				content, err := os.ReadFile(testFile)
+				if err != nil {
+					t.Fatalf("failed to read test file: %v", err)
+				}
 
-	It("should decrypt the file successfully", func() {
-		cmd := &cobra.Command{}
-		cmd.AddCommand(decrypt)
-		cmd.SetArgs([]string{"decrypt", testFile, "--aes-key", "1234567890123456"})
+				for _, s := range []string{"dXNlcm5hbWU=", "cGFzc3dvcmQ=", "secret-api-key-123", "my-secret-token"} {
+					if !strings.Contains(string(content), s) {
+						t.Errorf("expected content to contain %q", s)
+					}
+				}
+				if strings.Contains(string(content), "KUBEXPORTER_AES@") {
+					t.Error("expected no KUBEXPORTER_AES@ prefix")
+				}
+			},
+		},
+	}
 
-		err := cmd.Execute()
-		Expect(err).NotTo(HaveOccurred())
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			cmd.AddCommand(decrypt)
+			cmd.SetArgs([]string{"decrypt", testFile, "--aes-key", tt.aesKey})
 
-		// Verify the file was decrypted
-		content, err := os.ReadFile(testFile)
-		Expect(err).NotTo(HaveOccurred())
-
-		// Check that encrypted fields were decrypted
-		Expect(string(content)).To(ContainSubstring("dXNlcm5hbWU=")) // base64 encoded "username"
-		Expect(string(content)).To(ContainSubstring("cGFzc3dvcmQ=")) // base64 encoded "password"
-		Expect(string(content)).To(ContainSubstring("secret-api-key-123"))
-		Expect(string(content)).To(ContainSubstring("my-secret-token"))
-		Expect(string(content)).NotTo(ContainSubstring("KUBEXPORTER_AES@"))
-	})
-})
+			if err := cmd.Execute(); err != nil {
+				t.Errorf("unexpected error during decrypt: %v", err)
+			}
+			if tt.validate != nil {
+				tt.validate(t, testFile)
+			}
+		})
+	}
+}

@@ -3,9 +3,8 @@ package utils_test
 import (
 	"bytes"
 	"io"
+	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/utils/ptr"
@@ -14,50 +13,55 @@ import (
 	"github.com/bakito/kubexporter/pkg/utils"
 )
 
-var _ = Describe("Utils", func() {
-	var pf *genericclioptions.PrintFlags
-	BeforeEach(func() {
-		pf = &genericclioptions.PrintFlags{
-			OutputFormat:       ptr.To(types.DefaultFormat),
-			JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
-		}
+func TestPrintObj(t *testing.T) {
+	data := &unstructured.Unstructured{}
+	data.SetUnstructuredContent(map[string]any{
+		"kind": "Pod",
+		"foo":  "bar",
 	})
 
-	Context("PrintObj", func() {
-		var data *unstructured.Unstructured
-		BeforeEach(func() {
-			data = &unstructured.Unstructured{}
-			data.SetUnstructuredContent(map[string]any{
-				"kind": "Pod",
-				"foo":  "bar",
-			})
-		})
-		It("should print the object as yaml", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("yaml")
-			err := utils.PrintObj(pf, data, io.Writer(&buf))
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(buf.String()).Should(Equal(`foo: bar
-kind: Pod
-`))
-		})
-		It("should print the object as json", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("json")
+	tests := []struct {
+		name     string
+		format   string
+		expected string
+		wantErr  bool
+	}{
+		{
+			name:     "should print the object as yaml",
+			format:   "yaml",
+			expected: "foo: bar\nkind: Pod\n",
+		},
+		{
+			name:     "should print the object as json",
+			format:   "json",
+			expected: "{\n    \"foo\": \"bar\",\n    \"kind\": \"Pod\"\n}\n",
+		},
+		{
+			name:    "should fail with unsupported format",
+			format:  "xyz",
+			wantErr: true,
+		},
+	}
 
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pf := &genericclioptions.PrintFlags{
+				OutputFormat:       new(tt.format),
+				JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
+			}
+			if tt.format == "" {
+				pf.OutputFormat = ptr.To(types.DefaultFormat)
+			}
+
+			var buf bytes.Buffer
 			err := utils.PrintObj(pf, data, io.Writer(&buf))
-			Ω(err).ShouldNot(HaveOccurred())
-			Ω(buf.String()).Should(Equal(`{
-    "foo": "bar",
-    "kind": "Pod"
+			if (err != nil) != tt.wantErr {
+				t.Errorf("PrintObj() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && buf.String() != tt.expected {
+				t.Errorf("PrintObj() = %q, want %q", buf.String(), tt.expected)
+			}
+		})
+	}
 }
-`))
-		})
-		It("should fail with unsupported format", func() {
-			var buf bytes.Buffer
-			pf.OutputFormat = ptr.To("xyz")
-			err := utils.PrintObj(pf, data, io.Writer(&buf))
-			Ω(err).Should(HaveOccurred())
-		})
-	})
-})
