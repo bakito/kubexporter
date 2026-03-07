@@ -1,7 +1,6 @@
 package types
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -44,15 +43,12 @@ func TestEncrypted_Setup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = os.Unsetenv(EnvAesKey)
-			defer func() { _ = os.Unsetenv(EnvAesKey) }()
-
 			enc := &Encrypted{
 				AesKey:     tt.aesKey,
 				KindFields: tt.kindFields,
 			}
 			if tt.envKey != "" {
-				_ = os.Setenv(EnvAesKey, tt.envKey)
+				t.Setenv(EnvAesKey, tt.envKey)
 			}
 
 			err := enc.Setup()
@@ -80,7 +76,7 @@ func TestEncrypted_Setup(t *testing.T) {
 }
 
 func TestConfig_EncryptFields(t *testing.T) {
-	setup := func() (*Encrypted, *Config) {
+	setup := func() *Config {
 		enc := &Encrypted{
 			AesKey: "1234567890123456",
 			KindFields: map[string][][]string{
@@ -91,11 +87,11 @@ func TestConfig_EncryptFields(t *testing.T) {
 		config := &Config{
 			Encrypted: enc,
 		}
-		return enc, config
+		return config
 	}
 
 	t.Run("should encrypt the Secret data", func(t *testing.T) {
-		_, config := setup()
+		config := setup()
 		us := unstructured.Unstructured{Object: map[string]any{
 			"data": map[string]any{
 				"secret": "don't tell anyone!",
@@ -130,7 +126,7 @@ func TestConfig_EncryptFields(t *testing.T) {
 	})
 
 	t.Run("should not encrypt if already encrypted", func(t *testing.T) {
-		_, config := setup()
+		config := setup()
 		val := "KUBEXPORTER_AES@wKCCGma3NhnvzLMbMCrPK7nq7cQV6hF385YuqLjSk+UXCRgaQATO3PPUsfoheg=="
 		us := unstructured.Unstructured{Object: map[string]any{
 			"data": map[string]any{
@@ -146,7 +142,7 @@ func TestConfig_EncryptFields(t *testing.T) {
 	})
 
 	t.Run("should not encrypt empty strings", func(t *testing.T) {
-		_, config := setup()
+		config := setup()
 		us := unstructured.Unstructured{Object: map[string]any{
 			"data": map[string]any{
 				"secret": "",

@@ -23,11 +23,9 @@ import (
 	"github.com/bakito/kubexporter/pkg/types"
 )
 
-func setupWorker(t *testing.T) (*worker, *mock.MockInterface, string) {
-	tmpDir, err := os.MkdirTemp("", "worker-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
+func setupWorker(t *testing.T) (*worker, string) {
+	t.Helper()
+	tmpDir := t.TempDir()
 	mockCtrl := gm.NewController(t)
 	mockClient := mock.NewMockInterface(mockCtrl)
 	config := types.NewConfig(nil, &genericclioptions.PrintFlags{
@@ -41,7 +39,7 @@ func setupWorker(t *testing.T) (*worker, *mock.MockInterface, string) {
 		ac:     &client.APIClient{Client: mockClient},
 		prog:   nop.NewProgress(),
 	}
-	return w, mockClient, tmpDir
+	return w, tmpDir
 }
 
 func getTestData() (*types.GroupResource, *unstructured.UnstructuredList) {
@@ -73,11 +71,10 @@ func getTestData() (*types.GroupResource, *unstructured.UnstructuredList) {
 }
 
 func TestWorker_exportLists(t *testing.T) {
-	w, _, tmpDir := setupWorker(t)
-	defer os.RemoveAll(tmpDir)
+	w, tmpDir := setupWorker(t)
 	res, ul := getTestData()
 
-	t.Run("should do nothing with nil args", func(t *testing.T) {
+	t.Run("should do nothing with nil args", func(_ *testing.T) {
 		w.exportLists(nil, nil)
 	})
 
@@ -115,11 +112,10 @@ func TestWorker_exportLists(t *testing.T) {
 }
 
 func TestWorker_exportSingleResources(t *testing.T) {
-	w, _, tmpDir := setupWorker(t)
-	defer os.RemoveAll(tmpDir)
+	w, tmpDir := setupWorker(t)
 	res, ul := getTestData()
 
-	t.Run("should do nothing with nil args", func(t *testing.T) {
+	t.Run("should do nothing with nil args", func(_ *testing.T) {
 		w.exportSingleResources(nil, nil)
 	})
 
@@ -156,6 +152,7 @@ func TestWorker_exportSingleResources(t *testing.T) {
 }
 
 func checkDir(t *testing.T, expectedFiles int, dir ...string) []os.DirEntry {
+	t.Helper()
 	files, err := os.ReadDir(filepath.Join(dir...))
 	if err != nil {
 		t.Fatalf("failed to read dir: %v", err)
@@ -167,6 +164,7 @@ func checkDir(t *testing.T, expectedFiles int, dir ...string) []os.DirEntry {
 }
 
 func checkDeployment(t *testing.T, n, d int, u *unstructured.Unstructured) {
+	t.Helper()
 	if u.GetNamespace() != fmt.Sprintf("namespace-%d", n) {
 		t.Errorf("expected namespace-%d, but got %s", n, u.GetNamespace())
 	}
@@ -176,7 +174,10 @@ func checkDeployment(t *testing.T, n, d int, u *unstructured.Unstructured) {
 	if _, ok := u.Object["status"]; ok {
 		t.Error("expected status to be removed")
 	}
-	metadata := u.Object["metadata"].(map[string]any)
+	metadata, ok := u.Object["metadata"].(map[string]any)
+	if !ok {
+		t.Fatal("expected metadata to be a map")
+	}
 	if _, ok := metadata["uid"]; ok {
 		t.Error("expected uid to be removed")
 	}
@@ -199,6 +200,7 @@ func deployment(n, d int) appsv1.Deployment {
 }
 
 func unstructuredListFrom(t *testing.T, path ...string) *unstructured.UnstructuredList {
+	t.Helper()
 	ul := &unstructured.UnstructuredList{}
 	b, err := os.ReadFile(filepath.Join(path...))
 	if err != nil {
@@ -212,6 +214,7 @@ func unstructuredListFrom(t *testing.T, path ...string) *unstructured.Unstructur
 }
 
 func unstructuredFrom(t *testing.T, path ...string) *unstructured.Unstructured {
+	t.Helper()
 	u := &unstructured.Unstructured{}
 	b, err := os.ReadFile(filepath.Join(path...))
 	if err != nil {

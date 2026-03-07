@@ -13,7 +13,7 @@ import (
 	"github.com/bakito/kubexporter/pkg/types"
 )
 
-func setupConfig() (*types.Config, *genericclioptions.PrintFlags, *types.GroupResource) {
+func setupConfig() (*types.Config, *types.GroupResource) {
 	pf := &genericclioptions.PrintFlags{
 		OutputFormat:       ptr.To(types.DefaultFormat),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
@@ -25,39 +25,39 @@ func setupConfig() (*types.Config, *genericclioptions.PrintFlags, *types.GroupRe
 			Kind: "kind",
 		},
 	}
-	return config, pf, res
+	return config, res
 }
 
 func TestConfig_IsExcluded(t *testing.T) {
 	t.Run("should not be excluded if no includes and excludes", func(t *testing.T) {
-		config, _, res := setupConfig()
+		config, res := setupConfig()
 		if config.IsExcluded(res) {
 			t.Error("expected not excluded")
 		}
 	})
 	t.Run("should not be excluded if kind is included", func(t *testing.T) {
-		config, _, res := setupConfig()
+		config, res := setupConfig()
 		config.Included.Kinds = []string{"group.kind"}
 		if config.IsExcluded(res) {
 			t.Error("expected not excluded")
 		}
 	})
 	t.Run("should be excluded if kind is not in included", func(t *testing.T) {
-		config, _, res := setupConfig()
+		config, res := setupConfig()
 		config.Included.Kinds = []string{"group.kind2"}
 		if !config.IsExcluded(res) {
 			t.Error("expected excluded")
 		}
 	})
 	t.Run("should be excluded if kind is excluded", func(t *testing.T) {
-		config, _, res := setupConfig()
+		config, res := setupConfig()
 		config.Excluded.Kinds = []string{"group.kind"}
 		if !config.IsExcluded(res) {
 			t.Error("expected excluded")
 		}
 	})
 	t.Run("should not be excluded if kind is not excluded", func(t *testing.T) {
-		config, _, res := setupConfig()
+		config, res := setupConfig()
 		config.Excluded.Kinds = []string{"group.kind2"}
 		if config.IsExcluded(res) {
 			t.Error("expected not excluded")
@@ -66,7 +66,7 @@ func TestConfig_IsExcluded(t *testing.T) {
 }
 
 func TestConfig_IsInstanceExcluded(t *testing.T) {
-	config, _, res := setupConfig()
+	config, res := setupConfig()
 	config.Excluded = types.Excluded{
 		KindsByField: map[string][]types.FieldValue{
 			"group.kind": {
@@ -148,7 +148,7 @@ func TestConfig_IsInstanceExcluded(t *testing.T) {
 }
 
 func TestConfig_FileName(t *testing.T) {
-	config, _, res := setupConfig()
+	config, res := setupConfig()
 	us := &unstructured.Unstructured{
 		Object: map[string]any{
 			"kind": "Kind",
@@ -205,13 +205,13 @@ func TestConfig_FileName(t *testing.T) {
 
 func TestConfig_Validate(t *testing.T) {
 	t.Run("should be valid", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		if err := config.Validate(); err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
 	})
 	t.Run("should have invalid workers", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.Worker = 0
 		err := config.Validate()
 		if err == nil {
@@ -221,7 +221,7 @@ func TestConfig_Validate(t *testing.T) {
 		}
 	})
 	t.Run("should have invalid file template", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.FileNameTemplate = ""
 		err := config.Validate()
 		if err == nil {
@@ -231,7 +231,7 @@ func TestConfig_Validate(t *testing.T) {
 		}
 	})
 	t.Run("should have not parsable file template", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.FileNameTemplate = "{{dsfa"
 		err := config.Validate()
 		if err == nil {
@@ -241,7 +241,7 @@ func TestConfig_Validate(t *testing.T) {
 		}
 	})
 	t.Run("should have invalid list file template", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.ListFileNameTemplate = ""
 		err := config.Validate()
 		if err == nil {
@@ -251,7 +251,7 @@ func TestConfig_Validate(t *testing.T) {
 		}
 	})
 	t.Run("should have not parsable list file template", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.ListFileNameTemplate = "{{dsfa"
 		err := config.Validate()
 		if err == nil {
@@ -261,7 +261,7 @@ func TestConfig_Validate(t *testing.T) {
 		}
 	})
 	t.Run("quiet should switch progress and summary to false", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.Quiet = true
 		config.Progress = types.ProgressBar
 		config.Summary = true
@@ -277,7 +277,7 @@ func TestConfig_Validate(t *testing.T) {
 		}
 	})
 	t.Run("should set progress default to bar", func(t *testing.T) {
-		config, _, _ := setupConfig()
+		config, _ := setupConfig()
 		config.Progress = ""
 		err := config.Validate()
 		if err != nil {
@@ -298,7 +298,7 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 func TestConfig_FilterFields(t *testing.T) {
-	config, _, res := setupConfig()
+	config, res := setupConfig()
 	config.Excluded = types.Excluded{
 		Fields: [][]string{
 			{"status"},
@@ -339,7 +339,10 @@ func TestConfig_FilterFields(t *testing.T) {
 	t.Run("should filter default fields", func(t *testing.T) {
 		c := us.DeepCopy()
 		config.FilterFields(res, *c)
-		metadata := c.Object["metadata"].(map[string]any)
+		metadata, ok := c.Object["metadata"].(map[string]any)
+		if !ok {
+			t.Fatal("expected metadata to be a map")
+		}
 		if _, ok := metadata["name"]; !ok {
 			t.Error("expected name to be present")
 		}
@@ -357,7 +360,10 @@ func TestConfig_FilterFields(t *testing.T) {
 	t.Run("should filter slice fields", func(t *testing.T) {
 		c := us.DeepCopy()
 		config.FilterFields(res, *c)
-		spec := c.Object["spec"].(map[string]any)
+		spec, ok := c.Object["spec"].(map[string]any)
+		if !ok {
+			t.Fatal("expected spec to be a map")
+		}
 		if spec["foo"] != "bar" {
 			t.Errorf("expected foo=bar, but got %v", spec["foo"])
 		}
@@ -365,11 +371,17 @@ func TestConfig_FilterFields(t *testing.T) {
 		if len(sl) != 1 {
 			t.Fatalf("expected slice length 1, but got %d", len(sl))
 		}
-		item := sl[0].(map[string]any)
+		item, ok := sl[0].(map[string]any)
+		if !ok {
+			t.Fatal("expected item to be a map")
+		}
 		if _, ok := item["a"]; ok {
 			t.Error("expected a to be removed")
 		}
-		b := item["b"].(map[string]any)
+		b, ok := item["b"].(map[string]any)
+		if !ok {
+			t.Fatal("expected b to be a map")
+		}
 		if b["ba"] != "BA" {
 			t.Errorf("expected ba=BA, but got %v", b["ba"])
 		}
@@ -387,7 +399,10 @@ func TestConfig_FilterFields(t *testing.T) {
 		}
 		c := us.DeepCopy()
 		config.FilterFields(res2, *c)
-		metadata := c.Object["metadata"].(map[string]any)
+		metadata, ok := c.Object["metadata"].(map[string]any)
+		if !ok {
+			t.Fatal("expected metadata to be a map")
+		}
 		if _, ok := metadata["name"]; !ok {
 			t.Error("expected name to be present")
 		}
@@ -404,7 +419,7 @@ func TestConfig_FilterFields(t *testing.T) {
 }
 
 func TestConfig_MaskFields(t *testing.T) {
-	config, _, res := setupConfig()
+	config, res := setupConfig()
 	config.Masked = &types.Masked{
 		Replacement: "***",
 		KindFields: map[string][][]string{
@@ -437,7 +452,10 @@ func TestConfig_MaskFields(t *testing.T) {
 		if c.Object["status"] != "***" {
 			t.Errorf("expected status=***, but got %v", c.Object["status"])
 		}
-		data := c.Object["data"].(map[string]any)
+		data, ok := c.Object["data"].(map[string]any)
+		if !ok {
+			t.Fatal("expected data to be a map")
+		}
 		if data["a"] != "***" {
 			t.Errorf("expected data.a=***, but got %v", data["a"])
 		}
@@ -486,7 +504,7 @@ func TestConfig_MaskFields(t *testing.T) {
 }
 
 func TestConfig_SortSliceFields(t *testing.T) {
-	config, _, res := setupConfig()
+	config, res := setupConfig()
 	us := unstructured.Unstructured{
 		Object: map[string]any{
 			"kind":        "kind",
@@ -612,7 +630,7 @@ func TestKindFields(t *testing.T) {
 }
 
 func TestConfig_PreservedFields(t *testing.T) {
-	config, _, res := setupConfig()
+	config, res := setupConfig()
 
 	t.Run("should preserve specified fields when excluding status", func(t *testing.T) {
 		config.Excluded = types.Excluded{
@@ -659,7 +677,10 @@ func TestConfig_PreservedFields(t *testing.T) {
 		if _, ok := us.Object["status"]; !ok {
 			t.Fatal("expected status to be present")
 		}
-		status := us.Object["status"].(map[string]any)
+		status, ok := us.Object["status"].(map[string]any)
+		if !ok {
+			t.Fatal("expected status to be a map")
+		}
 		if _, ok := status["loadBalancer"]; !ok {
 			t.Error("expected loadBalancer to be present")
 		}

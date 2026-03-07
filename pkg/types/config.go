@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -433,9 +432,16 @@ func (c *Config) SortSliceFields(res *GroupResource, us unstructured.Unstructure
 							return int(a.(int64)) - int(b.(int64))
 						})
 					case float64:
-						sort.Slice(sl, func(i, j int) bool {
+						slices.SortFunc(sl, func(a, b any) int {
 							//nolint:forcetypeassert
-							return sl[i].(float64) < sl[j].(float64)
+							fa, fb := a.(float64), b.(float64)
+							if fa < fb {
+								return -1
+							}
+							if fa > fb {
+								return 1
+							}
+							return 0
 						})
 					default:
 						slices.SortFunc(sl, func(a, b any) int {
