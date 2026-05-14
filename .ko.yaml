@@ -7,3 +7,10 @@ builds:
       - -X github.com/bakito/kubexporter/version.Version={{.Env.VERSION}}
       - -X github.com/bakito/kubexporter/version.Revision={{.Env.REVISION}}
       - -X github.com/bakito/kubexporter/version.BuildDate={{.Env.BUILD_DATE}}
+    labels:
+      org.opencontainers.image.title: kubexporter
+      org.opencontainers.image.description: "📥 easily export your k8s resources"
+      org.opencontainers.image.source: https://github.com/bakito/kubexporter
+      org.opencontainers.image.url: https://github.com/bakito/kubexporter
+      org.opencontainers.image.documentation: https://github.com/bakito/kubexporter
+      org.opencontainers.image.vendor: bakito
