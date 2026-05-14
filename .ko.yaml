@@ -5,3 +5,5 @@ builds:
     ldflags:
       - -w -s
       - -X github.com/bakito/kubexporter/version.Version={{.Env.VERSION}}
+      - -X github.com/bakito/kubexporter/version.Revision={{.Env.REVISION}}
+      - -X github.com/bakito/kubexporter/version.BuildDate={{.Env.BUILD_DATE}}
