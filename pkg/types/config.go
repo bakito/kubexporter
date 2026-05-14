@@ -561,7 +561,7 @@ func (c *Config) fileNameInternal(res *GroupResource, namespace, name, templ str
 	return filepath.Join(pathElements...), err
 }
 
-// Validate validate the config.
+// Validate the config.
 func (c *Config) Validate() error {
 	if c.FileNameTemplate == "" {
 		return errors.New("file name template must not be empty")

@@ -5,7 +5,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/ptr"
 
 	"github.com/bakito/kubexporter/pkg/types"
 )
@@ -30,7 +29,7 @@ var (
 			}
 
 			printFlags = &genericclioptions.PrintFlags{
-				OutputFormat:       ptr.To(types.DefaultFormat),
+				OutputFormat:       new(types.DefaultFormat),
 				JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 			}
 

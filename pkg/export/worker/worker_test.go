@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	amtypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/ptr"
 
 	"github.com/bakito/kubexporter/pkg/client"
 	"github.com/bakito/kubexporter/pkg/export/progress/nop"
@@ -29,7 +28,7 @@ func setupWorker(t *testing.T) (*worker, string) {
 	mockCtrl := gm.NewController(t)
 	mockClient := mock.NewMockInterface(mockCtrl)
 	config := types.NewConfig(nil, &genericclioptions.PrintFlags{
-		OutputFormat:       ptr.To(types.DefaultFormat),
+		OutputFormat:       new(types.DefaultFormat),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 	})
 	config.Target = tmpDir

@@ -8,14 +8,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/ptr"
 
 	"github.com/bakito/kubexporter/pkg/types"
 )
 
 func setupConfig() (*types.Config, *types.GroupResource) {
 	pf := &genericclioptions.PrintFlags{
-		OutputFormat:       ptr.To(types.DefaultFormat),
+		OutputFormat:       new(types.DefaultFormat),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 	}
 	config := types.NewConfig(nil, pf)

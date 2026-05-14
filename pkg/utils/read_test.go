@@ -7,7 +7,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
-	"k8s.io/utils/ptr"
 
 	"github.com/bakito/kubexporter/pkg/types"
 	"github.com/bakito/kubexporter/pkg/utils"
@@ -50,7 +49,7 @@ func TestPrintObj(t *testing.T) {
 				JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 			}
 			if tt.format == "" {
-				pf.OutputFormat = ptr.To(types.DefaultFormat)
+				pf.OutputFormat = new(types.DefaultFormat)
 			}
 
 			var buf bytes.Buffer

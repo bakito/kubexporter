@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
-	"k8s.io/utils/ptr"
 
 	"github.com/bakito/kubexporter/pkg/export"
 	"github.com/bakito/kubexporter/pkg/types"
@@ -161,7 +160,7 @@ func init() {
 	configFlags.AddFlags(rootCmd.Flags())
 
 	printFlags = &genericclioptions.PrintFlags{
-		OutputFormat:       ptr.To(types.DefaultFormat),
+		OutputFormat:       new(types.DefaultFormat),
 		JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 	}
 	printFlags.AddFlags(rootCmd)
