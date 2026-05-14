@@ -1,12 +1,12 @@
 name: Build images
-
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches:
+      - main
   release:
-    types: [published]
+    types:
+      - published
+
 
 jobs:
   main:
@@ -75,13 +75,3 @@ jobs:
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
           cosign sign --yes ghcr.io/bakito/kubexporter@${{ steps.ko_build_main.outputs.digest }}
-
-      - name: Build PR image
-        if: ${{ github.event_name == 'pull_request' }}
-        env:
-          VERSION: pr-${{ github.event.pull_request.number }}
-        run: |
-          ko build --bare --local .
-
-      - name: Image digest
-        run: echo ${{ steps.ko_build_release.outputs.digest }}${{ steps.ko_build_main.outputs.digest }}
