@@ -38,9 +38,9 @@ jobs:
       - name: 🖼 Build image
         env:
           VERSION: e2e-tests
+          KO_DOCKER_REPO: kubexporter
         run: |
-          ko build --bare --local --tag kubexporter:e2e .
-          docker save kubexporter:e2e -o /tmp/image.tar
+          ko build --bare --tarball /tmp/image.tar --tags e2e --push=false .
 
       - name: 📦 Upload image tar
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
