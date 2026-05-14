@@ -37,6 +37,9 @@ jobs:
       - name: Pull image from GHCR
         run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
+      - name: Pull main image from GHCR
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+
       - name: Get latest release tag
         id: latest_release
         env:
@@ -52,6 +55,14 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          format: "table"
+          severity: "CRITICAL,HIGH,MEDIUM"
+          exit-code: "0" # Don't fail the build — just report
+
+      - name: Run Trivy vulnerability scan for main image (table output)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
           format: "table"
           severity: "CRITICAL,HIGH,MEDIUM"
           exit-code: "0" # Don't fail the build — just report
@@ -73,6 +84,15 @@ jobs:
           severity: "CRITICAL,HIGH,MEDIUM,LOW"
           exit-code: "0"
 
+      - name: Run Trivy vulnerability scan for main image (SARIF for GitHub Security tab)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
+          format: "sarif"
+          output: "trivy-results-main.sarif"
+          severity: "CRITICAL,HIGH,MEDIUM,LOW"
+          exit-code: "0"
+
       - name: Run Trivy vulnerability scan for latest release image (SARIF for GitHub Security tab)
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
@@ -87,9 +107,18 @@ jobs:
         if: always()
         with:
           sarif_file: "trivy-results.sarif"
+          category: "trivy-latest"
+
+      - name: Upload main Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4
+        if: always()
+        with:
+          sarif_file: "trivy-results-main.sarif"
+          category: "trivy-main"
 
       - name: Upload latest release Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@68bde559dea0fdcac2102bfdf6230c5f70eb485e # v4.35.4
         if: always()
         with:
           sarif_file: "trivy-results-latest-release.sarif"
+          category: "trivy-latest-release"
