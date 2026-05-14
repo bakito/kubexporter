@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -98,6 +99,11 @@ func readConfig(
 		case "archive":
 			sl, _ := cmd.Flags().GetBool(f.Name)
 			config.Archive = sl
+		case "exclude-defaults":
+			ed, _ := cmd.Flags().GetBool(f.Name)
+			if ed && len(config.Excluded.Kinds) == 0 {
+				config.Excluded.Kinds = types.DefaultExcludedKinds
+			}
 		default:
 		}
 	})
@@ -146,6 +152,8 @@ func init() {
 	rootCmd.Flags().Bool("summary", false, "If enabled, a summary is printed")
 	rootCmd.Flags().Bool("size", false, "If enabled, a exported file sizes are printed")
 	rootCmd.Flags().BoolP("archive", "a", false, "If enabled, an archive with the exports is created")
+	rootCmd.Flags().
+		BoolP("exclude-defaults", "d", false, "If enabled, default excludes will be applied. ["+strings.Join(types.DefaultExcludedKinds, ", ")+"]")
 	rootCmd.Flags().
 		StringP("progress", "p", string(types.ProgressBar), "Progress mode bar|bubbles|simple|none (default bar) ")
 	rootCmd.Flags().
