@@ -28,7 +28,7 @@ var (
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
 	Use:     "kubexporter",
-	Version: version.Version,
+	Version: fmt.Sprintf("%s (rev: %s; date: %s)", version.Version, version.Revision, version.BuildDate),
 	Short:   "easily export kubernetes resources",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		config, err := readConfig(cmd, configFlags, printFlags)
