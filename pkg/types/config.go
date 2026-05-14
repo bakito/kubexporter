@@ -52,6 +52,7 @@ const (
 
 var (
 	invalidFileChars = regexp.MustCompile(`[^a-zA-Z0-9.\-]`)
+
 	// DefaultExcludedFields the default field to be excluded.
 	DefaultExcludedFields = [][]string{
 		{"status"},
@@ -63,6 +64,47 @@ var (
 		{"metadata", "deletionGracePeriodSeconds"},
 		{"metadata", "generation"},
 		{"metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+	}
+
+	// DefaultExcludedKinds the kind to be excluded if default excludes are enabled.
+	DefaultExcludedKinds = []string{
+		// Runtime workload instances / controller-generated resources
+		"apps.ControllerRevision",
+		"apps.ReplicaSet",
+		"batch.Job",
+		"Pod",
+		"ReplicationController",
+
+		// Endpoint/discovery objects, usually generated from Services/Pods
+		"discovery.k8s.io.EndpointSlice",
+		"Endpoints",
+
+		// Events and transient cluster observations
+		"Event",
+		"events.k8s.io.Event",
+
+		// Coordination / leader election / runtime locks
+		"coordination.k8s.io.Lease",
+
+		// Metrics API resources, transient and not restorable config
+		"metrics.k8s.io.NodeMetrics",
+		"metrics.k8s.io.PodMetrics",
+
+		// Deprecated / legacy / rarely useful for restore
+		"ComponentStatus",
+
+		// Sensitive; excluded by default unless explicitly encrypted/masked
+		"Secret",
+
+		// Admission/auth review objects; generally request/response APIs, not backup state
+		"LocalSubjectAccessReview",
+		"SelfSubjectAccessReview",
+		"SelfSubjectRulesReview",
+		"SubjectAccessReview",
+		"TokenReview",
+
+		// Binding is generally not useful as durable desired state
+		"Binding",
 	}
 )
 
