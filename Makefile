@@ -44,3 +44,9 @@ mocks: tb.mockgen
 	$(TB_MOCKGEN) -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
 	$(TB_MOCKGEN) -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 
+ko-build:
+	VERSION=local ko build --local --bare .
+
+ko-publish:
+	ko build --bare .
+

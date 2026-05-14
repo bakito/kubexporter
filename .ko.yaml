@@ -1,0 +1,7 @@
+defaultBaseImage: cgr.dev/chainguard/static:latest
+builds:
+  - id: kubexporter
+    main: .
+    ldflags:
+      - -w -s
+      - -X github.com/bakito/kubexporter/version.Version={{.Env.VERSION}}
