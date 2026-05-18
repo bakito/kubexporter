@@ -1,0 +1,66 @@
+name: Build images
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types:
+      - published
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write # required for keyless signing via GitHub OIDC
+    steps:
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4.0.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
+      - name: Login to ghcr.io
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ github.event.release.tag_name }}
+        id: docker_build_release
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        if: ${{ github.event.release.tag_name != '' }}
+        with:
+          push: true
+          tags: ghcr.io/bakito/kubexporter:latest,ghcr.io/bakito/kubexporter:${{ github.event.release.tag_name }}
+          platforms: linux/amd64
+          provenance: false
+          build-args: VERSION=${{ github.event.release.tag_name }}
+
+      - name: Sign release image
+        if: ${{ github.event.release.tag_name != '' }}
+        run: |
+          cosign sign --yes ghcr.io/bakito/kubexporter@${{ steps.docker_build_release.outputs.digest }}
+
+      - name: Build and push main
+        id: docker_build_main
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
+        if: ${{ github.event.release.tag_name == '' }}
+        with:
+          push: true
+          tags: ghcr.io/bakito/kubexporter:main
+          platforms: linux/amd64
+          provenance: false
+          build-args: VERSION=main
+
+      - name: Sign main image
+        if: ${{ github.event.release.tag_name == '' }}
+        run: |
+          cosign sign --yes ghcr.io/bakito/kubexporter@${{ steps.docker_build_main.outputs.digest }}
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build_release.outputs.digest }}${{ steps.docker_build_main.outputs.digest }}

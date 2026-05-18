@@ -6,7 +6,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - -s -w -X github.com/bakito/kubexporter/version.Version={{.Version}} -X github.com/bakito/kubexporter/version.Revision={{.ShortCommit}} -X github.com/bakito/kubexporter/version.BuildDate={{.Date}}
+      - -s -w -X github.com/bakito/kubexporter/version.Version={{.Version}}
     goos:
       - linux
       - windows
