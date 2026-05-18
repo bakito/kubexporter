@@ -4,6 +4,7 @@ FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS builder
 WORKDIR /build
 
 ARG VERSION=main
+ARG REVISION=n/a
 ARG TARGETOS=linux
 ARG TARGETARCH
 
@@ -21,12 +22,13 @@ COPY . .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 \
+    BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
     GOOS=$TARGETOS \
     GOARCH=$TARGETARCH \
     go build \
       -a \
       -trimpath \
-      -ldflags="-w -s -X github.com/bakito/kubexporter/version.Version=${VERSION}" \
+      -ldflags="-w -s -X github.com/bakito/kubexporter/version.Version=${VERSION} -X github.com/bakito/kubexporter/version.Revision=${REVISION} -X github.com/bakito/kubexporter/version.BuildDate=${BUILD_DATE}" \
       -o kubexporter . && \
     upx -q kubexporter
 

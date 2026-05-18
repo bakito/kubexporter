@@ -22,7 +22,7 @@ jobs:
 
       - name: 🖼 Build image
         run: |
-          docker build -f Dockerfile --build-arg VERSION=e2e-tests -t kubexporter:e2e .
+          docker build -f Dockerfile --build-arg VERSION=e2e-tests --build-arg REVISION=e2e-tests -t kubexporter:e2e .
           docker save kubexporter:e2e -o /tmp/image.tar
 
       - name: 📦 Upload image tar
