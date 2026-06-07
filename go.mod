@@ -20,7 +20,7 @@ require (
 	github.com/vbauerster/mpb/v8 v8.12.1
 	go.uber.org/mock v0.6.0
 	golang.org/x/term v0.43.0
-	google.golang.org/api v0.282.0
+	google.golang.org/api v0.283.0
 	k8s.io/api v0.36.1
 	k8s.io/apimachinery v0.36.1
 	k8s.io/cli-runtime v0.36.1
