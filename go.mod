@@ -5,7 +5,7 @@ go 1.26.4
 require (
 	charm.land/bubbles/v2 v2.1.0
 	charm.land/bubbletea/v2 v2.0.7
-	charm.land/lipgloss/v2 v2.0.3
+	charm.land/lipgloss/v2 v2.0.4
 	cloud.google.com/go/storage v1.62.3
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/dustin/go-humanize v1.0.1
