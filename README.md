@@ -26,6 +26,7 @@ Download the latest binary from https://github.com/bakito/kubexporter/releases.
 ```bash
 # Add the tap
 brew tap bakito/tap
+brew trust bakito/tap
 
 # install kubexporter 
 brew install --cask kubexporter
