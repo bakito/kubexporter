@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ghodss/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -366,6 +367,57 @@ func TestConfig_Validate(t *testing.T) {
 			}
 			if tt.validate != nil {
 				tt.validate(t, config)
+			}
+		})
+	}
+}
+
+func TestConfig_Namespace(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   string
+		expected types.Namespaces
+	}{
+		{
+			name:     "should read a legacy namespace string",
+			config:   "namespace: default",
+			expected: types.Namespaces{"default"},
+		},
+		{
+			name:     "should read comma-separated namespace string",
+			config:   "namespace: namespace-a,namespace-b",
+			expected: types.Namespaces{"namespace-a", "namespace-b"},
+		},
+		{
+			name: "should read namespace list",
+			config: `namespace:
+  - namespace-a
+  - namespace-b`,
+			expected: types.Namespaces{"namespace-a", "namespace-b"},
+		},
+		{
+			name:     "should ignore empty namespaces",
+			config:   "namespace: ''",
+			expected: nil,
+		},
+		{
+			name: "should deduplicate namespaces",
+			config: `namespace:
+  - namespace-a
+  - namespace-a
+  - namespace-b`,
+			expected: types.Namespaces{"namespace-a", "namespace-b"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config, _ := setupConfig()
+			if err := yaml.Unmarshal([]byte(tt.config), config); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if !reflect.DeepEqual(config.Namespace, tt.expected) {
+				t.Errorf("expected namespace %v, but got %v", tt.expected, config.Namespace)
 			}
 		})
 	}

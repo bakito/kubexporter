@@ -103,10 +103,16 @@ func (e *exporter) Export(ctx context.Context) error {
 
 	var exportErr error
 	var s *worker.Stats
+	var done chan struct{}
 	if prog.Async() {
+		done = make(chan struct{})
 		go func() {
+			defer close(done)
 			s, exportErr = worker.RunExport(ctx, workers, resources)
 			e.stats.Add(s)
+		}()
+		defer func() {
+			<-done
 		}()
 	} else {
 		s, exportErr = worker.RunExport(ctx, workers, resources)
@@ -115,6 +121,9 @@ func (e *exporter) Export(ctx context.Context) error {
 
 	if err := prog.Run(); err != nil {
 		return err
+	}
+	if prog.Async() {
+		<-done
 	}
 	if exportErr != nil {
 		return exportErr
@@ -159,10 +168,13 @@ func (e *exporter) writeIntro() {
 	e.l.Printf("Starting export ...\n")
 	e.l.Printf("  kubexporter version %q\n", version.Version)
 	e.l.Printf("  cluster %q\n", e.ac.RestConfig.Host)
-	if e.config.Namespace == "" {
+	if !e.config.HasNamespaceFilter() {
 		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
-		e.l.Printf("  namespace %q 🏠\n", e.config.Namespace)
+		e.l.Printf("  namespace %q 🏠\n", e.config.Namespace.String())
+		if e.config.IncludeClusterResources {
+			e.l.Printf("  include cluster resources 🌐\n")
+		}
 	}
 	e.l.Printf("  target %q 📁\n", e.config.Target)
 	e.l.Printf("  format %q 📜\n", e.config.OutputFormat())
@@ -235,7 +247,9 @@ func (e *exporter) listResources() ([]*types.GroupResource, error) {
 				APIGroupVersion: gv.String(),
 				APIResource:     resource,
 			}
-			if !allowsList(resource) || e.config.IsExcluded(r) || (!resource.Namespaced && e.config.Namespace != "") {
+			if !allowsList(resource) ||
+				e.config.IsExcluded(r) ||
+				(!resource.Namespaced && e.config.HasNamespaceFilter() && !e.config.IncludeClusterResources) {
 				continue
 			}
 

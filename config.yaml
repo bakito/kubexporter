@@ -3,7 +3,14 @@ progress: bubbles
 archive: true
 archiveRetentionDays: 10
 archiveTarget: .
-namespace:
+# To limit export, use either:
+#namespace: namespace-a
+# or:
+# namespace:
+#   - ns1
+#   - ns2
+
+# includeClusterResources: false
 asLists: false
 #queryPageSize: 1000
 clearTarget: true
