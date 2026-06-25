@@ -162,7 +162,8 @@ type Config struct {
 	ClearTarget             bool          `json:"clearTarget"             yaml:"clearTarget"`
 	Summary                 bool          `json:"summary"                 yaml:"summary"`
 	Progress                Progress      `json:"progress"                yaml:"progress"`
-	Namespace               string        `json:"namespace"               yaml:"namespace"`
+	Namespace               Namespaces    `json:"namespace"               yaml:"namespace"`
+	IncludeClusterResources bool          `json:"includeClusterResources" yaml:"includeClusterResources"`
 	Worker                  int           `json:"worker"                  yaml:"worker"`
 	Archive                 bool          `json:"archive"                 yaml:"archive"`
 	ArchiveRetentionDays    int           `json:"archiveRetentionDays"    yaml:"archiveRetentionDays"`
@@ -182,6 +183,83 @@ type Config struct {
 
 func (c *Config) MaxArchiveAge() time.Time {
 	return time.Now().AddDate(0, 0, -c.ArchiveRetentionDays)
+}
+
+// HasNamespaceFilter returns true if export is limited to one or more namespaces.
+func (c *Config) HasNamespaceFilter() bool {
+	return len(c.Namespace) > 0
+}
+
+// NamespaceFilter returns the configured namespaces.
+func (c *Config) NamespaceFilter() []string {
+	return append([]string(nil), c.Namespace...)
+}
+
+// NamespaceQueryValues returns namespace values for Kubernetes list requests.
+func (c *Config) NamespaceQueryValues() []string {
+	if !c.HasNamespaceFilter() {
+		return []string{""}
+	}
+	return c.NamespaceFilter()
+}
+
+// Namespaces is the namespace export filter.
+type Namespaces []string
+
+// NewNamespaces creates a normalized namespace filter.
+func NewNamespaces(namespaces []string) Namespaces {
+	return normalizeNamespaces(namespaces)
+}
+
+// UnmarshalJSON supports both the legacy string form and the new list form.
+func (n *Namespaces) UnmarshalJSON(b []byte) error {
+	var value any
+	if err := json.Unmarshal(b, &value); err != nil {
+		return err
+	}
+
+	switch v := value.(type) {
+	case nil:
+		*n = nil
+	case string:
+		*n = normalizeNamespaces([]string{v})
+	case []any:
+		namespaces := make([]string, 0, len(v))
+		for _, item := range v {
+			s, ok := item.(string)
+			if !ok {
+				return errors.New("namespace must contain only strings")
+			}
+			namespaces = append(namespaces, s)
+		}
+		*n = normalizeNamespaces(namespaces)
+	default:
+		return errors.New("namespace must be a string or a list of strings")
+	}
+	return nil
+}
+
+func (n Namespaces) String() string {
+	return strings.Join(n, ", ")
+}
+
+func normalizeNamespaces(namespaces []string) Namespaces {
+	seen := make(map[string]bool)
+	normalized := make(Namespaces, 0, len(namespaces))
+	for _, raw := range namespaces {
+		for ns := range strings.SplitSeq(raw, ",") {
+			ns = strings.TrimSpace(ns)
+			if ns == "" || seen[ns] {
+				continue
+			}
+			seen[ns] = true
+			normalized = append(normalized, ns)
+		}
+	}
+	if len(normalized) == 0 {
+		return nil
+	}
+	return normalized
 }
 
 type S3Config struct {
@@ -605,6 +683,8 @@ func (c *Config) fileNameInternal(res *GroupResource, namespace, name, templ str
 
 // Validate the config.
 func (c *Config) Validate() error {
+	c.Namespace = normalizeNamespaces(c.Namespace)
+
 	if c.FileNameTemplate == "" {
 		return errors.New("file name template must not be empty")
 	} else if _, err := c.FileName(&GroupResource{}, &unstructured.Unstructured{}, 0); err != nil {

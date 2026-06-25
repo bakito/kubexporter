@@ -69,6 +69,9 @@ func (s *Stats) Add(o *Stats) {
 }
 
 func (s *Stats) addNamespace(ns string) {
+	if ns == "" {
+		return
+	}
 	if s.namespaces == nil {
 		s.namespaces = make(map[string]bool)
 	}
@@ -106,6 +109,7 @@ func (w *worker) Stop() Stats {
 func (w *worker) list(
 	ctx context.Context,
 	group, version, kind string,
+	namespace string,
 	continueValue string,
 ) (*unstructured.UnstructuredList, error) {
 	mapping, err := w.ac.Mapper.RESTMapping(schema.GroupKind{Group: group, Kind: kind}, version)
@@ -116,7 +120,7 @@ func (w *worker) list(
 	var dr dynamic.ResourceInterface
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 		// namespaced resources should specify the namespace
-		dr = w.ac.Client.Resource(mapping.Resource).Namespace(w.config.Namespace)
+		dr = w.ac.Client.Resource(mapping.Resource).Namespace(namespace)
 	} else {
 		// for cluster-wide resources
 		dr = w.ac.Client.Resource(mapping.Resource)
@@ -142,11 +146,13 @@ func (w *worker) GenerateWork(
 		w.currentKind = res.GroupKind()
 		w.prog.Reset()
 
-		hasMorePages := ""
-		for {
-			hasMorePages = w.listResources(ctx, res, hasMorePages)
-			if hasMorePages == "" {
-				break
+		for _, namespace := range w.namespacesForResource(res) {
+			hasMorePages := ""
+			for {
+				hasMorePages = w.listResources(ctx, res, namespace, hasMorePages)
+				if hasMorePages == "" {
+					break
+				}
 			}
 		}
 		w.stats.Resources += res.ExportedInstances
@@ -162,7 +168,19 @@ func (w *worker) GenerateWork(
 	}
 }
 
-func (w *worker) listResources(ctx context.Context, res *types.GroupResource, hasMorePages string) string {
+func (w *worker) namespacesForResource(res *types.GroupResource) []string {
+	if res.APIResource.Namespaced {
+		return w.config.NamespaceQueryValues()
+	}
+	return []string{""}
+}
+
+func (w *worker) listResources(
+	ctx context.Context,
+	res *types.GroupResource,
+	namespace string,
+	hasMorePages string,
+) string {
 	w.currentPage = res.Pages + 1
 	w.prog.NewSearchBar(
 		progress.Step{
@@ -173,7 +191,7 @@ func (w *worker) listResources(ctx context.Context, res *types.GroupResource, ha
 		},
 	)
 	start := time.Now()
-	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, hasMorePages)
+	ul, err := w.list(ctx, res.APIGroup, res.APIVersion, res.APIResource.Kind, namespace, hasMorePages)
 
 	if w.prog != nil {
 		w.prog.IncrementResourceBarBy(w.id, 1)

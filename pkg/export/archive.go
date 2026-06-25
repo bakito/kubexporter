@@ -57,11 +57,11 @@ func (e *exporter) tarGz() error {
 	}
 
 	var name string
-	if e.config.Namespace != "" {
+	if e.config.HasNamespaceFilter() {
 		name = fmt.Sprintf(
 			"%s-%s-%s.tar.gz",
 			filepath.Base(e.config.Target),
-			e.config.Namespace,
+			strings.Join(e.config.NamespaceFilter(), "-"),
 			time.Now().Format(archiveTimestampPattern),
 		)
 	} else {
