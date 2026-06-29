@@ -374,39 +374,58 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestConfig_Namespace(t *testing.T) {
 	tests := []struct {
-		name     string
-		config   string
-		expected types.Namespaces
+		name               string
+		config             string
+		expectedNamespace  string
+		expectedNamespaces []string
+		expectedFilter     []string
 	}{
 		{
-			name:     "should read a legacy namespace string",
-			config:   "namespace: default",
-			expected: types.Namespaces{"default"},
+			name:              "should read a singular namespace",
+			config:            "namespace: default",
+			expectedNamespace: "default",
+			expectedFilter:    []string{"default"},
 		},
 		{
-			name:     "should read comma-separated namespace string",
-			config:   "namespace: namespace-a,namespace-b",
-			expected: types.Namespaces{"namespace-a", "namespace-b"},
-		},
-		{
-			name: "should read namespace list",
-			config: `namespace:
+			name: "should read namespaces list",
+			config: `namespaces:
   - namespace-a
   - namespace-b`,
-			expected: types.Namespaces{"namespace-a", "namespace-b"},
+			expectedNamespaces: []string{"namespace-a", "namespace-b"},
+			expectedFilter:     []string{"namespace-a", "namespace-b"},
 		},
 		{
-			name:     "should ignore empty namespaces",
-			config:   "namespace: ''",
-			expected: nil,
+			name: "should read comma-separated namespaces string",
+			config: `namespaces:
+  - namespace-a,namespace-b`,
+			expectedNamespaces: []string{"namespace-a", "namespace-b"},
+			expectedFilter:     []string{"namespace-a", "namespace-b"},
 		},
 		{
-			name: "should deduplicate namespaces",
-			config: `namespace:
+			name: "should join namespace and namespaces",
+			config: `namespace: namespace-a
+namespaces:
+  - namespace-b
+  - namespace-c`,
+			expectedNamespace:  "namespace-a",
+			expectedNamespaces: []string{"namespace-b", "namespace-c"},
+			expectedFilter:     []string{"namespace-a", "namespace-b", "namespace-c"},
+		},
+		{
+			name: "should deduplicate joined namespaces",
+			config: `namespace: namespace-a
+namespaces:
   - namespace-a
-  - namespace-a
-  - namespace-b`,
-			expected: types.Namespaces{"namespace-a", "namespace-b"},
+  - namespace-b
+  - namespace-a`,
+			expectedNamespace:  "namespace-a",
+			expectedNamespaces: []string{"namespace-a", "namespace-b"},
+			expectedFilter:     []string{"namespace-a", "namespace-b"},
+		},
+		{
+			name:           "should ignore empty namespaces",
+			config:         "namespace: ''",
+			expectedFilter: nil,
 		},
 	}
 
@@ -416,8 +435,15 @@ func TestConfig_Namespace(t *testing.T) {
 			if err := yaml.Unmarshal([]byte(tt.config), config); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if !reflect.DeepEqual(config.Namespace, tt.expected) {
-				t.Errorf("expected namespace %v, but got %v", tt.expected, config.Namespace)
+			config.Namespaces = types.NewNamespaces(config.Namespaces)
+			if config.Namespace != tt.expectedNamespace {
+				t.Errorf("expected namespace %q, but got %q", tt.expectedNamespace, config.Namespace)
+			}
+			if !reflect.DeepEqual(config.Namespaces, tt.expectedNamespaces) {
+				t.Errorf("expected namespaces %v, but got %v", tt.expectedNamespaces, config.Namespaces)
+			}
+			if !reflect.DeepEqual(config.NamespaceFilter(), tt.expectedFilter) {
+				t.Errorf("expected namespace filter %v, but got %v", tt.expectedFilter, config.NamespaceFilter())
 			}
 		})
 	}

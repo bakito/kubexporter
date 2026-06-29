@@ -61,8 +61,11 @@ func readConfig(
 	cmd.Flags().Visit(func(f *pflag.Flag) {
 		switch f.Name {
 		case "namespace":
+			namespace, _ := cmd.Flags().GetString(f.Name)
+			config.Namespace = namespace
+		case "namespaces":
 			namespaces, _ := cmd.Flags().GetStringSlice(f.Name)
-			config.Namespace = types.NewNamespaces(namespaces)
+			config.Namespaces = types.NewNamespaces(namespaces)
 		case "include-cluster-resources":
 			b, _ := cmd.Flags().GetBool(f.Name)
 			config.IncludeClusterResources = b
@@ -122,6 +125,7 @@ func readConfig(
 
 	config.Encrypted.KindFields = config.Masked.KindFields.Diff(config.Encrypted.KindFields)
 
+	config.Normalize()
 	correctProgressForNonTerminalRun(config)
 
 	return config, nil
@@ -167,16 +171,13 @@ func init() {
 			"Export only included kinds, if included kinds are defined, excluded will be ignored")
 	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")
 	rootCmd.Flags().Duration("created-within", 0, "The max allowed age duration for the resources")
-	rootCmd.Flags().StringSliceP("namespace", "n", []string{},
+	rootCmd.Flags().StringSlice("namespaces", []string{},
 		"Export only these namespaces, comma-separated or repeated")
 	rootCmd.Flags().Bool("include-cluster-resources", false,
 		"Also export cluster-scoped resources when a namespace filter is active")
 
 	configFlags = genericclioptions.NewConfigFlags(true)
-	configFlags.Namespace = nil
 	configFlags.AddFlags(rootCmd.Flags())
-	namespace := ""
-	configFlags.Namespace = &namespace
 
 	printFlags = &genericclioptions.PrintFlags{
 		OutputFormat:       new(types.DefaultFormat),

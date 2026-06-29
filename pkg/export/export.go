@@ -171,7 +171,7 @@ func (e *exporter) writeIntro() {
 	if !e.config.HasNamespaceFilter() {
 		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
-		e.l.Printf("  namespace %q 🏠\n", e.config.Namespace.String())
+		e.l.Printf("  namespaces %q 🏠\n", e.config.NamespaceFilterString())
 		if e.config.IncludeClusterResources {
 			e.l.Printf("  include cluster resources 🌐\n")
 		}

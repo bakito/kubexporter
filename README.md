@@ -67,7 +67,8 @@ Flags:
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
   -l, --lists                          If enabled, all resources are exported as lists instead of individual files
       --include-cluster-resources      Also export cluster-scoped resources when a namespace filter is active (e.g. --include-cluster-resources=true)
-  -n, --namespace strings              Export only these namespaces, comma-separated (e.g. --namespace ns1,ns2) or repeated (e.g. --namespace ns1 --namespace ns2)
+  -n, --namespace string               Export only this namespace
+      --namespaces strings             Export only these namespaces, comma-separated (e.g. --namespaces ns1,ns2) or repeated (e.g. --namespaces ns1 --namespaces ns2)
   -o, --output string                  Output format. One of: (json, yaml). (default "yaml")
   -p, --progress string                Progress mode bar|simple|none (default bar)  (default "bar")
   -q, --quiet                          If enabled, output is prevented
@@ -114,12 +115,11 @@ archive: true
 #gcs:
 #  bucket: <your-bucket-name>
 
-# define one or more namespaces (default all)
+# define a single namespace (default all)
 namespace:
-# To limit export, replace the empty value above with either:
 #namespace: namespace-a
-# or:
-#namespace:
+# define multiple namespaces (joined with namespace, if both are set)
+#namespaces:
 #  - namespace-a
 #  - namespace-b
 # export cluster-scoped resources too when a namespace filter is active

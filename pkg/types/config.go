@@ -162,7 +162,8 @@ type Config struct {
 	ClearTarget             bool          `json:"clearTarget"             yaml:"clearTarget"`
 	Summary                 bool          `json:"summary"                 yaml:"summary"`
 	Progress                Progress      `json:"progress"                yaml:"progress"`
-	Namespace               Namespaces    `json:"namespace"               yaml:"namespace"`
+	Namespace               string        `json:"namespace"               yaml:"namespace"`
+	Namespaces              []string      `json:"namespaces"              yaml:"namespaces"`
 	IncludeClusterResources bool          `json:"includeClusterResources" yaml:"includeClusterResources"`
 	Worker                  int           `json:"worker"                  yaml:"worker"`
 	Archive                 bool          `json:"archive"                 yaml:"archive"`
@@ -185,14 +186,36 @@ func (c *Config) MaxArchiveAge() time.Time {
 	return time.Now().AddDate(0, 0, -c.ArchiveRetentionDays)
 }
 
-// HasNamespaceFilter returns true if export is limited to one or more namespaces.
-func (c *Config) HasNamespaceFilter() bool {
-	return len(c.Namespace) > 0
+// Normalize normalizes config values after config-file and CLI overrides are applied.
+func (c *Config) Normalize() {
+	c.Namespace = strings.TrimSpace(c.Namespace)
+	c.Namespaces = normalizeNamespaces(c.Namespaces)
 }
 
-// NamespaceFilter returns the configured namespaces.
+// HasNamespaceFilter returns true if export is limited to one or more namespaces.
+func (c *Config) HasNamespaceFilter() bool {
+	return len(c.NamespaceFilter()) > 0
+}
+
+// NamespaceFilter returns the configured namespace filters.
 func (c *Config) NamespaceFilter() []string {
-	return append([]string(nil), c.Namespace...)
+	namespaces := append(slices.Clone(c.Namespaces), c.Namespace)
+
+	namespaces = slices.DeleteFunc(namespaces, func(ns string) bool {
+		return strings.TrimSpace(ns) == ""
+	})
+
+	for i, ns := range namespaces {
+		namespaces[i] = strings.TrimSpace(ns)
+	}
+
+	slices.Sort(namespaces)
+	namespaces = slices.Compact(namespaces)
+
+	if len(namespaces) == 0 {
+		return nil
+	}
+	return namespaces
 }
 
 // NamespaceQueryValues returns namespace values for Kubernetes list requests.
@@ -203,49 +226,19 @@ func (c *Config) NamespaceQueryValues() []string {
 	return c.NamespaceFilter()
 }
 
-// Namespaces is the namespace export filter.
-type Namespaces []string
-
 // NewNamespaces creates a normalized namespace filter.
-func NewNamespaces(namespaces []string) Namespaces {
+func NewNamespaces(namespaces []string) []string {
 	return normalizeNamespaces(namespaces)
 }
 
-// UnmarshalJSON supports both the legacy string form and the new list form.
-func (n *Namespaces) UnmarshalJSON(b []byte) error {
-	var value any
-	if err := json.Unmarshal(b, &value); err != nil {
-		return err
-	}
-
-	switch v := value.(type) {
-	case nil:
-		*n = nil
-	case string:
-		*n = normalizeNamespaces([]string{v})
-	case []any:
-		namespaces := make([]string, 0, len(v))
-		for _, item := range v {
-			s, ok := item.(string)
-			if !ok {
-				return errors.New("namespace must contain only strings")
-			}
-			namespaces = append(namespaces, s)
-		}
-		*n = normalizeNamespaces(namespaces)
-	default:
-		return errors.New("namespace must be a string or a list of strings")
-	}
-	return nil
+// NamespaceFilterString returns a printable namespace filter.
+func (c *Config) NamespaceFilterString() string {
+	return strings.Join(c.NamespaceFilter(), ", ")
 }
 
-func (n Namespaces) String() string {
-	return strings.Join(n, ", ")
-}
-
-func normalizeNamespaces(namespaces []string) Namespaces {
+func normalizeNamespaces(namespaces []string) []string {
 	seen := make(map[string]bool)
-	normalized := make(Namespaces, 0, len(namespaces))
+	normalized := make([]string, 0, len(namespaces))
 	for _, raw := range namespaces {
 		for ns := range strings.SplitSeq(raw, ",") {
 			ns = strings.TrimSpace(ns)
@@ -683,7 +676,7 @@ func (c *Config) fileNameInternal(res *GroupResource, namespace, name, templ str
 
 // Validate the config.
 func (c *Config) Validate() error {
-	c.Namespace = normalizeNamespaces(c.Namespace)
+	c.Normalize()
 
 	if c.FileNameTemplate == "" {
 		return errors.New("file name template must not be empty")
