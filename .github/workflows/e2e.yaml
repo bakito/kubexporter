@@ -66,6 +66,11 @@ jobs:
           echo "## Run Exporter from outside the cluster" >> $GITHUB_STEP_SUMMARY
           go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
 
+      - name: Run Exporter from outside the cluster with selected namespaces
+        run: |
+          echo "## Run Exporter from outside the cluster with selected namespaces" >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --namespace kube-system --namespace local-path-storage >> $GITHUB_STEP_SUMMARY
+
       - name: Run Exporter as k8s Job
         id: run_as_k8s_job
         continue-on-error: true

@@ -10,7 +10,8 @@ namespace:
 # namespaces:
 #   - ns1
 #   - ns2
-includeClusterResources: true
+
+# includeClusterResources: false
 asLists: false
 #queryPageSize: 1000
 clearTarget: true

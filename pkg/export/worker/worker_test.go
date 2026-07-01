@@ -34,6 +34,11 @@ func setupWorker(t *testing.T) (*worker, string) {
 	})
 	config.Target = tmpDir
 
+	err := config.Validate()
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	w := &worker{
 		config: config,
 		ac:     &client.APIClient{Client: mockClient},
@@ -211,7 +216,7 @@ func TestWorker_namespacesForResource(t *testing.T) {
 
 	t.Run("should query all namespaces without filter", func(t *testing.T) {
 		got := w.namespacesForResource(namespaced)
-		if !reflect.DeepEqual(got, []string{""}) {
+		if !reflect.DeepEqual(got, types.EmptyNamespaces()) {
 			t.Errorf("expected all namespace query, but got %v", got)
 		}
 	})
@@ -227,7 +232,7 @@ func TestWorker_namespacesForResource(t *testing.T) {
 	t.Run("should query cluster scope for cluster resources", func(t *testing.T) {
 		w.config.Namespaces = []string{"namespace-1", "namespace-2"}
 		got := w.namespacesForResource(&clusterScoped)
-		if !reflect.DeepEqual(got, []string{""}) {
+		if !reflect.DeepEqual(got, types.EmptyNamespaces()) {
 			t.Errorf("expected cluster query, but got %v", got)
 		}
 	})
