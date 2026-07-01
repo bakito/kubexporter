@@ -3,6 +3,7 @@ package export
 import (
 	"archive/tar"
 	"compress/gzip"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io"
@@ -56,19 +57,7 @@ func (e *exporter) tarGz() error {
 		return err
 	}
 
-	var name string
-	if e.config.HasNamespaceFilter() {
-		firstNamespace := e.config.NamespaceFilter()[0]
-		name = fmt.Sprintf(
-			"%s-%s-%s.tar.gz",
-			filepath.Base(e.config.Target),
-			firstNamespace,
-			time.Now().Format(archiveTimestampPattern),
-		)
-	} else {
-		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), time.Now().Format(archiveTimestampPattern))
-	}
-	name = filepath.Join(dir, name)
+	name := filepath.Join(dir, e.archiveName(time.Now()))
 	e.l.Printf("\n    Creating archive ...\n")
 	// set up the output file
 	file, err := os.Create(name)
@@ -102,6 +91,26 @@ func (e *exporter) tarGz() error {
 	}
 	e.archive = name
 	return filepath.Walk(e.config.Target, walker)
+}
+
+func (e *exporter) archiveName(ts time.Time) (name string) {
+	if e.config.HasNamespaces() {
+		var namespaces string
+		if len(e.config.Namespaces) > 1 {
+			namespaces = fmt.Sprintf("%x", sha256.Sum256([]byte(strings.Join(e.config.Namespaces, ","))))[:8]
+		} else {
+			namespaces = strings.Join(e.config.Namespaces, "-")
+		}
+		name = fmt.Sprintf(
+			"%s-%s-%s.tar.gz",
+			filepath.Base(e.config.Target),
+			namespaces,
+			ts.Format(archiveTimestampPattern),
+		)
+	} else {
+		name = fmt.Sprintf("%s-%s.tar.gz", filepath.Base(e.config.Target), ts.Format(archiveTimestampPattern))
+	}
+	return name
 }
 
 func (e *exporter) archiveDirs() (workDir, dir string, err error) {
