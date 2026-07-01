@@ -66,7 +66,9 @@ Flags:
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
   -l, --lists                          If enabled, all resources are exported as lists instead of individual files
-  -n, --namespace string               If present, the namespace scope for this CLI request
+      --include-cluster-resources      Also export cluster-scoped resources when a namespace filter is active (e.g. --include-cluster-resources=true)
+  -n, --namespace string               Export only this namespace
+      --namespaces strings             Export only these namespaces, comma-separated (e.g. --namespaces ns1,ns2) or repeated (e.g. --namespaces ns1 --namespaces ns2)
   -o, --output string                  Output format. One of: (json, yaml). (default "yaml")
   -p, --progress string                Progress mode bar|simple|none (default bar)  (default "bar")
   -q, --quiet                          If enabled, output is prevented
@@ -115,6 +117,13 @@ archive: true
 
 # define a single namespace (default all)
 namespace:
+#namespace: namespace-a
+# define multiple namespaces (joined with namespace, if both are set)
+#namespaces:
+#  - namespace-a
+#  - namespace-b
+# export cluster-scoped resources too when a namespace filter is active
+includeClusterResources: false
 # define the number of parallel worker
 worker: 1
 # export as lists

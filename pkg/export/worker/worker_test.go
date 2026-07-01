@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"github.com/ghodss/yaml"
@@ -200,6 +201,36 @@ func TestWorker_exportSingleResources(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWorker_namespacesForResource(t *testing.T) {
+	w, _ := setupWorker(t)
+	namespaced, _ := getTestData()
+	clusterScoped := *namespaced
+	clusterScoped.APIResource.Namespaced = false
+
+	t.Run("should query all namespaces without filter", func(t *testing.T) {
+		got := w.namespacesForResource(namespaced)
+		if !reflect.DeepEqual(got, []string{""}) {
+			t.Errorf("expected all namespace query, but got %v", got)
+		}
+	})
+
+	t.Run("should query every namespace filter for namespaced resources", func(t *testing.T) {
+		w.config.Namespaces = []string{"namespace-1", "namespace-2"}
+		got := w.namespacesForResource(namespaced)
+		if !reflect.DeepEqual(got, []string{"namespace-1", "namespace-2"}) {
+			t.Errorf("expected namespace filter queries, but got %v", got)
+		}
+	})
+
+	t.Run("should query cluster scope for cluster resources", func(t *testing.T) {
+		w.config.Namespaces = []string{"namespace-1", "namespace-2"}
+		got := w.namespacesForResource(&clusterScoped)
+		if !reflect.DeepEqual(got, []string{""}) {
+			t.Errorf("expected cluster query, but got %v", got)
+		}
+	})
 }
 
 func checkDir(t *testing.T, expectedFiles int, dir ...string) []os.DirEntry {
