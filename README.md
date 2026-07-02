@@ -42,14 +42,27 @@ kubectl exporter ...
 
 ## Usage
 
-```bash
+<!-- cli-doc-start -->
+```
+easily export kubernetes resources
+
 Usage:
   kubexporter [flags]
+  kubexporter [command]
+
+Available Commands:
+  completion              Generate the autocompletion script for the specified shell
+  decrypt                 Decrypt secrets in exported resource files
+  encrypt                 Encrypt secrets in exported resource files
+  help                    Help about any command
+  update-owner-references Update owner references of an export against the current cluster
 
 Flags:
+  -a, --archive                        If enabled, an archive with the exports is created
       --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
       --as-uid string                  UID to impersonate for the operation.
+      --as-user-extra stringArray      User extras to impersonate for the operation, this flag can be repeated to specify multiple values for the same key.
       --cache-dir string               Default cache directory (default "/home/bakito/.kube/cache")
       --certificate-authority string   Path to a cert file for the certificate authority
   -c, --clear-target                   If enabled, the target dir is deleted before running the new export
@@ -60,20 +73,22 @@ Flags:
       --context string                 The name of the kubeconfig context to use
       --created-within duration        The max allowed age duration for the resources
       --disable-compression            If true, opt-out of response compression for all requests to the server
+  -d, --exclude-defaults               If enabled, default excludes will be applied. [apps.ControllerRevision, apps.ReplicaSet, batch.Job, Pod, ReplicationController, discovery.k8s.io.EndpointSlice, Endpoints, Event, events.k8s.io.Event, coordination.k8s.io.Lease, metrics.k8s.io.NodeMetrics, metrics.k8s.io.PodMetrics, ComponentStatus, Secret, LocalSubjectAccessReview, SelfSubjectAccessReview, SelfSubjectRulesReview, SubjectAccessReview, TokenReview, Binding]
   -e, --exclude-kinds strings          Do not export excluded kinds
   -h, --help                           help for kubexporter
+      --include-cluster-resources      Also export cluster-scoped resources when a namespace filter is active
   -i, --include-kinds strings          Export only included kinds, if included kinds are defined, excluded will be ignored
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
   -l, --lists                          If enabled, all resources are exported as lists instead of individual files
-      --include-cluster-resources      Also export cluster-scoped resources when a namespace filter is active (e.g. --include-cluster-resources=true)
   -n, --namespace strings              Export only these namespaces, comma-separated (e.g. --namespace ns1,ns2) or repeated (e.g. --namespace ns1 --namespace ns2)
-  -o, --output string                  Output format. One of: (json, yaml). (default "yaml")
-  -p, --progress string                Progress mode bar|simple|none (default bar)  (default "bar")
+  -o, --output string                  Output format. One of: (json, yaml, kyaml). (default "yaml")
+  -p, --progress string                Progress mode bar|bubbles|simple|none (default bar)  (default "bar")
   -q, --quiet                          If enabled, output is prevented
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -s, --server string                  The address and port of the Kubernetes API server
       --show-managed-fields            If true, keep the managedFields when printing objects in JSON or YAML format.
+      --size                           If enabled, a exported file sizes are printed
       --summary                        If enabled, a summary is printed
   -t, --target string                  Set the target directory (default exports) (default "exports")
       --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
@@ -83,7 +98,9 @@ Flags:
       --version                        version for kubexporter
   -w, --worker int                     The number of worker to use for the export (default 1)
 
+Use "kubexporter [command] --help" for more information about a command.
 ```
+<!-- cli-doc-end -->
 
 [![asciicast](https://asciinema.org/a/J793zgHiRBgDTgWbKjHrsM8YL.svg)](https://asciinema.org/a/J793zgHiRBgDTgWbKjHrsM8YL)
 
