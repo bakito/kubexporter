@@ -168,7 +168,7 @@ func init() {
 	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")
 	rootCmd.Flags().Duration("created-within", 0, "The max allowed age duration for the resources")
 	rootCmd.Flags().StringSliceP("namespace", "n", []string{},
-		"Export only these namespaces, comma-separated or repeated")
+		"Export only these namespaces, comma-separated (e.g. --namespace ns1,ns2) or repeated (e.g. --namespace ns1 --namespace ns2)")
 	rootCmd.Flags().Bool("include-cluster-resources", false,
 		"Also export cluster-scoped resources when a namespace filter is active")
 
