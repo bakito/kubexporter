@@ -8,6 +8,7 @@ require (
 	charm.land/lipgloss/v2 v2.0.4
 	cloud.google.com/go/storage v1.63.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
+	github.com/bakito/docs-gen v0.0.2
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.6.0
