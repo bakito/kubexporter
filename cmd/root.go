@@ -147,7 +147,7 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
-	rootCmd.Flags().StringP("target", "t", "exports", "Set the target directory (default exports)")
+	rootCmd.Flags().StringP("target", "t", "exports", "Set the target directory")
 	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
 	rootCmd.Flags().
 		BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
@@ -159,7 +159,7 @@ func init() {
 	rootCmd.Flags().
 		BoolP("exclude-defaults", "d", false, "If enabled, default excludes will be applied. ["+strings.Join(types.DefaultExcludedKinds, ", ")+"]")
 	rootCmd.Flags().
-		StringP("progress", "p", string(types.ProgressBar), "Progress mode bar|bubbles|simple|none (default bar) ")
+		StringP("progress", "p", string(types.ProgressBar), "Progress mode bar|bubbles|simple|none")
 	rootCmd.Flags().
 		BoolP("lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
 	rootCmd.Flags().

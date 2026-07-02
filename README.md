@@ -83,14 +83,14 @@ Flags:
   -l, --lists                          If enabled, all resources are exported as lists instead of individual files
   -n, --namespace strings              Export only these namespaces, comma-separated (e.g. --namespace ns1,ns2) or repeated (e.g. --namespace ns1 --namespace ns2)
   -o, --output string                  Output format. One of: (json, yaml, kyaml). (default "yaml")
-  -p, --progress string                Progress mode bar|bubbles|simple|none (default bar)  (default "bar")
+  -p, --progress string                Progress mode bar|bubbles|simple|none (default "bar")
   -q, --quiet                          If enabled, output is prevented
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -s, --server string                  The address and port of the Kubernetes API server
       --show-managed-fields            If true, keep the managedFields when printing objects in JSON or YAML format.
       --size                           If enabled, a exported file sizes are printed
       --summary                        If enabled, a summary is printed
-  -t, --target string                  Set the target directory (default exports) (default "exports")
+  -t, --target string                  Set the target directory (default "exports")
       --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
       --token string                   Bearer token for authentication to the API server
       --user string                    The name of the kubeconfig user to use
@@ -108,113 +108,109 @@ Use "kubexporter [command] --help" for more information about a command.
 
 ### Config
 
-KubExporter exports by default all resources and allows to exclude unwanted resources.
+KubExporter exports by default all resources and allows excluding unwanted resources.
 The benefit is that new custom resource definitions are automatically considered in the export.
 
-Example configuration
+Example configuration: [config.yaml](config.yaml)
 
+Config Documentation:
+
+<!-- yaml-doc-start -->
 ```yaml
-# print a summary
-summary: true
-# print progress (bar|simple|none)
-progress: bar
-# create an archive
-archive: true
-# S3 Configuration to upload the archive to an S3 compatible storage
-#s3:
-#  endpoint: <your-s3-endpoint>
-#  accessKeyID: <your-access-key-id>
-#  secretAccessKey: <your-secret-access-key>
-#  token: <your-session-token> # Optional
-#  secure: true # Use HTTPS (default)
-#  bucket: <your-bucket-name>
-#gcs:
-#  bucket: <your-bucket-name>
-
-# define a single namespace (default all)
-namespace:
-#namespace: namespace-a
-# define multiple namespaces (joined with namespace, if both are set)
-#namespaces:
-#  - namespace-a
-#  - namespace-b
-# export cluster-scoped resources too when a namespace filter is active
-#includeClusterResources: false
-# define the number of parallel worker
-worker: 1
-# export as lists
-asLists: false
-# enable pagination on queries (only supported when asLists = false)
-#queryPageSize: 1000
-# clear the target directory before exporting
-clearTarget: true
+# Excluded resources (struct)
 excluded:
-  # list all kinds to be excluded
+  # List all kinds to be excluded ([]string)
   kinds:
-    - Binding
-    - ComponentStatus
-    - Endpoints
-    - Event
-    - LimitRange
-    - LocalSubjectAccessReview
-    - PersistentVolume
-    - Pod
-    - ReplicationController
-    - ReplicationControllerDummy
-    - RoleBindingRestriction
-    - apps.ReplicaSet
-    - batch.Job
-    - events.k8s.io.Event
-    - extensions.ReplicaSet
-  # list fields that should be removed for all resources before exported; slices are also traversed
+  # List fields that should be removed for all resources before exported; slices are also traversed ([][]string)
   fields:
-    - [status]
-    - [metadata, uid]
-    - [metadata, selfLink]
-    - [metadata, resourceVersion]
-    - [metadata, creationTimestamp]
-    - [metadata, generation]
-    - [metadata, annotations, "kubectl.kubernetes.io/last-applied-configuration"]
-  # kind specific excluded fields
+  # Kind specific excluded fields (map[string:[][]string])
   kindFields:
-    Service:
-      - [spec, clusterIP]
-  # allows to exclude single instances with certain field values
+  # Allows to exclude single instances with certain field values (map[string:[]struct])
   kindByField:
-    Service:
-      - field: [metadata, name]
-        # the value is compared to the string representation of the actual kind value
-        values: [exclude-me-1, exclude-me-2]
-    Secret:
-      - field: [type]
-        # exclude helm secrets
-        values: ['helm.sh/release', 'helm.sh/release.v1']
-# excludes resources if the owner reference kind is excluded
-considerOwnerReferences: false
-# mask certain fields 
+  # List of fields to be preserved (struct)
+  preservedFields:
+    # Fields to be preserved ([][]string)
+    fields:
+# Included resources (struct)
+included:
+  # List all kinds to be included ([]string)
+  kinds:
+# The max allowed age duration for the resources (int64)
+createdWithin:
+# Consider owner references for not excluded resources (bool)
+considerOwnerReferences:
+# Field masking config (struct)
 masked:
-  # the replacement string to be used for masked fields (default '***')
-  replacement: '***'
-  # generate a checksum from the value to be masked value instead of the replacement. (supported 'md5', 'sha1', 'sha256')  
-  checksum: ''
-  # kind specific fields that should be masked
+  # The replacement value for masked fields (string)
+  replacement:
+  # The checksum algorithm to use for masked fields md5|sha1|sha256 (default md5) (string)
+  checksum:
+  # The fields to mask for each kind (map[string:[][]string])
   kindFields:
-    Secret:
-      - [data]
-# encrypt certain fields 
-#encrypted:
-#  # the aes key to use to encrypt the field values. The key can also be provided via env variable 'KUBEXPORTER_AES_KEY'
-#  aesKey: '***'
-#  # kind specific fields that should be encrypted. NOTE: if the same fields or a parent branch is also masked, masking wins over encryption.
-#  kindFields:
-#    Secret:
-#      - [ data ]
-
-# sort the slice field value before exporting
+# Field encryption config (struct)
+encrypted:
+  # The AES key to use for field encryption (string)
+  aesKey:
+  # The fields to encrypt for each kind (map[string:[][]string])
+  kindFields:
+# sort the slice field value before exporting (map[string:[][]string])
 sortSlices:
-  User:
-    - [roles]
+# Custom resource file name template (string)
+fileNameTemplate:
+# Custom resource list file name template (string)
+listFileNameTemplate:
+# Export as lists per kind (bool)
+asLists:
+# Kubernetes query page size (0 use default) (int)
+queryPageSize:
+# The target directory (default "exports") (string)
+target:
+# Clear the target directory before exporting (bool)
+clearTarget:
+# If enabled, a summary is printed (bool)
+summary:
+# Progress mode bar|bubbles|simple|none (default bar) (string)
+progress:
+# A single namespace (default all) (string)
+namespace:
+# Multiple namespaces (joined with namespace, if both are set) ([]string)
+namespaces:
+# Export cluster-scoped resources too when a namespace filter is active (bool)
+includeClusterResources:
+# The number of parallel worker (int)
+worker:
+# create an archive (bool)
+archive:
+# Number of days to keep old archives (int)
+archiveRetentionDays:
+# The target directory for the archive(default "exports") (string)
+archiveTarget:
+# S3 Configuration to upload the archive to an S3 compatible storage (struct)
+s3:
+  # S3 Endpoint (string)
+  endpoint:
+  # Access key ID (string)
+  accessKeyID:
+  # Secret access key (string)
+  secretAccessKey:
+  # Session token (optional) (string)
+  token:
+  # Use HTTPS (default true) (bool)
+  secure:
+  # Bucket name (string)
+  bucket:
+# Google storage bucket configuration (struct)
+gcs:
+  # Bucket name (string)
+  bucket:
+# Output is prevented (bool)
+quiet:
+# Errors during export are listed in summary (bool)
+verbose:
+# Print the size of the exported files (bool)
+printSize:
 ```
+<!-- yaml-doc-end -->
 
 ### S3
 
