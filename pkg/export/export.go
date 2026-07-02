@@ -168,10 +168,10 @@ func (e *exporter) writeIntro() {
 	e.l.Printf("Starting export ...\n")
 	e.l.Printf("  kubexporter version %q\n", version.Version)
 	e.l.Printf("  cluster %q\n", e.ac.RestConfig.Host)
-	if !e.config.HasNamespaceFilter() {
+	if !e.config.HasNamespaces() {
 		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
-		e.l.Printf("  namespaces %q 🏠\n", e.config.NamespaceFilterString())
+		e.l.Printf("  namespaces %s 🏠\n", strings.Join(e.config.Namespaces, ", "))
 		if e.config.IncludeClusterResources {
 			e.l.Printf("  include cluster resources 🌐\n")
 		}
@@ -249,7 +249,7 @@ func (e *exporter) listResources() ([]*types.GroupResource, error) {
 			}
 			if !allowsList(resource) ||
 				e.config.IsExcluded(r) ||
-				(!resource.Namespaced && e.config.HasNamespaceFilter() && !e.config.IncludeClusterResources) {
+				(!resource.Namespaced && e.config.HasNamespaces() && !e.config.IncludeClusterResources) {
 				continue
 			}
 

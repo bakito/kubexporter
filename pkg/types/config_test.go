@@ -5,7 +5,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ghodss/yaml"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -367,83 +366,6 @@ func TestConfig_Validate(t *testing.T) {
 			}
 			if tt.validate != nil {
 				tt.validate(t, config)
-			}
-		})
-	}
-}
-
-func TestConfig_Namespace(t *testing.T) {
-	tests := []struct {
-		name               string
-		config             string
-		expectedNamespace  string
-		expectedNamespaces []string
-		expectedFilter     []string
-	}{
-		{
-			name:              "should read a singular namespace",
-			config:            "namespace: default",
-			expectedNamespace: "default",
-			expectedFilter:    []string{"default"},
-		},
-		{
-			name: "should read namespaces list",
-			config: `namespaces:
-  - namespace-a
-  - namespace-b`,
-			expectedNamespaces: []string{"namespace-a", "namespace-b"},
-			expectedFilter:     []string{"namespace-a", "namespace-b"},
-		},
-		{
-			name: "should read comma-separated namespaces string",
-			config: `namespaces:
-  - namespace-a,namespace-b`,
-			expectedNamespaces: []string{"namespace-a", "namespace-b"},
-			expectedFilter:     []string{"namespace-a", "namespace-b"},
-		},
-		{
-			name: "should join namespace and namespaces",
-			config: `namespace: namespace-a
-namespaces:
-  - namespace-b
-  - namespace-c`,
-			expectedNamespace:  "namespace-a",
-			expectedNamespaces: []string{"namespace-b", "namespace-c"},
-			expectedFilter:     []string{"namespace-a", "namespace-b", "namespace-c"},
-		},
-		{
-			name: "should deduplicate joined namespaces",
-			config: `namespace: namespace-a
-namespaces:
-  - namespace-a
-  - namespace-b
-  - namespace-a`,
-			expectedNamespace:  "namespace-a",
-			expectedNamespaces: []string{"namespace-a", "namespace-b"},
-			expectedFilter:     []string{"namespace-a", "namespace-b"},
-		},
-		{
-			name:           "should ignore empty namespaces",
-			config:         "namespace: ''",
-			expectedFilter: nil,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config, _ := setupConfig()
-			if err := yaml.Unmarshal([]byte(tt.config), config); err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-			config.Namespaces = types.NewNamespaces(config.Namespaces)
-			if config.Namespace != tt.expectedNamespace {
-				t.Errorf("expected namespace %q, but got %q", tt.expectedNamespace, config.Namespace)
-			}
-			if !reflect.DeepEqual(config.Namespaces, tt.expectedNamespaces) {
-				t.Errorf("expected namespaces %v, but got %v", tt.expectedNamespaces, config.Namespaces)
-			}
-			if !reflect.DeepEqual(config.NamespaceFilter(), tt.expectedFilter) {
-				t.Errorf("expected namespace filter %v, but got %v", tt.expectedFilter, config.NamespaceFilter())
 			}
 		})
 	}

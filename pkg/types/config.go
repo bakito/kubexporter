@@ -162,8 +162,8 @@ type Config struct {
 	ClearTarget             bool          `json:"clearTarget"             yaml:"clearTarget"`
 	Summary                 bool          `json:"summary"                 yaml:"summary"`
 	Progress                Progress      `json:"progress"                yaml:"progress"`
-	Namespace               string        `json:"namespace"               yaml:"namespace"`
-	Namespaces              []string      `json:"namespaces"              yaml:"namespaces"`
+	Namespace               *string       `json:"namespace,omitempty"     yaml:"namespace,omitempty"`
+	Namespaces              []string      `json:"namespaces,omitempty"    yaml:"namespaces,omitempty"`
 	IncludeClusterResources bool          `json:"includeClusterResources" yaml:"includeClusterResources"`
 	Worker                  int           `json:"worker"                  yaml:"worker"`
 	Archive                 bool          `json:"archive"                 yaml:"archive"`
@@ -186,73 +186,31 @@ func (c *Config) MaxArchiveAge() time.Time {
 	return time.Now().AddDate(0, 0, -c.ArchiveRetentionDays)
 }
 
-// Normalize normalizes config values after config-file and CLI overrides are applied.
-func (c *Config) Normalize() {
-	c.Namespace = strings.TrimSpace(c.Namespace)
-	c.Namespaces = normalizeNamespaces(c.Namespaces)
+// HasNamespaces returns true if export is limited to one or more namespaces.
+func (c *Config) HasNamespaces() bool {
+	return len(c.Namespaces) > 0
 }
 
-// HasNamespaceFilter returns true if export is limited to one or more namespaces.
-func (c *Config) HasNamespaceFilter() bool {
-	return len(c.NamespaceFilter()) > 0
-}
-
-// NamespaceFilter returns the configured namespace filters.
-func (c *Config) NamespaceFilter() []string {
-	namespaces := append(slices.Clone(c.Namespaces), c.Namespace)
-
-	namespaces = slices.DeleteFunc(namespaces, func(ns string) bool {
-		return strings.TrimSpace(ns) == ""
-	})
-
-	for i, ns := range namespaces {
-		namespaces[i] = strings.TrimSpace(ns)
+func (c *Config) normalizeNamespaces() {
+	ns := append([]string(nil), c.Namespaces...)
+	if c.Namespace != nil {
+		ns = append(ns, strings.TrimSpace(*c.Namespace))
+		c.Namespace = nil
 	}
-
-	slices.Sort(namespaces)
-	namespaces = slices.Compact(namespaces)
-
-	if len(namespaces) == 0 {
-		return nil
+	for i := range ns {
+		ns[i] = strings.TrimSpace(ns[i])
 	}
-	return namespaces
+	if ns == nil {
+		ns = EmptyNamespaces()
+	} else {
+		slices.Sort(ns)
+		ns = slices.Compact(ns)
+	}
+	c.Namespaces = ns
 }
 
-// NamespaceQueryValues returns namespace values for Kubernetes list requests.
-func (c *Config) NamespaceQueryValues() []string {
-	if !c.HasNamespaceFilter() {
-		return []string{""}
-	}
-	return c.NamespaceFilter()
-}
-
-// NewNamespaces creates a normalized namespace filter.
-func NewNamespaces(namespaces []string) []string {
-	return normalizeNamespaces(namespaces)
-}
-
-// NamespaceFilterString returns a printable namespace filter.
-func (c *Config) NamespaceFilterString() string {
-	return strings.Join(c.NamespaceFilter(), ", ")
-}
-
-func normalizeNamespaces(namespaces []string) []string {
-	seen := make(map[string]bool)
-	normalized := make([]string, 0, len(namespaces))
-	for _, raw := range namespaces {
-		for ns := range strings.SplitSeq(raw, ",") {
-			ns = strings.TrimSpace(ns)
-			if ns == "" || seen[ns] {
-				continue
-			}
-			seen[ns] = true
-			normalized = append(normalized, ns)
-		}
-	}
-	if len(normalized) == 0 {
-		return nil
-	}
-	return normalized
+func EmptyNamespaces() []string {
+	return []string{``}
 }
 
 type S3Config struct {
@@ -676,7 +634,7 @@ func (c *Config) fileNameInternal(res *GroupResource, namespace, name, templ str
 
 // Validate the config.
 func (c *Config) Validate() error {
-	c.Normalize()
+	c.normalizeNamespaces()
 
 	if c.FileNameTemplate == "" {
 		return errors.New("file name template must not be empty")
