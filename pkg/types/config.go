@@ -27,11 +27,9 @@ import (
 
 const (
 	// DefaultFileNameTemplate default file name template.
-	DefaultFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}` +
-		`{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
+	DefaultFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Name}}.{{.Extension}}`
 	// DefaultListFileNameTemplate default list file name template.
-	DefaultListFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}` +
-		`{{.Kind}}.{{.Extension}}`
+	DefaultListFileNameTemplate = `{{default "_cluster_" .Namespace}}/{{if .Group}}{{printf "%s." .Group }}{{end}}{{.Kind}}.{{.Extension}}`
 	// DefaultFormat default output format.
 	DefaultFormat = "yaml"
 	// DefaultTarget default export target dir.
@@ -147,33 +145,33 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config.
 type Config struct {
-	Excluded                Excluded      `json:"excluded"                yaml:"excluded"`
-	Included                Included      `json:"included"                yaml:"included"`
-	CreatedWithin           time.Duration `json:"createdWithin"           yaml:"createdWithin"`
-	ConsiderOwnerReferences bool          `json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
-	Masked                  *Masked       `json:"masked"                  yaml:"masked"`
-	Encrypted               *Encrypted    `json:"encrypted"               yaml:"encrypted"`
-	SortSlices              KindFields    `json:"sortSlices"              yaml:"sortSlices"`
-	FileNameTemplate        string        `json:"fileNameTemplate"        yaml:"fileNameTemplate"`
-	ListFileNameTemplate    string        `json:"listFileNameTemplate"    yaml:"listFileNameTemplate"`
-	AsLists                 bool          `json:"asLists"                 yaml:"asLists"`
-	QueryPageSize           int           `json:"queryPageSize"           yaml:"queryPageSize"`
-	Target                  string        `json:"target"                  yaml:"target"`
-	ClearTarget             bool          `json:"clearTarget"             yaml:"clearTarget"`
-	Summary                 bool          `json:"summary"                 yaml:"summary"`
-	Progress                Progress      `json:"progress"                yaml:"progress"`
-	Namespace               *string       `json:"namespace,omitempty"     yaml:"namespace,omitempty"`
-	Namespaces              []string      `json:"namespaces,omitempty"    yaml:"namespaces,omitempty"`
-	IncludeClusterResources bool          `json:"includeClusterResources" yaml:"includeClusterResources"`
-	Worker                  int           `json:"worker"                  yaml:"worker"`
-	Archive                 bool          `json:"archive"                 yaml:"archive"`
-	ArchiveRetentionDays    int           `json:"archiveRetentionDays"    yaml:"archiveRetentionDays"`
-	ArchiveTarget           string        `json:"archiveTarget"           yaml:"archiveTarget"`
-	S3Config                *S3Config     `json:"s3"                      yaml:"s3"`
-	GCSConfig               *GCSConfig    `json:"gcs"                     yaml:"gcs"`
-	Quiet                   bool          `json:"quiet"                   yaml:"quiet"`
-	Verbose                 bool          `json:"verbose"                 yaml:"verbose"`
-	PrintSize               bool          `json:"printSize"               yaml:"printSize"`
+	Excluded                Excluded      `docs:"Excluded resources"                                                    json:"excluded"                yaml:"excluded"`
+	Included                Included      `docs:"Included resources"                                                    json:"included"                yaml:"included"`
+	CreatedWithin           time.Duration `docs:"The max allowed age duration for the resources"                        json:"createdWithin"           yaml:"createdWithin"`
+	ConsiderOwnerReferences bool          `docs:"Consider owner references for not excluded resources"                  json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
+	Masked                  *Masked       `docs:"Field masking config"                                                  json:"masked"                  yaml:"masked"`
+	Encrypted               *Encrypted    `docs:"Field encryption config"                                               json:"encrypted"               yaml:"encrypted"`
+	SortSlices              KindFields    `docs:"sort the slice field value before exporting"                           json:"sortSlices"              yaml:"sortSlices"`
+	FileNameTemplate        string        `docs:"Custom resource file name template"                                    json:"fileNameTemplate"        yaml:"fileNameTemplate"`
+	ListFileNameTemplate    string        `docs:"Custom resource list file name template"                               json:"listFileNameTemplate"    yaml:"listFileNameTemplate"`
+	AsLists                 bool          `docs:"Export as lists per kind"                                              json:"asLists"                 yaml:"asLists"`
+	QueryPageSize           int           `docs:"Kubernetes query page size (0 use default)"                            json:"queryPageSize"           yaml:"queryPageSize"`
+	Target                  string        `docs:"The target directory (default \"exports\")"                            json:"target"                  yaml:"target"`
+	ClearTarget             bool          `docs:"Clear the target directory before exporting"                           json:"clearTarget"             yaml:"clearTarget"`
+	Summary                 bool          `docs:"If enabled, a summary is printed"                                      json:"summary"                 yaml:"summary"`
+	Progress                Progress      `docs:"Progress mode bar|bubbles|simple|none (default bar)"                   json:"progress"                yaml:"progress"`
+	Namespace               *string       `docs:"A single namespace (default all)"                                      json:"namespace,omitempty"     yaml:"namespace,omitempty"`
+	Namespaces              []string      `docs:"Multiple namespaces (joined with namespace, if both are set)"          json:"namespaces,omitempty"    yaml:"namespaces,omitempty"`
+	IncludeClusterResources bool          `docs:"Export cluster-scoped resources too when a namespace filter is active" json:"includeClusterResources" yaml:"includeClusterResources"`
+	Worker                  int           `docs:"The number of parallel worker"                                         json:"worker"                  yaml:"worker"`
+	Archive                 bool          `docs:"create an archive"                                                     json:"archive"                 yaml:"archive"`
+	ArchiveRetentionDays    int           `docs:"Number of days to keep old archives"                                   json:"archiveRetentionDays"    yaml:"archiveRetentionDays"`
+	ArchiveTarget           string        `docs:"The target directory for the archive(default \"exports\")"             json:"archiveTarget"           yaml:"archiveTarget"`
+	S3Config                *S3Config     `docs:"S3 Configuration to upload the archive to an S3 compatible storage"    json:"s3"                      yaml:"s3"`
+	GCSConfig               *GCSConfig    `docs:"Google storage bucket configuration"                                   json:"gcs"                     yaml:"gcs"`
+	Quiet                   bool          `docs:"Output is prevented"                                                   json:"quiet"                   yaml:"quiet"`
+	Verbose                 bool          `docs:"Errors during export are listed in summary"                            json:"verbose"                 yaml:"verbose"`
+	PrintSize               bool          `docs:"Print the size of the exported files"                                  json:"printSize"               yaml:"printSize"`
 
 	excludedSet set
 	includedSet set
@@ -214,16 +212,16 @@ func EmptyNamespaces() []string {
 }
 
 type S3Config struct {
-	Endpoint        string `json:"endpoint"        yaml:"endpoint"`
-	AccessKeyID     string `json:"accessKeyID"     yaml:"accessKeyID"`
-	SecretAccessKey string `json:"secretAccessKey" yaml:"secretAccessKey"`
-	Token           string `json:"token"           yaml:"token"`
-	Secure          bool   `json:"secure"          yaml:"secure"`
-	Bucket          string `json:"bucket"          yaml:"bucket"`
+	Endpoint        string `docs:"S3 Endpoint"              json:"endpoint"        yaml:"endpoint"`
+	AccessKeyID     string `docs:"Access key ID"            json:"accessKeyID"     yaml:"accessKeyID"`
+	SecretAccessKey string `docs:"Secret access key"        json:"secretAccessKey" yaml:"secretAccessKey"`
+	Token           string `docs:"Session token (optional)" json:"token"           yaml:"token"`
+	Secure          bool   `docs:"Use HTTPS (default true)" json:"secure"          yaml:"secure"`
+	Bucket          string `docs:"Bucket name"              json:"bucket"          yaml:"bucket"`
 }
 
 type GCSConfig struct {
-	Bucket string `json:"bucket" yaml:"bucket"`
+	Bucket string `docs:"Bucket name" json:"bucket" yaml:"bucket"`
 }
 
 // Progress type.
@@ -231,16 +229,16 @@ type Progress string
 
 // Excluded exclusion params.
 type Excluded struct {
-	Kinds           []string                `json:"kinds"           yaml:"kinds"`
-	Fields          [][]string              `json:"fields"          yaml:"fields"`
-	KindFields      KindFields              `json:"kindFields"      yaml:"kindFields"`
-	KindsByField    map[string][]FieldValue `json:"kindByField"     yaml:"kindByField"`
-	PreservedFields PreservedFields         `json:"preservedFields" yaml:"preservedFields"`
+	Kinds           []string                `docs:"List all kinds to be excluded"                                                                   json:"kinds"           yaml:"kinds"`
+	Fields          [][]string              `docs:"List fields that should be removed for all resources before exported; slices are also traversed" json:"fields"          yaml:"fields"`
+	KindFields      KindFields              `docs:"Kind specific excluded fields"                                                                   json:"kindFields"      yaml:"kindFields"`
+	KindsByField    map[string][]FieldValue `docs:"Allows to exclude single instances with certain field values"                                    json:"kindByField"     yaml:"kindByField"`
+	PreservedFields PreservedFields         `docs:"List of fields to be preserved"                                                                  json:"preservedFields" yaml:"preservedFields"`
 }
 
 // PreservedFields defines fields that should be preserved when their parent field is excluded.
 type PreservedFields struct {
-	Fields [][]string `json:"fields" yaml:"fields"` // Global preserved fields
+	Fields [][]string `docs:"Fields to be preserved" json:"fields" yaml:"fields"` // Global preserved fields
 }
 
 // KindFields map kinds to fields.
@@ -311,7 +309,7 @@ func diffFields(this, other [][]string) [][]string {
 
 // Included inclusion params.
 type Included struct {
-	Kinds []string `json:"kinds" yaml:"kinds"`
+	Kinds []string `docs:"List all kinds to be included" json:"kinds" yaml:"kinds"`
 }
 
 // FieldValue field with value.

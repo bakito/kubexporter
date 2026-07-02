@@ -26,8 +26,8 @@ const (
 )
 
 type Encrypted struct {
-	AesKey     string     `json:"aesKey"     yaml:"aesKey"`
-	KindFields KindFields `json:"kindFields" yaml:"kindFields"`
+	AesKey     string     `docs:"The AES key to use for field encryption" json:"aesKey"     yaml:"aesKey"`
+	KindFields KindFields `docs:"The fields to encrypt for each kind"     json:"kindFields" yaml:"kindFields"`
 	gcm        cipher.AEAD
 	nonce      []byte
 }

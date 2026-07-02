@@ -11,9 +11,9 @@ import (
 
 // Masked masking params.
 type Masked struct {
-	Replacement string     `json:"replacement" yaml:"replacement"`
-	Checksum    string     `json:"checksum"    yaml:"checksum"`
-	KindFields  KindFields `json:"kindFields"  yaml:"kindFields"`
+	Replacement string     `docs:"The replacement value for masked fields"                                       json:"replacement" yaml:"replacement"`
+	Checksum    string     `docs:"The checksum algorithm to use for masked fields md5|sha1|sha256 (default md5)" json:"checksum"    yaml:"checksum"`
+	KindFields  KindFields `docs:"The fields to mask for each kind"                                              json:"kindFields"  yaml:"kindFields"`
 	doSum       func(string) string
 }
 
