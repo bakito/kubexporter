@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -147,30 +148,24 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
-	rootCmd.Flags().StringP("target", "t", "exports", "Set the target directory")
-	rootCmd.Flags().IntP("worker", "w", 1, "The number of worker to use for the export")
-	rootCmd.Flags().
-		BoolP("clear-target", "c", false, "If enabled, the target dir is deleted before running the new export")
-	rootCmd.Flags().BoolP("quiet", "q", false, "If enabled, output is prevented")
-	rootCmd.Flags().BoolP("verbose", "v", false, "If enabled, errors during export are listed in summary")
-	rootCmd.Flags().Bool("summary", false, "If enabled, a summary is printed")
-	rootCmd.Flags().Bool("size", false, "If enabled, a exported file sizes are printed")
-	rootCmd.Flags().BoolP("archive", "a", false, "If enabled, an archive with the exports is created")
 	rootCmd.Flags().
 		BoolP("exclude-defaults", "d", false, "If enabled, default excludes will be applied. ["+strings.Join(types.DefaultExcludedKinds, ", ")+"]")
-	rootCmd.Flags().
-		StringP("progress", "p", string(types.ProgressBar), "Progress mode bar|bubbles|simple|none")
-	rootCmd.Flags().
-		BoolP("lists", "l", false, "If enabled, all resources are exported as lists instead of individual files")
-	rootCmd.Flags().
-		StringSliceP("include-kinds", "i", []string{},
-			"Export only included kinds, if included kinds are defined, excluded will be ignored")
-	rootCmd.Flags().StringSliceP("exclude-kinds", "e", []string{}, "Do not export excluded kinds")
-	rootCmd.Flags().Duration("created-within", 0, "The max allowed age duration for the resources")
-	rootCmd.Flags().StringSliceP("namespace", "n", []string{},
-		"Export only these namespaces, comma-separated (e.g. --namespace ns1,ns2) or repeated (e.g. --namespace ns1 --namespace ns2)")
-	rootCmd.Flags().Bool("include-cluster-resources", false,
-		"Also export cluster-scoped resources when a namespace filter is active")
+
+	rootCmd.Flags().StringP(cflagP("target", "t", "exports"))
+	rootCmd.Flags().IntP(cflagP("worker", "w", 1))
+	rootCmd.Flags().BoolP(cflagP("clear-target", "c", false))
+	rootCmd.Flags().BoolP(cflagP("quiet", "q", false))
+	rootCmd.Flags().BoolP(cflagP("verbose", "v", false))
+	rootCmd.Flags().Bool(cflag("summary", false))
+	rootCmd.Flags().Bool(cflag("size", false))
+	rootCmd.Flags().BoolP(cflagP("archive", "a", false))
+	rootCmd.Flags().StringP(cflagP("progress", "p", string(types.ProgressBar)))
+	rootCmd.Flags().BoolP(cflagP("lists", "l", false))
+	rootCmd.Flags().StringSliceP(cflagP("include-kinds", "i", []string{}))
+	rootCmd.Flags().StringSliceP(cflagP("exclude-kinds", "e", []string{}))
+	rootCmd.Flags().Duration(cflag[time.Duration]("created-within", 0))
+	rootCmd.Flags().StringSliceP(cflagP("namespace", "n", []string{}))
+	rootCmd.Flags().Bool(cflag("include-cluster-resources", false))
 
 	configFlags = genericclioptions.NewConfigFlags(true)
 	configFlags.Namespace = nil

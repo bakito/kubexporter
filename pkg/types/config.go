@@ -145,33 +145,33 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config.
 type Config struct {
-	Excluded                Excluded      `docs:"Excluded resources"                                                    json:"excluded"                yaml:"excluded"`
-	Included                Included      `docs:"Included resources"                                                    json:"included"                yaml:"included"`
-	CreatedWithin           time.Duration `docs:"The max allowed age duration for the resources"                        json:"createdWithin"           yaml:"createdWithin"`
-	ConsiderOwnerReferences bool          `docs:"Consider owner references for not excluded resources"                  json:"considerOwnerReferences" yaml:"considerOwnerReferences"`
-	Masked                  *Masked       `docs:"Field masking config"                                                  json:"masked"                  yaml:"masked"`
-	Encrypted               *Encrypted    `docs:"Field encryption config"                                               json:"encrypted"               yaml:"encrypted"`
-	SortSlices              KindFields    `docs:"sort the slice field value before exporting"                           json:"sortSlices"              yaml:"sortSlices"`
-	FileNameTemplate        string        `docs:"Custom resource file name template"                                    json:"fileNameTemplate"        yaml:"fileNameTemplate"`
-	ListFileNameTemplate    string        `docs:"Custom resource list file name template"                               json:"listFileNameTemplate"    yaml:"listFileNameTemplate"`
-	AsLists                 bool          `docs:"Export as lists per kind"                                              json:"asLists"                 yaml:"asLists"`
-	QueryPageSize           int           `docs:"Kubernetes query page size (0 use default)"                            json:"queryPageSize"           yaml:"queryPageSize"`
-	Target                  string        `docs:"The target directory (default \"exports\")"                            json:"target"                  yaml:"target"`
-	ClearTarget             bool          `docs:"Clear the target directory before exporting"                           json:"clearTarget"             yaml:"clearTarget"`
-	Summary                 bool          `docs:"If enabled, a summary is printed"                                      json:"summary"                 yaml:"summary"`
-	Progress                Progress      `docs:"Progress mode bar|bubbles|simple|none (default bar)"                   json:"progress"                yaml:"progress"`
-	Namespace               *string       `docs:"A single namespace (default all)"                                      json:"namespace,omitempty"     yaml:"namespace,omitempty"`
-	Namespaces              []string      `docs:"Multiple namespaces (joined with namespace, if both are set)"          json:"namespaces,omitempty"    yaml:"namespaces,omitempty"`
-	IncludeClusterResources bool          `docs:"Export cluster-scoped resources too when a namespace filter is active" json:"includeClusterResources" yaml:"includeClusterResources"`
-	Worker                  int           `docs:"The number of parallel worker"                                         json:"worker"                  yaml:"worker"`
-	Archive                 bool          `docs:"create an archive"                                                     json:"archive"                 yaml:"archive"`
-	ArchiveRetentionDays    int           `docs:"Number of days to keep old archives"                                   json:"archiveRetentionDays"    yaml:"archiveRetentionDays"`
-	ArchiveTarget           string        `docs:"The target directory for the archive(default \"exports\")"             json:"archiveTarget"           yaml:"archiveTarget"`
-	S3Config                *S3Config     `docs:"S3 Configuration to upload the archive to an S3 compatible storage"    json:"s3"                      yaml:"s3"`
-	GCSConfig               *GCSConfig    `docs:"Google storage bucket configuration"                                   json:"gcs"                     yaml:"gcs"`
-	Quiet                   bool          `docs:"Output is prevented"                                                   json:"quiet"                   yaml:"quiet"`
-	Verbose                 bool          `docs:"Errors during export are listed in summary"                            json:"verbose"                 yaml:"verbose"`
-	PrintSize               bool          `docs:"Print the size of the exported files"                                  json:"printSize"               yaml:"printSize"`
+	Excluded                Excluded      `docs:"Excluded resources"                                                     json:"excluded"                      yaml:"excluded"`
+	Included                Included      `docs:"Included resources"                                                     json:"included"                      yaml:"included"`
+	CreatedWithin           time.Duration `docs:"The max allowed age duration for the resources"                         docs-cli:"created-within"            json:"createdWithin"           yaml:"createdWithin"`
+	ConsiderOwnerReferences bool          `docs:"Consider owner references for not excluded resources"                   json:"considerOwnerReferences"       yaml:"considerOwnerReferences"`
+	Masked                  *Masked       `docs:"Field masking config"                                                   json:"masked"                        yaml:"masked"`
+	Encrypted               *Encrypted    `docs:"Field encryption config"                                                json:"encrypted"                     yaml:"encrypted"`
+	SortSlices              KindFields    `docs:"sort the slice field value before exporting"                            json:"sortSlices"                    yaml:"sortSlices"`
+	FileNameTemplate        string        `docs:"Custom resource file name template"                                     json:"fileNameTemplate"              yaml:"fileNameTemplate"`
+	ListFileNameTemplate    string        `docs:"Custom resource list file name template"                                json:"listFileNameTemplate"          yaml:"listFileNameTemplate"`
+	AsLists                 bool          `docs:"Export as lists instead of individual files"                            docs-cli:"lists"                     json:"asLists"                 yaml:"asLists"`
+	QueryPageSize           int           `docs:"Kubernetes query page size (0 use default)"                             json:"queryPageSize"                 yaml:"queryPageSize"`
+	Target                  string        `docs:"The target directory"                                                   docs-cli:"target"                    json:"target"                  yaml:"target"`
+	ClearTarget             bool          `docs:"Clear the target directory before exporting"                            docs-cli:"clear-target"              json:"clearTarget"             yaml:"clearTarget"`
+	Summary                 bool          `docs:"If enabled, a summary is printed"                                       docs-cli:"summary"                   json:"summary"                 yaml:"summary"`
+	Progress                Progress      `docs:"Progress mode bar|bubbles|simple|none"                                  docs-cli:"progress"                  json:"progress"                yaml:"progress"`
+	Namespace               *string       `docs:"A single namespace (default all)"                                       docs-cli:"namespace"                 json:"namespace,omitempty"     yaml:"namespace,omitempty"`
+	Namespaces              []string      `docs:"Multiple namespaces (joined with namespace, if both are set)"           json:"namespaces,omitempty"          yaml:"namespaces,omitempty"`
+	IncludeClusterResources bool          `docs:"Export cluster-scoped resources too, when a namespace filter is active" docs-cli:"include-cluster-resources" json:"includeClusterResources" yaml:"includeClusterResources"`
+	Worker                  int           `docs:"The number of parallel worker"                                          docs-cli:"worker"                    json:"worker"                  yaml:"worker"`
+	Archive                 bool          `docs:"Create a tar.gz archive"                                                docs-cli:"archive"                   json:"archive"                 yaml:"archive"`
+	ArchiveRetentionDays    int           `docs:"Number of days to keep old archives"                                    json:"archiveRetentionDays"          yaml:"archiveRetentionDays"`
+	ArchiveTarget           string        `docs:"The target directory for the archive(default \"exports\")"              json:"archiveTarget"                 yaml:"archiveTarget"`
+	S3Config                *S3Config     `docs:"S3 Configuration to upload the archive to an S3 compatible storage"     json:"s3"                            yaml:"s3"`
+	GCSConfig               *GCSConfig    `docs:"Google storage bucket configuration"                                    json:"gcs"                           yaml:"gcs"`
+	Quiet                   bool          `docs:"Output is prevented"                                                    docs-cli:"quiet"                     json:"quiet"                   yaml:"quiet"`
+	Verbose                 bool          `docs:"Errors during export are listed in summary"                             docs-cli:"verbose"                   json:"verbose"                 yaml:"verbose"`
+	PrintSize               bool          `docs:"Print the size of the exported files"                                   docs-cli:"size"                      json:"printSize"               yaml:"printSize"`
 
 	excludedSet set
 	includedSet set
@@ -229,11 +229,11 @@ type Progress string
 
 // Excluded exclusion params.
 type Excluded struct {
-	Kinds           []string                `docs:"List all kinds to be excluded"                                                                   json:"kinds"           yaml:"kinds"`
-	Fields          [][]string              `docs:"List fields that should be removed for all resources before exported; slices are also traversed" json:"fields"          yaml:"fields"`
-	KindFields      KindFields              `docs:"Kind specific excluded fields"                                                                   json:"kindFields"      yaml:"kindFields"`
-	KindsByField    map[string][]FieldValue `docs:"Allows to exclude single instances with certain field values"                                    json:"kindByField"     yaml:"kindByField"`
-	PreservedFields PreservedFields         `docs:"List of fields to be preserved"                                                                  json:"preservedFields" yaml:"preservedFields"`
+	Kinds           []string                `docs:"List all kinds to be excluded"                                                                   docs-cli:"exclude-kinds" json:"kinds"           yaml:"kinds"`
+	Fields          [][]string              `docs:"List fields that should be removed for all resources before exported; slices are also traversed" json:"fields"            yaml:"fields"`
+	KindFields      KindFields              `docs:"Kind specific excluded fields"                                                                   json:"kindFields"        yaml:"kindFields"`
+	KindsByField    map[string][]FieldValue `docs:"Allows to exclude single instances with certain field values"                                    json:"kindByField"       yaml:"kindByField"`
+	PreservedFields PreservedFields         `docs:"List of fields to be preserved"                                                                  json:"preservedFields"   yaml:"preservedFields"`
 }
 
 // PreservedFields defines fields that should be preserved when their parent field is excluded.
@@ -309,7 +309,7 @@ func diffFields(this, other [][]string) [][]string {
 
 // Included inclusion params.
 type Included struct {
-	Kinds []string `docs:"List all kinds to be included" json:"kinds" yaml:"kinds"`
+	Kinds []string `docs:"List all kinds to be included" docs-cli:"include-kinds" json:"kinds" yaml:"kinds"`
 }
 
 // FieldValue field with value.

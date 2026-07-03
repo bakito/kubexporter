@@ -58,14 +58,14 @@ Available Commands:
   update-owner-references Update owner references of an export against the current cluster
 
 Flags:
-  -a, --archive                        If enabled, an archive with the exports is created
+  -a, --archive                        Create a tar.gz archive
       --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
       --as-uid string                  UID to impersonate for the operation.
       --as-user-extra stringArray      User extras to impersonate for the operation, this flag can be repeated to specify multiple values for the same key.
-      --cache-dir string               Default cache directory (default "/home/bakito/.kube/cache")
+      --cache-dir string               Default cache directory (default "/home/user/.kube/cache")
       --certificate-authority string   Path to a cert file for the certificate authority
-  -c, --clear-target                   If enabled, the target dir is deleted before running the new export
+  -c, --clear-target                   Clear the target directory before exporting
       --client-certificate string      Path to a client certificate file for TLS
       --client-key string              Path to a client key file for TLS
       --cluster string                 The name of the kubeconfig cluster to use
@@ -74,29 +74,29 @@ Flags:
       --created-within duration        The max allowed age duration for the resources
       --disable-compression            If true, opt-out of response compression for all requests to the server
   -d, --exclude-defaults               If enabled, default excludes will be applied. [apps.ControllerRevision, apps.ReplicaSet, batch.Job, Pod, ReplicationController, discovery.k8s.io.EndpointSlice, Endpoints, Event, events.k8s.io.Event, coordination.k8s.io.Lease, metrics.k8s.io.NodeMetrics, metrics.k8s.io.PodMetrics, ComponentStatus, Secret, LocalSubjectAccessReview, SelfSubjectAccessReview, SelfSubjectRulesReview, SubjectAccessReview, TokenReview, Binding]
-  -e, --exclude-kinds strings          Do not export excluded kinds
+  -e, --exclude-kinds strings          List all kinds to be excluded
   -h, --help                           help for kubexporter
-      --include-cluster-resources      Also export cluster-scoped resources when a namespace filter is active
-  -i, --include-kinds strings          Export only included kinds, if included kinds are defined, excluded will be ignored
+      --include-cluster-resources      Export cluster-scoped resources too, when a namespace filter is active
+  -i, --include-kinds strings          List all kinds to be included
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
-  -l, --lists                          If enabled, all resources are exported as lists instead of individual files
-  -n, --namespace strings              Export only these namespaces, comma-separated (e.g. --namespace ns1,ns2) or repeated (e.g. --namespace ns1 --namespace ns2)
+  -l, --lists                          Export as lists instead of individual files
+  -n, --namespace strings              A single namespace (default all)
   -o, --output string                  Output format. One of: (json, yaml, kyaml). (default "yaml")
   -p, --progress string                Progress mode bar|bubbles|simple|none (default "bar")
-  -q, --quiet                          If enabled, output is prevented
+  -q, --quiet                          Output is prevented
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -s, --server string                  The address and port of the Kubernetes API server
       --show-managed-fields            If true, keep the managedFields when printing objects in JSON or YAML format.
-      --size                           If enabled, a exported file sizes are printed
+      --size                           Print the size of the exported files
       --summary                        If enabled, a summary is printed
-  -t, --target string                  Set the target directory (default "exports")
+  -t, --target string                  The target directory (default "exports")
       --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
       --token string                   Bearer token for authentication to the API server
       --user string                    The name of the kubeconfig user to use
-  -v, --verbose                        If enabled, errors during export are listed in summary
+  -v, --verbose                        Errors during export are listed in summary
       --version                        version for kubexporter
-  -w, --worker int                     The number of worker to use for the export (default 1)
+  -w, --worker int                     The number of parallel worker (default 1)
 
 Use "kubexporter [command] --help" for more information about a command.
 ```
@@ -159,27 +159,27 @@ sortSlices:
 fileNameTemplate:
 # Custom resource list file name template (string)
 listFileNameTemplate:
-# Export as lists per kind (bool)
+# Export as lists instead of individual files (bool)
 asLists:
 # Kubernetes query page size (0 use default) (int)
 queryPageSize:
-# The target directory (default "exports") (string)
+# The target directory (string)
 target:
 # Clear the target directory before exporting (bool)
 clearTarget:
 # If enabled, a summary is printed (bool)
 summary:
-# Progress mode bar|bubbles|simple|none (default bar) (string)
+# Progress mode bar|bubbles|simple|none (string)
 progress:
 # A single namespace (default all) (string)
 namespace:
 # Multiple namespaces (joined with namespace, if both are set) ([]string)
 namespaces:
-# Export cluster-scoped resources too when a namespace filter is active (bool)
+# Export cluster-scoped resources too, when a namespace filter is active (bool)
 includeClusterResources:
 # The number of parallel worker (int)
 worker:
-# create an archive (bool)
+# Create a tar.gz archive (bool)
 archive:
 # Number of days to keep old archives (int)
 archiveRetentionDays:
