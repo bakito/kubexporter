@@ -52,8 +52,8 @@ github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d h1:licZJFw2RwpH
 github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d/go.mod h1:asat636LX7Bqt5lYEZ27JNDcqxfjdBQuJ/MM4CN/Lzo=
 github.com/aymanbagabas/go-udiff v0.4.1 h1:OEIrQ8maEeDBXQDoGCbbTTXYJMYRCRO1fnodZ12Gv5o=
 github.com/aymanbagabas/go-udiff v0.4.1/go.mod h1:0L9PGwj20lrtmEMeyw4WKJ/TMyDtvAoK9bf2u/mNo3w=
-github.com/bakito/docs-gen v0.0.2 h1:ACJVMRZuJsmpD1admjepbP8TXJtF9mCQp1ZYh7kAMTQ=
-github.com/bakito/docs-gen v0.0.2/go.mod h1:vIPGcnC2b8MkK3zRiJU4TsPoByKshHPBNBmdkIfl/5k=
+github.com/bakito/docs-gen v0.0.5 h1:bKqRKcf7taVxWd+rCzBWx4TO8HnLNHRUXdjHQESFXVA=
+github.com/bakito/docs-gen v0.0.5/go.mod h1:vIPGcnC2b8MkK3zRiJU4TsPoByKshHPBNBmdkIfl/5k=
 github.com/blang/semver/v4 v4.0.0 h1:1PFHFE6yCCTv8C1TeyNNarDzntLi7wMI5i/pzqYIsAM=
 github.com/blang/semver/v4 v4.0.0/go.mod h1:IbckMUScFkM3pff0VJDNKRiT6TG/YpiHIM2yvyW5YoQ=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
