@@ -1,6 +1,6 @@
 module github.com/bakito/kubexporter
 
-go 1.26.4
+go 1.26.5
 
 require (
 	charm.land/bubbles/v2 v2.1.0
