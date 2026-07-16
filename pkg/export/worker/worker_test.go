@@ -220,6 +220,13 @@ func TestWorker_namespacesForResource(t *testing.T) {
 			t.Errorf("expected all namespace query, but got %v", got)
 		}
 	})
+	t.Run("should query all namespaces with nil filter", func(t *testing.T) {
+		w.config.Namespaces = nil
+		got := w.namespacesForResource(namespaced)
+		if !reflect.DeepEqual(got, types.EmptyNamespaces()) {
+			t.Errorf("expected all namespace query, but got %v", got)
+		}
+	})
 
 	t.Run("should query every namespace filter for namespaced resources", func(t *testing.T) {
 		w.config.Namespaces = []string{"namespace-1", "namespace-2"}
