@@ -169,7 +169,7 @@ func (w *worker) GenerateWork(
 }
 
 func (w *worker) namespacesForResource(res *types.GroupResource) []string {
-	if res.APIResource.Namespaced {
+	if res.APIResource.Namespaced && len(w.config.Namespaces) != 0 {
 		return w.config.Namespaces
 	}
 	return types.EmptyNamespaces()
