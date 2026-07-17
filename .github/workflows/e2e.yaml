@@ -61,15 +61,31 @@ jobs:
           docker_image_name: kubexporter:e2e
           docker_image_file: /tmp/image.tar
 
-      - name: Run Exporter from outside the cluster
+      - name: Set up test namespaces
         run: |
-          echo "## Run Exporter from outside the cluster" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress bar >> $GITHUB_STEP_SUMMARY
+          kubectl apply -f testdata/e2e/namespaces.yaml
+          echo "Waiting for test deployments to be created"
+          for ns in e2e-ns1 e2e-ns2 e2e-ns3; do
+            kubectl rollout status deployment/e2e-deploy -n "$ns" --timeout=60s
+          done
 
-      - name: Run Exporter from outside the cluster with selected namespaces
+      - name: Export all namespaces
         run: |
-          echo "## Run Exporter from outside the cluster with selected namespaces" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --namespace kube-system --namespace local-path-storage >> $GITHUB_STEP_SUMMARY
+          echo "## Export all namespaces" >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --target exports-all >> $GITHUB_STEP_SUMMARY
+          testdata/e2e/verify-namespaces.sh exports-all e2e-ns1 e2e-ns2 e2e-ns3
+
+      - name: Export a single namespace
+        run: |
+          echo "## Export a single namespace" >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --target exports-single --namespace e2e-ns1 >> $GITHUB_STEP_SUMMARY
+          testdata/e2e/verify-namespaces.sh exports-single e2e-ns1
+
+      - name: Export two namespaces
+        run: |
+          echo "## Export two namespaces" >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --target exports-two --namespace e2e-ns1 --namespace e2e-ns2 >> $GITHUB_STEP_SUMMARY
+          testdata/e2e/verify-namespaces.sh exports-two e2e-ns1 e2e-ns2
 
       - name: Run Exporter as k8s Job
         id: run_as_k8s_job
