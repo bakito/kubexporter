@@ -1,0 +1,121 @@
+# Test namespaces used by the e2e namespace filtering tests.
+# Each namespace contains a ConfigMap, a Secret and a Deployment.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: e2e-ns1
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: e2e-ns2
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: e2e-ns3
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: e2e-config
+  namespace: e2e-ns1
+data:
+  key: value
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: e2e-secret
+  namespace: e2e-ns1
+stringData:
+  password: s3cr3t
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: e2e-deploy
+  namespace: e2e-ns1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: e2e-deploy
+  template:
+    metadata:
+      labels:
+        app: e2e-deploy
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: e2e-config
+  namespace: e2e-ns2
+data:
+  key: value
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: e2e-secret
+  namespace: e2e-ns2
+stringData:
+  password: s3cr3t
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: e2e-deploy
+  namespace: e2e-ns2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: e2e-deploy
+  template:
+    metadata:
+      labels:
+        app: e2e-deploy
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: e2e-config
+  namespace: e2e-ns3
+data:
+  key: value
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: e2e-secret
+  namespace: e2e-ns3
+stringData:
+  password: s3cr3t
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: e2e-deploy
+  namespace: e2e-ns3
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: e2e-deploy
+  template:
+    metadata:
+      labels:
+        app: e2e-deploy
+    spec:
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
