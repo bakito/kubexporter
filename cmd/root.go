@@ -109,6 +109,11 @@ func readConfig(
 			if ed && len(config.Excluded.Kinds) == 0 {
 				config.Excluded.Kinds = types.DefaultExcludedKinds
 			}
+		case "otlp-metrics":
+			ed, _ := cmd.Flags().GetBool(f.Name)
+			if config.Metrics != nil {
+				config.Metrics.OTLP.Enabled = ed
+			}
 		default:
 		}
 	})
@@ -158,6 +163,7 @@ func init() {
 	rootCmd.Flags().BoolP(cflagP("verbose", "v", false))
 	rootCmd.Flags().Bool(cflag("summary", false))
 	rootCmd.Flags().Bool(cflag("size", false))
+	rootCmd.Flags().Bool(cflag("otlp-metrics", false))
 	rootCmd.Flags().BoolP(cflagP("archive", "a", false))
 	rootCmd.Flags().StringP(cflagP("progress", "p", string(types.ProgressBar)))
 	rootCmd.Flags().BoolP(cflagP("lists", "l", false))
@@ -169,6 +175,7 @@ func init() {
 
 	configFlags = genericclioptions.NewConfigFlags(true)
 	configFlags.Namespace = nil
+	configFlags.CacheDir = nil
 	configFlags.AddFlags(rootCmd.Flags())
 
 	printFlags = &genericclioptions.PrintFlags{

@@ -135,6 +135,12 @@ func (e *exporter) Export(ctx context.Context) error {
 		}
 	}
 
+	if e.config.Metrics != nil && e.config.Metrics.OTLP.Enabled {
+		if err := e.sendOtlpMetrics(ctx, e.config.Metrics.OTLP, resources); err != nil {
+			return err
+		}
+	}
+
 	if e.config.Archive {
 		err = e.tarGz()
 		if err != nil {
@@ -220,6 +226,9 @@ func (e *exporter) writeIntro() {
 		if e.config.GCSConfig != nil {
 			e.l.Printf("  upload to GCS 🪣 %s\n", e.config.GCSConfig.Bucket)
 		}
+	}
+	if e.config.Metrics != nil && e.config.Metrics.OTLP.Enabled {
+		e.l.Printf("  export OTLP metrics to %s 📊\n", e.config.Metrics.OTLP.Endpoint)
 	}
 	e.config.Logger().Printf("\nExporting ...\n")
 }

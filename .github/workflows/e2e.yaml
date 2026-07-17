@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.tags }}
+
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -39,10 +40,11 @@ jobs:
       matrix:
         # https://hub.docker.com/r/kindest/node/tags
         k8s_version: ["v1.34.8", "v1.35.5", "v1.36.1"]
+
     steps:
-      - name: Checkout
+      - name: 🛎 Checkout
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-      - name: Set up Go
+      - name: 🐹 Set up Go
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: "go.mod"
@@ -53,7 +55,7 @@ jobs:
           name: image-tar
           path: /tmp
 
-      - name: Install kind with registry
+      - name: ☸ Install kind with registry
         uses: bakito/kind-with-registry-action@b13dc5fd599a5c774e7ca721d6e7a34f7269d2d8 # v1.0.1
         with:
           node_image: kindest/node:${{ matrix.k8s_version }}
@@ -61,7 +63,26 @@ jobs:
           docker_image_name: kubexporter:e2e
           docker_image_file: /tmp/image.tar
 
-      - name: Set up test namespaces
+      - name: 📡 Start otel collector
+        run: |
+          echo "Preparing otel output dir"
+          mkdir -p /tmp/otel-output
+          echo "Starting otel/opentelemetry-collector-contrib as a background container"
+          docker run --rm -d \
+            --name otel-collector \
+            -p 4317:4317 -p 4318:4318 \
+            -v "${{ github.workspace }}/testdata/e2e/otel-collector-config.yaml":/etc/otelcol-contrib/config.yaml:ro \
+            -v /tmp/otel-output:/etc/otel/output \
+            -u $(id -u) \
+            otel/opentelemetry-collector-contrib:latest
+          # wait for the container to be up (timeout ~30s)
+          for i in {1..30}; do
+            docker ps --filter "name=otel-collector" --filter "status=running" | grep otel-collector && break
+            sleep 1
+          done
+          docker ps --filter "name=otel-collector" --filter "status=running" || (docker logs otel-collector && exit 1)
+
+      - name: 🏗 Set up test namespaces
         run: |
           kubectl apply -f testdata/e2e/namespaces.yaml
           echo "Waiting for test deployments to be created"
@@ -69,25 +90,25 @@ jobs:
             kubectl rollout status deployment/e2e-deploy -n "$ns" --timeout=60s
           done
 
-      - name: Export all namespaces
+      - name: 🌐 Export all namespaces
         run: |
           echo "## Export all namespaces" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --target exports-all >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --target exports-all --otlp-metrics=true >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-namespaces.sh exports-all e2e-ns1 e2e-ns2 e2e-ns3
 
-      - name: Export a single namespace
+      - name: 1️⃣ Export a single namespace
         run: |
           echo "## Export a single namespace" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --target exports-single --namespace e2e-ns1 >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --target exports-single --namespace e2e-ns1 --otlp-metrics=false >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-namespaces.sh exports-single e2e-ns1
 
-      - name: Export two namespaces
+      - name: 2️⃣ Export two namespaces
         run: |
           echo "## Export two namespaces" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --target exports-two --namespace e2e-ns1 --namespace e2e-ns2 >> $GITHUB_STEP_SUMMARY
+          go run . --config config.yaml --progress simple --target exports-two --namespace e2e-ns1 --namespace e2e-ns2 --otlp-metrics=false >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-namespaces.sh exports-two e2e-ns1 e2e-ns2
 
-      - name: Run Exporter as k8s Job
+      - name: 🚀 Run Exporter as k8s Job
         id: run_as_k8s_job
         continue-on-error: true
         run: |
@@ -95,13 +116,21 @@ jobs:
           kubectl apply -n e2e -f testdata/e2e/job-with-rbac.yaml
           echo "Waiting for Job to be terminated"
           kubectl wait --for=condition=complete job/kubexporter -n e2e --timeout=30s
-      - name: Print k8s logs
+      - name: 📜 Print k8s logs
         run: |
           echo "## Run Exporter as k8s Job" >> $GITHUB_STEP_SUMMARY
           kubectl logs -n e2e -l e2e=kubexporter --tail=10000 >> $GITHUB_STEP_SUMMARY
 
-      - name: Fail if 'Run Exporter as k8s Job' failed
+      - name: 🧐 Fail if 'Run Exporter as k8s Job' failed
         if: steps.run_as_k8s_job.outcome=='failure'
         run: |
           echo "Step 'Run Exporter as k8s Job' failed: Check the logs as well as the job summary for errors"
           exit 1
+      - name: 📊 Verify metrics were pushed
+        run: |
+          test -s /tmp/otel-output/metrics.json || (echo "No metrics received" && exit 1)
+          echo "## Metrics" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/otel-output/metrics.json >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          testdata/e2e/verify-metrics.sh /tmp/otel-output/metrics.json
