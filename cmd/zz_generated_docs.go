@@ -15,6 +15,7 @@ var docsCobraMapping = map[string]string{
 	`include-cluster-resources`: `Export cluster-scoped resources too, when a namespace filter is active`,
 	`worker`: `The number of parallel worker`,
 	`archive`: `Create a tar.gz archive`,
+	`otlp-metrics`: `OTLP Metrics are enabled`,
 	`quiet`: `Output is prevented`,
 	`verbose`: `Errors during export are listed in summary`,
 	`size`: `Print the size of the exported files`,

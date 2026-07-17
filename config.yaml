@@ -4,6 +4,12 @@ archive: true
 archiveRetentionDays: 10
 archiveTarget: .
 # define a single namespace (default all)
+metrics:
+  otlp:
+    enabled: true
+    endpoint: localhost:4317
+    insecure: true
+
 namespace:
 # namespace: ns1
 # define multiple namespaces (joined with namespace, if both are set)

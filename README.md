@@ -63,7 +63,6 @@ Flags:
       --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
       --as-uid string                  UID to impersonate for the operation.
       --as-user-extra stringArray      User extras to impersonate for the operation, this flag can be repeated to specify multiple values for the same key.
-      --cache-dir string               Default cache directory (default "/home/user/.kube/cache")
       --certificate-authority string   Path to a cert file for the certificate authority
   -c, --clear-target                   Clear the target directory before exporting
       --client-certificate string      Path to a client certificate file for TLS
@@ -82,6 +81,7 @@ Flags:
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
   -l, --lists                          Export as lists instead of individual files
   -n, --namespace strings              A single namespace (default all)
+      --otlp-metrics                   OTLP Metrics are enabled
   -o, --output string                  Output format. One of: (json, yaml, kyaml). (default "yaml")
   -p, --progress string                Progress mode bar|bubbles|simple|none (default "bar")
   -q, --quiet                          Output is prevented
@@ -203,6 +203,16 @@ s3:
 gcs:
   # Bucket name (string)
   bucket:
+# Metrics configuration (struct)
+metrics:
+  # OTel Metrics configuration (struct)
+  otlp:
+    # OTLP Metrics are enabled (bool)
+    enabled:
+    # OTLP Metrics endpoint (string)
+    endpoint:
+    # OTLP Metrics insecure (bool)
+    insecure:
 # Output is prevented (bool)
 quiet:
 # Errors during export are listed in summary (bool)
@@ -276,6 +286,49 @@ Example:
 gcs:
   bucket: <your-bucket-name>
 ```
+
+
+### Metrics
+
+kubexporter supports pushing metrics to OTel collectors.
+
+```yaml
+metrics:
+  otlp:
+    enabled: true
+    endpoint: localhost:4317
+    insecure: true
+```
+
+#### Metrics 
+
+<!-- metrics-doc-start -->
+| Metric | Description |
+| ------ | ----------- |
+| kubexporter.duration_seconds | Total export duration in seconds |
+| kubexporter.errors | Number of errors encountered during export |
+| kubexporter.exported_resources | Total number of exported resources |
+| kubexporter.exported_size_bytes | Total size of exported resources in bytes |
+| kubexporter.kinds | Number of kinds processed |
+| kubexporter.namespaces | Number of namespaces containing exported resources |
+| kubexporter.query_pages | Total number of query pages requested |
+| kubexporter.resource.export_duration_seconds | Export duration per kind in seconds |
+| kubexporter.resource.exported_instances | Number of exported resource instances per kind |
+| kubexporter.resource.exported_size_bytes | Size of exported resources per kind in bytes |
+| kubexporter.resource.instances | Number of resource instances found per kind |
+| kubexporter.resource.query_duration_seconds | Query duration per kind in seconds |
+| kubexporter.resource.query_pages | Number of query pages per kind |
+<!-- metrics-doc-end -->
+
+#### Grafana Dashboard
+
+A pre-configured Grafana sample dashboard is available at [examples/grafana/dashboard.json](examples/grafana/dashboard.json).
+
+#### Authentication
+
+OTLP Authentication headers can be defined via env variables with prefix `KUBEXPORTER_METRICS_OTLP_HEADER_`
+
+E.g: `KUBEXPORTER_METRICS_OTLP_HEADER_Authorization="Bearer <yourToken>`
 
 ### Update Owner References
 

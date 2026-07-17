@@ -169,6 +169,7 @@ type Config struct {
 	ArchiveTarget           string        `docs:"The target directory for the archive(default \"exports\")"              json:"archiveTarget"                 yaml:"archiveTarget"`
 	S3Config                *S3Config     `docs:"S3 Configuration to upload the archive to an S3 compatible storage"     json:"s3"                            yaml:"s3"`
 	GCSConfig               *GCSConfig    `docs:"Google storage bucket configuration"                                    json:"gcs"                           yaml:"gcs"`
+	Metrics                 *Metrics      `docs:"Metrics configuration"                                                  json:"metrics"                       yaml:"metrics"`
 	Quiet                   bool          `docs:"Output is prevented"                                                    docs-cli:"quiet"                     json:"quiet"                   yaml:"quiet"`
 	Verbose                 bool          `docs:"Errors during export are listed in summary"                             docs-cli:"verbose"                   json:"verbose"                 yaml:"verbose"`
 	PrintSize               bool          `docs:"Print the size of the exported files"                                   docs-cli:"size"                      json:"printSize"               yaml:"printSize"`
@@ -222,6 +223,16 @@ type S3Config struct {
 
 type GCSConfig struct {
 	Bucket string `docs:"Bucket name" json:"bucket" yaml:"bucket"`
+}
+
+type Metrics struct {
+	OTLP OTLP `docs:"OTel Metrics configuration" json:"otlp" yaml:"otlp"`
+}
+
+type OTLP struct {
+	Enabled  bool   `docs:"OTLP Metrics are enabled" docs-cli:"otlp-metrics" json:"enabled"  yaml:"enabled"`
+	Endpoint string `docs:"OTLP Metrics endpoint"    json:"endpoint"         yaml:"endpoint"`
+	Insecure bool   `docs:"OTLP Metrics insecure"    json:"insecure"         yaml:"insecure"`
 }
 
 // Progress type.
