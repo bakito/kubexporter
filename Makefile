@@ -41,8 +41,8 @@ check-vulnerabilities:
 
 # generate mocks
 mocks: tb.mockgen
-	$(TB_MOCKGEN) -destination pkg/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
-	$(TB_MOCKGEN) -destination pkg/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
+	$(TB_MOCKGEN) -destination internal/mocks/client/mock.go   k8s.io/client-go/dynamic Interface
+	$(TB_MOCKGEN) -destination internal/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 
 .PHONY: docs
 docs:

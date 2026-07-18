@@ -3,7 +3,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/bakito/kubexporter/pkg/uor"
+	"github.com/bakito/kubexporter/internal/uor"
 )
 
 // updateOwnerReferences.

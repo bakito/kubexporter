@@ -6,8 +6,8 @@ import (
 	"github.com/bakito/docs-gen/pkg/cobra"
 	"github.com/bakito/docs-gen/pkg/template"
 	"github.com/bakito/docs-gen/pkg/yaml"
-	"github.com/bakito/kubexporter/pkg/export"
-	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/internal/export/metrics"
+	"github.com/bakito/kubexporter/internal/types"
 )
 
 const (
@@ -31,13 +31,13 @@ func main() {
 	docs.UpdateDocumentation("README.md",
 		cli.UpdateDocumentation(cliStartMarker, cliEndMarker, ".", "go", "run", ".", "--help"),
 		yaml.UpdateDocumentation[types.Config](yamlStartMarker, yamlEndMarker),
-		template.UpdateDocumentation(export.MetricsDoc(), metricsStartMarker, metricsEndMarker,
+		template.UpdateDocumentation(metrics.MetricsDoc(), metricsStartMarker, metricsEndMarker,
 			"| {{ .Key }} | {{ .Value }} |\n",
 			template.WithPrefix("| Metric | Description |\n| ------ | ----------- |\n"),
 		),
 	)
 	docs.UpdateDocumentation("testdata/e2e/verify-metrics.sh",
-		template.UpdateDocumentation(export.MetricsDoc(), checkMetricsStartMarker, checkMetricsEndtMarker,
+		template.UpdateDocumentation(metrics.MetricsDoc(), checkMetricsStartMarker, checkMetricsEndtMarker,
 			"  {{ .Key }}\n",
 		),
 	)
