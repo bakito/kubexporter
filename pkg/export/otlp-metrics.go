@@ -146,15 +146,6 @@ func MetricsDoc() map[string]string {
 	return docs
 }
 
-// MetricDefinitions returns metic keys and descriptions.
-func MetricDefinitions() map[string]string {
-	out := make(map[string]string)
-	for _, metric := range allMetrics {
-		out[metric.Key] = metric.Description
-	}
-	return out
-}
-
 func newInt64Counter(meter otelmetric.Meter, m metricDef) (otelmetric.Int64Counter, error) {
 	return meter.Int64Counter(m.Key, m.int64CounterOptions()...)
 }

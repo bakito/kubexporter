@@ -31,13 +31,13 @@ func main() {
 	docs.UpdateDocumentation("README.md",
 		cli.UpdateDocumentation(cliStartMarker, cliEndMarker, ".", "go", "run", ".", "--help"),
 		yaml.UpdateDocumentation[types.Config](yamlStartMarker, yamlEndMarker),
-		template.UpdateDocumentation(export.MetricDefinitions(), metricsStartMarker, metricsEndMarker,
+		template.UpdateDocumentation(export.MetricsDoc(), metricsStartMarker, metricsEndMarker,
 			"| {{ .Key }} | {{ .Value }} |\n",
 			template.WithPrefix("| Metric | Description |\n| ------ | ----------- |\n"),
 		),
 	)
 	docs.UpdateDocumentation("testdata/e2e/verify-metrics.sh",
-		template.UpdateDocumentation(export.MetricDefinitions(), checkMetricsStartMarker, checkMetricsEndtMarker,
+		template.UpdateDocumentation(export.MetricsDoc(), checkMetricsStartMarker, checkMetricsEndtMarker,
 			"  {{ .Key }}\n",
 		),
 	)
