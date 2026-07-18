@@ -6,7 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/internal/types"
 )
 
 // decrypt.

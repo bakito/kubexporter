@@ -15,8 +15,8 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/klog/v2"
 
-	"github.com/bakito/kubexporter/pkg/export"
-	"github.com/bakito/kubexporter/pkg/types"
+	"github.com/bakito/kubexporter/internal/export"
+	"github.com/bakito/kubexporter/internal/types"
 	"github.com/bakito/kubexporter/version"
 )
 
