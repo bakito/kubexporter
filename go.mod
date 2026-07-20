@@ -18,7 +18,7 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/vardius/worker-pool/v2 v2.1.0
-	github.com/vbauerster/mpb/v8 v8.12.1
+	github.com/vbauerster/mpb/v8 v8.13.0
 	go.opentelemetry.io/otel v1.44.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.44.0
 	go.opentelemetry.io/otel/metric v1.44.0
