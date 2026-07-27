@@ -6,7 +6,7 @@ require (
 	charm.land/bubbles/v2 v2.1.1
 	charm.land/bubbletea/v2 v2.0.8
 	charm.land/lipgloss/v2 v2.0.5
-	cloud.google.com/go/storage v1.63.1
+	cloud.google.com/go/storage v1.64.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/bakito/docs-gen v0.0.7
 	github.com/dustin/go-humanize v1.0.1
