@@ -53,7 +53,7 @@
                       "spec": {
                         "editorMode": "code",
                         "expr": "last_over_time(kubexporter_duration_seconds{cluster=~\"$cluster\", target=~\"$target\"}[2d])",
-                        "legendFormat": "Run Duration",
+                        "legendFormat": "Run Duration ({{target}})",
                         "range": true
                       }
                     },
@@ -74,7 +74,7 @@
                       "spec": {
                         "editorMode": "code",
                         "expr": "last_over_time(kubexporter_errors_total{cluster=~\"$cluster\", target=~\"$target\"}[2d])",
-                        "legendFormat": "Errors",
+                        "legendFormat": "Errors ({{target}})",
                         "range": true
                       }
                     },
@@ -90,7 +90,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "timeseries",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "annotations": {
@@ -331,7 +331,8 @@
                           "Value #Exported Instances",
                           "Value #Exported Size",
                           "Value #Query Duration",
-                          "Value #Export Duration"
+                          "Value #Export Duration",
+                          "target"
                         ]
                       }
                     }
@@ -351,7 +352,18 @@
                     "options": {
                       "excludeByName": {},
                       "includeByName": {},
-                      "indexByName": {},
+                      "indexByName": {
+                        "Value #Export Duration": 9,
+                        "Value #Exported Instances": 6,
+                        "Value #Exported Size": 7,
+                        "Value #Query Duration": 8,
+                        "Value #Total Instances": 5,
+                        "group": 1,
+                        "kind": 2,
+                        "namespaced": 3,
+                        "target": 0,
+                        "version": 4
+                      },
                       "renameByName": {
                         "Export Time": "Export Duration",
                         "Exported": "Exported Instances",
@@ -368,6 +380,7 @@
                         "kind": "Kind",
                         "namespaced": "Namespaced",
                         "resource": "Resource",
+                        "target": "Target",
                         "version": "Version"
                       }
                     }
@@ -380,7 +393,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "table",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "cellHeight": "sm",
@@ -495,7 +508,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "stat",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "colorMode": "value",
@@ -576,7 +589,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "stat",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "colorMode": "value",
@@ -657,7 +670,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "stat",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "colorMode": "value",
@@ -738,7 +751,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "stat",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "colorMode": "value",
@@ -819,7 +832,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "stat",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "colorMode": "value",
@@ -904,7 +917,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "stat",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "colorMode": "value",
@@ -969,7 +982,7 @@
                       "spec": {
                         "editorMode": "code",
                         "expr": "last_over_time(kubexporter_exported_resources_total{cluster=~\"$cluster\", target=~\"$target\"}[2d])",
-                        "legendFormat": "Exported Resources",
+                        "legendFormat": "Exported Resources ({{target}})",
                         "range": true
                       }
                     },
@@ -990,7 +1003,7 @@
                       "spec": {
                         "editorMode": "code",
                         "expr": "last_over_time(kubexporter_exported_size_bytes_total{cluster=~\"$cluster\", target=~\"$target\"}[2d])",
-                        "legendFormat": "Exported Size",
+                        "legendFormat": "Exported Size ({{target}})",
                         "range": true
                       }
                     },
@@ -1006,7 +1019,7 @@
           "vizConfig": {
             "kind": "VizConfig",
             "group": "timeseries",
-            "version": "13.2.0-29004967847",
+            "version": "13.2.0-30402795349",
             "spec": {
               "options": {
                 "annotations": {
