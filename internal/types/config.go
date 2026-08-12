@@ -730,3 +730,7 @@ func newSet(values ...string) set {
 	}
 	return s
 }
+
+func (c *Config) ContextName() *string {
+	return c.configFlags.Context
+}

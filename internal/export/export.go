@@ -175,6 +175,9 @@ func (e *exporter) writeIntro() {
 	e.l.Printf("Starting export ...\n")
 	e.l.Printf("  kubexporter version %q\n", version.Version)
 	e.l.Printf("  cluster %q\n", e.ac.RestConfig.Host)
+	if e.config.ContextName() != nil {
+		e.l.Printf("  context name %q ️\n", *e.config.ContextName())
+	}
 	if !e.config.HasNamespaces() {
 		e.l.Printf("  all namespaces 🏘️\n")
 	} else {
