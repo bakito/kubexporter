@@ -137,7 +137,7 @@ func (e *exporter) Export(ctx context.Context) error {
 	}
 
 	if e.config.Metrics != nil && e.config.Metrics.OTLP.Enabled {
-		if err := metrics.SentOTLP(ctx, e, e.config.Metrics.OTLP, resources); err != nil {
+		if err := metrics.SendOTLP(ctx, e, e.config.Metrics.OTLP, resources); err != nil {
 			return err
 		}
 	}

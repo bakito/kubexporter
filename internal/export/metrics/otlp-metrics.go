@@ -154,8 +154,8 @@ func newFloat64Gauge(meter otelmetric.Meter, m metricDef) (otelmetric.Float64Gau
 	return meter.Float64Gauge(m.Key, m.float64GaugeOptions()...)
 }
 
-// SentOTLP OTLP metrics.
-func SentOTLP(ctx context.Context, p Provider, metrics types.OTLP, resources []*types.GroupResource) error {
+// SendOTLP OTLP metrics.
+func SendOTLP(ctx context.Context, p Provider, metrics types.OTLP, resources []*types.GroupResource) error {
 	p.Logger().Printf("\n    Pushing OTLP metrics to %s...\n", metrics.Endpoint)
 	provider, err := setupMeterProvider(ctx, metrics)
 	if err != nil {
