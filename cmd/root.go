@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -42,7 +43,7 @@ var rootCmd = &cobra.Command{
 			return err
 		}
 
-		return ex.Export(context.TODO())
+		return ex.Export(cmd.Context())
 	},
 }
 
@@ -145,10 +146,16 @@ func correctProgressForNonTerminalRun(config *types.Config) {
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := run(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+}
+
+func run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	return rootCmd.ExecuteContext(ctx)
 }
 
 func init() {
