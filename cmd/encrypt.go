@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
@@ -11,21 +9,13 @@ import (
 
 // encrypt.
 var (
-	encryptAesKey string
-
 	encrypt = &cobra.Command{
 		Use:   "encrypt <file-path(s)>",
 		Short: "Encrypt secrets in exported resource files",
-		RunE: func(_ *cobra.Command, args []string) (err error) {
-			if k, ok := os.LookupEnv(types.EnvAesKey); ok {
-				encryptAesKey = k
-			}
-
-			if encryptAesKey == "" {
-				encryptAesKey, err = readKey()
-				if err != nil {
-					return err
-				}
+		RunE: func(cmd *cobra.Command, args []string) error {
+			key, err := evaluateAesKey(cmd)
+			if err != nil {
+				return err
 			}
 
 			printFlags = &genericclioptions.PrintFlags{
@@ -33,12 +23,12 @@ var (
 				JSONYamlPrintFlags: genericclioptions.NewJSONYamlPrintFlags(),
 			}
 
-			return types.Encrypt(printFlags, encryptAesKey, args...)
+			return types.Encrypt(printFlags, key, args...)
 		},
 	}
 )
 
 func init() {
 	rootCmd.AddCommand(encrypt)
-	encrypt.PersistentFlags().StringVar(&encryptAesKey, "aes-key", "", "the encryption key")
+	aesKeyFlags(encrypt, "encryption")
 }

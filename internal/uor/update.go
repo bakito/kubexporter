@@ -19,7 +19,7 @@ import (
 	"github.com/bakito/kubexporter/internal/utils"
 )
 
-func Update(config *types.Config) error {
+func Update(ctx context.Context, config *types.Config) error {
 	err := config.Validate()
 	if err != nil {
 		return err
@@ -49,7 +49,6 @@ func Update(config *types.Config) error {
 	table := render.Table()
 	table.Header("File", "Owner Kind", "Owner Name", "UID From", "UID To")
 
-	ctx := context.TODO()
 	hasRows := false
 	for _, file := range files {
 		rows, err := updateFile(ctx, config, file, ac, table)
