@@ -59,9 +59,7 @@ func getTestData() (*types.GroupResource, *unstructured.UnstructuredList) {
 	}
 
 	dl := &appsv1.DeploymentList{
-		TypeMeta: metav1.TypeMeta{
-			Kind: "DeploymentList",
-		},
+		Kind: "DeploymentList",
 		Items: []appsv1.Deployment{
 			deployment(1, 1),
 			deployment(1, 2),
@@ -279,14 +277,10 @@ func checkDeployment(t *testing.T, n, d int, u *unstructured.Unstructured) {
 
 func deployment(n, d int) appsv1.Deployment {
 	return appsv1.Deployment{
-		TypeMeta: metav1.TypeMeta{
-			Kind: "Deployment",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: fmt.Sprintf("namespace-%d", n),
-			Name:      fmt.Sprintf("deployment-%d", d),
-			UID:       amtypes.UID(uuid.New().String()),
-		},
+		Kind:      "Deployment",
+		Namespace: fmt.Sprintf("namespace-%d", n),
+		Name:      fmt.Sprintf("deployment-%d", d),
+		UID:       amtypes.UID(uuid.New().String()),
 		Status: appsv1.DeploymentStatus{
 			Replicas: 1,
 		},
