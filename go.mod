@@ -26,7 +26,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.46.0
 	go.uber.org/mock v0.6.0
 	golang.org/x/term v0.45.0
-	google.golang.org/api v0.295.0
+	google.golang.org/api v0.297.0
 	k8s.io/api v0.37.0
 	k8s.io/apimachinery v0.37.0
 	k8s.io/cli-runtime v0.37.0
