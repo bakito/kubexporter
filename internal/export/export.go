@@ -109,6 +109,7 @@ func (e *exporter) Export(ctx context.Context) error {
 		done = make(chan struct{})
 		go func() {
 			defer close(done)
+			defer prog.Finish()
 			s, exportErr = worker.RunExport(ctx, workers, resources)
 			e.stats.Add(s)
 		}()
@@ -118,6 +119,7 @@ func (e *exporter) Export(ctx context.Context) error {
 	} else {
 		s, exportErr = worker.RunExport(ctx, workers, resources)
 		e.stats.Add(s)
+		prog.Finish()
 	}
 
 	if err := prog.Run(); err != nil {

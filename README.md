@@ -83,6 +83,7 @@ Flags:
       --otlp-metrics                   OTLP Metrics are enabled
   -o, --output string                  Output format. One of: (json, yaml, kyaml). (default "yaml")
   -p, --progress string                Progress mode bar|bubbles|simple|none (default "bar")
+      --proxy-url string               Proxy URL to use for requests to the API server
   -q, --quiet                          Output is prevented
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
   -s, --server string                  The address and port of the Kubernetes API server

@@ -27,6 +27,9 @@ func (*nilProgress) NewExportBar(_ progress.Step) {
 func (*nilProgress) Reset() {
 }
 
+func (*nilProgress) Finish() {
+}
+
 func (n *nilProgress) NewWorker() progress.Progress {
 	return n
 }

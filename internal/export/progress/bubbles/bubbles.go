@@ -18,20 +18,30 @@ const (
 	maxWidth = 150
 
 	mainProgressTitle = "Resources"
+
+	iconSearch = "🔍"
+	iconExport = "👷"
+	iconDone   = "✅"
 )
 
 func NewProgress(resources []*types.GroupResource) progress.Progress {
+	return newBubblesProgress(resources)
+}
+
+func newBubblesProgress(resources []*types.GroupResource) *bubblesProgress {
 	var maxLen float64
 	for _, res := range resources {
 		maxLen = math.Max(maxLen, float64(len(res.GroupKind())))
 	}
+	m := &model{
+		resources:    len(resources),
+		mainProgress: newProgressModel(),
+		maxLen:       int(maxLen),
+	}
 	return &bubblesProgress{
-		model: &model{
-			resources:    float64(len(resources)),
-			mainProgress: newProgressModel(),
-			mainPercent:  1 / float64(len(resources)),
-			maxLen:       int(maxLen),
-		},
+		model: m,
+		// the program is created up front, so messages can be sent before Run() is called
+		program: tea.NewProgram(m),
 	}
 }
 
@@ -53,13 +63,8 @@ func (*bubblesProgress) Async() bool {
 }
 
 func (b *bubblesProgress) Run() error {
-	b.program = tea.NewProgram(b.model)
 	_, err := b.program.Run()
-	if err != nil {
-		return err
-	}
-	b.program.Send(exitMsg(true))
-	return nil
+	return err
 }
 
 func (b *bubblesProgress) NewSearchBar(step progress.Step) {
@@ -72,6 +77,10 @@ func (b *bubblesProgress) NewExportBar(step progress.Step) {
 
 func (*bubblesProgress) Reset() {
 	// not applicable
+}
+
+func (b *bubblesProgress) Finish() {
+	b.program.Send(finishMsg(true))
 }
 
 func (b *bubblesProgress) NewWorker() progress.Progress {
@@ -89,9 +98,9 @@ func (b *bubblesProgress) IncrementResourceBarBy(id, inc int) {
 }
 
 type model struct {
-	resources      float64
+	resources      int
+	done           int
 	mainProgress   bp.Model
-	mainPercent    float64
 	workerProgress []*bp.Model
 	workerStates   []*workerState
 	maxLen         int
@@ -107,6 +116,37 @@ func (*model) Init() tea.Cmd {
 	return nil
 }
 
+func (m *model) mainPercent() float64 {
+	if m.resources <= 0 {
+		return 1
+	}
+	return math.Min(float64(m.done)/float64(m.resources), 1)
+}
+
+// worker returns the state of the given worker id or nil if the id is unknown.
+func (m *model) worker(id int) (*workerState, *bp.Model) {
+	if id < 1 || id > len(m.workerStates) {
+		return nil, nil
+	}
+	return m.workerStates[id-1], m.workerProgress[id-1]
+}
+
+func (m *model) startBar(step progress.Step, icon string) {
+	state, bar := m.worker(step.WorkerID)
+	if state == nil {
+		return
+	}
+	state.Step = step
+	state.icon = icon
+	// as long as nothing was processed, the bar is empty
+	state.percent = 0
+	if step.Total == 0 && icon == iconExport {
+		// nothing to export for this step
+		state.percent = 1
+	}
+	bar.SetWidth(m.mainProgress.Width() - m.maxLen - 3 + len(mainProgressTitle))
+}
+
 func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msgIn.(type) {
 	case tea.KeyPressMsg:
@@ -120,46 +160,42 @@ func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case updateMainMsg:
-		m.mainPercent += 1 / m.resources
-		if m.mainPercent > 1.0 {
-			m.mainPercent = 1.0
-			return m, tea.Quit
+		if m.done < m.resources {
+			m.done += int(msg)
 		}
-
+		if m.done > m.resources {
+			m.done = m.resources
+		}
 		return m, nil
 
 	case searchMsg:
-		m.workerStates[msg.WorkerID-1].Total = msg.Total
-		if m.workerStates[msg.WorkerID-1].Total == 0 {
-			m.workerStates[msg.WorkerID-1].percent = 1
-		} else {
-			m.workerStates[msg.WorkerID-1].percent = 0
-		}
-		m.workerStates[msg.WorkerID-1].Step = progress.Step(msg)
-		m.workerStates[msg.WorkerID-1].icon = "🔍"
-		m.workerProgress[msg.WorkerID-1].SetWidth(m.mainProgress.Width() - m.maxLen - 3 + len(mainProgressTitle))
+		m.startBar(progress.Step(msg), iconSearch)
 		return m, nil
-	case exportMsg:
-		m.workerStates[msg.WorkerID-1].Total = msg.Total
-		if m.workerStates[msg.WorkerID-1].Total == 0 {
-			m.workerStates[msg.WorkerID-1].percent = 1
-		} else {
-			m.workerStates[msg.WorkerID-1].percent = 0
-		}
 
-		m.workerStates[msg.WorkerID-1].Step = progress.Step(msg)
-		m.workerStates[msg.WorkerID-1].icon = "👷"
-		m.workerProgress[msg.WorkerID-1].SetWidth(m.mainProgress.Width() - m.maxLen - 3 + len(mainProgressTitle))
+	case exportMsg:
+		m.startBar(progress.Step(msg), iconExport)
 		return m, nil
+
 	case updateWorkerMsq:
-		if m.workerStates[msg.workerID-1].Total == 0 {
-			m.workerStates[msg.workerID-1].percent = 1
+		state, _ := m.worker(msg.workerID)
+		if state == nil {
+			return m, nil
+		}
+		if state.Total <= 0 {
+			// unknown total (search), the step is done as soon as it reports progress
+			state.percent = 1
 		} else {
-			incr := float64(msg.incr) / float64(m.workerStates[msg.workerID-1].Total)
-			m.workerStates[msg.workerID-1].percent += incr
+			state.percent = math.Min(state.percent+float64(msg.incr)/float64(state.Total), 1)
 		}
 		return m, nil
-	case exitMsg:
+
+	case finishMsg:
+		// make sure everything ends up at 100%
+		m.done = m.resources
+		for _, state := range m.workerStates {
+			state.percent = 1
+			state.icon = iconDone
+		}
 		return m, tea.Quit
 
 	default:
@@ -169,17 +205,17 @@ func (m *model) Update(msgIn tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *model) View() tea.View {
 	pad := strings.Repeat(" ", padding)
-	view := "\n" + pad + mainProgressTitle + ": " + m.mainProgress.ViewAs(m.mainPercent) + "\n\n"
-	var viewSb172 strings.Builder
+	view := "\n" + pad + mainProgressTitle + ": " + m.mainProgress.ViewAs(m.mainPercent()) + "\n\n"
+	var viewSb strings.Builder
 	for i, workerProgress := range m.workerProgress {
-		viewSb172.WriteString(pad + fmt.Sprintf(
+		viewSb.WriteString(pad + fmt.Sprintf(
 			"%s %s: %s",
 			m.workerStates[i].icon,
 			m.workerStates[i].CurrentKind,
 			strings.Repeat(" ", m.maxLen-len(m.workerStates[i].CurrentKind)),
 		) + workerProgress.ViewAs(m.workerStates[i].percent) + "\n")
 	}
-	view += viewSb172.String()
+	view += viewSb.String()
 	return tea.NewView(view)
 }
 
@@ -192,7 +228,7 @@ type (
 )
 
 type (
-	exitMsg   bool
+	finishMsg bool
 	searchMsg progress.Step
 	exportMsg progress.Step
 )

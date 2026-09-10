@@ -267,6 +267,7 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 	}
 
 	cnt := 0
+	processed := 0
 	var exportedSize int64
 	for ns, usl := range perNs {
 		ok, s := w.exportOneSingleList(res, ns, usl)
@@ -274,7 +275,12 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 			cnt += len(usl.Items)
 			exportedSize += s
 		}
+		processed += len(usl.Items)
 		w.prog.IncrementResourceBarBy(w.id, len(usl.Items))
+	}
+	// also account for the excluded instances, the progress bar total is based on all items
+	if skipped := len(ul.Items) - processed; skipped > 0 {
+		w.prog.IncrementResourceBarBy(w.id, skipped)
 	}
 	return cnt, exportedSize
 }
