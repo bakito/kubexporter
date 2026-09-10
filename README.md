@@ -102,7 +102,15 @@ Use "kubexporter [command] --help" for more information about a command.
 ```
 <!-- cli-doc-end -->
 
-[![asciicast](https://asciinema.org/a/J793zgHiRBgDTgWbKjHrsM8YL.svg)](https://asciinema.org/a/J793zgHiRBgDTgWbKjHrsM8YL)
+### Progress Options
+
+| bar | bubbles |
+|---|---|
+| ![bar](docs/vhs/progress-bar.gif) | ![bubbles](docs/vhs/progress-bubbles.gif) |
+
+| simple | none |
+|---|---|
+| ![simple](docs/vhs/progress-simple.gif) | ![none](docs/vhs/progress-none.gif) |
 
 ## Configuration
 

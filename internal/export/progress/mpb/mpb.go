@@ -2,29 +2,55 @@ package mpb
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"charm.land/lipgloss/v2"
+	"github.com/mattn/go-runewidth"
 	"github.com/vbauerster/mpb/v8"
 	"github.com/vbauerster/mpb/v8/decor"
 
 	"github.com/bakito/kubexporter/internal/export/progress"
+	"github.com/bakito/kubexporter/internal/types"
 )
 
-func NewProgress(resources int) progress.Progress {
-	return newMpbProgress(mpb.New(), resources)
+const (
+	mainBarTitle = "Resources"
+
+	iconMain   = "📦"
+	iconSearch = "🔍"
+	iconExport = "👷"
+)
+
+var (
+	styleFiller  = lipgloss.NewStyle().Foreground(lipgloss.Color("#316CE6"))
+	stylePadding = lipgloss.NewStyle().Foreground(lipgloss.Color("#5F5F5F"))
+	styleMain    = lipgloss.NewStyle().Bold(true)
+	styleLabel   = lipgloss.NewStyle().Foreground(lipgloss.Color("#8A8A8A"))
+	styleDetails = lipgloss.NewStyle().Foreground(lipgloss.Color("#8A8A8A"))
+)
+
+// NewProgress creates a new progress bar based progress.
+func NewProgress(resources []*types.GroupResource) progress.Progress {
+	labelWidth := runewidth.StringWidth(mainBarTitle)
+	for _, res := range resources {
+		labelWidth = max(labelWidth, runewidth.StringWidth(res.GroupKind()))
+	}
+	return newMpbProgress(mpb.New(), len(resources), labelWidth)
 }
 
-func newMpbProgress(prog *mpb.Progress, resources int) *mpbProgress {
-	main := &mpbProgress{
+func newMpbProgress(prog *mpb.Progress, resources, labelWidth int) *mpbProgress {
+	sh := &shared{
+		mainTotal:  int64(resources),
+		labelWidth: labelWidth,
+	}
+	sh.mainBar = newMpbMainBar(prog, resources, sh)
+	return &mpbProgress{
 		prog:             prog,
 		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-		shared: &shared{
-			mainBar:   newMpbMainBar(prog, resources),
-			mainTotal: int64(resources),
-		},
+		shared:           sh,
 	}
-	return main
 }
 
 // shared holds the state shared between the main progress and all its workers.
@@ -33,6 +59,7 @@ type shared struct {
 	mainBar     *mpb.Bar
 	mainTotal   int64
 	mainCurrent int64
+	labelWidth  int
 	workers     []*mpbProgress
 }
 
@@ -104,22 +131,27 @@ func (m *mpbProgress) completeResourceBar() {
 	m.resourceCurrent = m.resourceTotal
 }
 
-func newMpbMainBar(prog *mpb.Progress, size int) *mpb.Bar {
-	bar := prog.AddBar(int64(size),
+// barStyle is the common style of all bars.
+func barStyle() mpb.BarFillerBuilder {
+	return mpb.BarStyle().
+		Lbound("").Rbound("").
+		Filler("━").FillerMeta(render(styleFiller)).
+		Tip("━").TipMeta(render(styleFiller)).
+		Padding("─").PaddingMeta(render(stylePadding))
+}
+
+func newMpbMainBar(prog *mpb.Progress, size int, sh *shared) *mpb.Bar {
+	elapsed := decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
+	return prog.New(int64(size), barStyle(),
 		mpb.PrependDecorators(
-			// display our name with one space on the right
-			decor.Name("Resources", decor.WC{W: len("Resources") + 1, C: decor.DindentRight}),
-			decor.Elapsed(decor.ET_STYLE_GO),
+			elapsedDecorator(elapsed),
+			labelDecorator(iconMain, mainBarTitle, sh, styleMain),
 		),
 		mpb.AppendDecorators(
-			decor.CurrentNoUnit(""),
-			decor.Name("/"),
-			decor.TotalNoUnit(""),
-			decor.Name(" "),
-			decor.Percentage(),
+			countersDecorator(),
+			detailsDecorator(""),
 		),
 	)
-	return bar
 }
 
 func (m *mpbProgress) NewSearchBar(step progress.Step) {
@@ -129,12 +161,14 @@ func (m *mpbProgress) NewSearchBar(step progress.Step) {
 	// make sure the previous bar is completed before it is replaced
 	m.completeResourceBar()
 
-	newBar := m.prog.AddBar(1,
+	newBar := m.prog.New(1, barStyle(),
 		mpb.PrependDecorators(
-			m.preDecoratorSearch(step.CurrentKind, step.PageSize, step.CurrentPage),
+			elapsedDecorator(nil),
+			labelDecorator(iconSearch, step.CurrentKind, m.shared, styleLabel),
 		),
 		mpb.AppendDecorators(
-			m.postDecorator(),
+			countersDecorator(),
+			detailsDecorator(pageDetails(step)),
 		),
 		mpb.BarQueueAfter(m.resourceBar),
 	)
@@ -156,12 +190,14 @@ func (m *mpbProgress) NewExportBar(step progress.Step) {
 	// make sure the previous bar is completed before it is replaced
 	m.completeResourceBar()
 
-	newBar := m.prog.AddBar(int64(step.Total),
+	newBar := m.prog.New(int64(step.Total), barStyle(),
 		mpb.PrependDecorators(
-			m.preDecoratorExport(step.CurrentKind, step.PageSize, step.CurrentPage),
+			elapsedDecorator(m.elapsedDecorator),
+			labelDecorator(iconExport, step.CurrentKind, m.shared, styleLabel),
 		),
 		mpb.AppendDecorators(
-			m.postDecorator(),
+			countersDecorator(),
+			detailsDecorator(pageDetails(step)),
 		),
 		mpb.BarQueueAfter(m.resourceBar),
 	)
@@ -170,34 +206,62 @@ func (m *mpbProgress) NewExportBar(step progress.Step) {
 	m.resourceCurrent = 0
 }
 
-func (m *mpbProgress) preDecoratorSearch(currentKind string, pageSize, currentPage int) decor.Decorator {
-	return decor.Any(func(decor.Statistics) string {
-		page := ""
-		if pageSize > 0 {
-			page = fmt.Sprintf(" (page %d)", currentPage)
+// elapsedDecorator renders the elapsed time in a fixed width column.
+func elapsedDecorator(elapsed decor.Decorator) decor.Decorator {
+	return decor.Meta(decor.Any(func(s decor.Statistics) string {
+		el := ""
+		if elapsed != nil {
+			el, _ = elapsed.Decor(s)
 		}
-		return fmt.Sprintf("🔍 %2d: %s%s ", m.id, currentKind, page)
-	})
+		return fmt.Sprintf("%7s ", strings.TrimSpace(el))
+	}), render(styleDetails))
 }
 
-func (m *mpbProgress) preDecoratorExport(currentKind string, pageSize, currentPage int) decor.Decorator {
-	return decor.Any(func(s decor.Statistics) string {
-		page := ""
-		if pageSize > 0 {
-			page = fmt.Sprintf(" (page %d)", currentPage)
-		}
-		d, _ := m.elapsedDecorator.Decor(s)
-		return fmt.Sprintf("👷 %2d: %s%s %s", m.id, currentKind, page, d)
-	})
+// labelDecorator renders the icon and the label in aligned columns.
+func labelDecorator(icon, value string, sh *shared, style lipgloss.Style) decor.Decorator {
+	return decor.Meta(decor.Any(func(decor.Statistics) string {
+		// the icons are emoji occupying two cells
+		return icon + " " + padTo(value, sh.labelWidth) + " "
+	}), render(style))
 }
 
-func (*mpbProgress) postDecorator() decor.Decorator {
-	return decor.Any(func(s decor.Statistics) string {
-		d1, _ := decor.CurrentNoUnit("").Decor(s)
-		d2, _ := decor.TotalNoUnit("").Decor(s)
-		d3, _ := decor.Percentage().Decor(s)
-		return fmt.Sprintf("%s / %s %s", d1, d2, d3)
-	})
+// countersDecorator renders the percentage and the current / total values in fixed width
+// columns, so all bars have the same width.
+func countersDecorator() decor.Decorator {
+	return decor.Meta(decor.Any(func(s decor.Statistics) string {
+		cur, _ := decor.CurrentNoUnit("").Decor(s)
+		total, _ := decor.TotalNoUnit("").Decor(s)
+		percent, _ := decor.Percentage().Decor(s)
+		values := fmt.Sprintf("%s/%s", strings.TrimSpace(cur), strings.TrimSpace(total))
+		return fmt.Sprintf("  %5s  %11s", strings.TrimSpace(percent), values)
+	}), render(styleDetails))
+}
+
+// detailsDecorator renders the trailing details in a fixed width column.
+func detailsDecorator(details string) decor.Decorator {
+	return decor.Meta(decor.Any(func(decor.Statistics) string {
+		return fmt.Sprintf("  %-9s", details)
+	}), render(styleDetails))
+}
+
+// pageDetails describes the current page of a step.
+func pageDetails(step progress.Step) string {
+	if step.PageSize > 0 && step.CurrentPage > 0 {
+		return fmt.Sprintf("page %d", step.CurrentPage)
+	}
+	return ""
+}
+
+// render adapts a lipgloss style to the meta function signature of mpb.
+func render(style lipgloss.Style) func(string) string {
+	return func(s string) string {
+		return style.Render(s)
+	}
+}
+
+// padTo pads the given value to the given display width.
+func padTo(value string, width int) string {
+	return value + strings.Repeat(" ", max(width-runewidth.StringWidth(value), 0))
 }
 
 func (m *mpbProgress) IncrementMainBar() {

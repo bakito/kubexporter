@@ -21,6 +21,8 @@ var nonASCII = regexp.MustCompile("[[:^ascii:]]")
 type YALI interface {
 	Printf(format string, a ...any)
 	Checkf(format string, a ...any)
+	// Simple reports whether the logger prints plain ASCII output only.
+	Simple() bool
 }
 
 // New logger.
@@ -34,6 +36,11 @@ func New(quiet, simple bool) YALI {
 type log struct {
 	quiet  bool
 	simple bool
+}
+
+// Simple reports whether the logger prints plain ASCII output only.
+func (l *log) Simple() bool {
+	return l.simple
 }
 
 // Printf print a message.

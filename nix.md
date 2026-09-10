@@ -28,7 +28,7 @@ nix-build -A  kubexporter
 ## Test
 
 ```bash
-./result/bin/kubexporter --version
+./result/kubexporter --version
 ```
 
 ## Commit

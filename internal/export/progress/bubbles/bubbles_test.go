@@ -1,8 +1,11 @@
 package bubbles
 
 import (
+	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/bakito/kubexporter/internal/export/progress"
@@ -144,4 +147,31 @@ func TestUnknownWorkerIsIgnored(_ *testing.T) {
 	// must not panic
 	m.Update(searchMsg(progress.Step{WorkerID: 5, CurrentKind: "Pod"}))
 	m.Update(updateWorkerMsq{workerID: 0, incr: 1})
+}
+
+func TestViewRowsAreAligned(t *testing.T) {
+	p, m := newTestProgress("ConfigMap", "apps/StatefulSet")
+	p.NewWorker()
+	p.NewWorker()
+
+	m.Update(tea.WindowSizeMsg{Width: 120})
+	m.Update(exportMsg(progress.Step{WorkerID: 1, CurrentKind: "ConfigMap", Total: 10}))
+	m.Update(updateWorkerMsq{workerID: 1, incr: 4})
+	m.Update(searchMsg(progress.Step{WorkerID: 2, CurrentKind: "apps/StatefulSet"}))
+
+	var columns []int
+	for line := range strings.SplitSeq(m.render(), "\n") {
+		plain := ansi.Strip(line)
+		if idx := strings.IndexAny(plain, "━─"); idx >= 0 {
+			columns = append(columns, idx)
+		}
+	}
+	if len(columns) != 3 {
+		t.Fatalf("expected 3 progress bars, but got %d", len(columns))
+	}
+	for i, c := range columns {
+		if c != columns[0] {
+			t.Errorf("bar of line %d starts at %d, but expected %d:\n%s", i, c, columns[0], m.render())
+		}
+	}
 }

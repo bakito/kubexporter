@@ -11,7 +11,7 @@ import (
 )
 
 func newTestProgress(resources int) *mpbProgress {
-	return newMpbProgress(mpb.New(mpb.WithOutput(io.Discard), mpb.WithWidth(80)), resources)
+	return newMpbProgress(mpb.New(mpb.WithOutput(io.Discard), mpb.WithWidth(80)), resources, len("Resources"))
 }
 
 func TestMainBarIsCompleted(t *testing.T) {

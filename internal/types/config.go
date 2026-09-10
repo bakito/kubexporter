@@ -687,7 +687,7 @@ func (c *Config) Validate() error {
 // Logger get the logger.
 func (c *Config) Logger() log.YALI {
 	if c.log == nil {
-		c.log = log.New(c.Quiet, c.Progress == ProgressSimple)
+		c.log = log.New(c.Quiet, c.Progress == ProgressSimple || c.Progress == ProgressNone)
 	}
 	return c.log
 }
@@ -731,6 +731,10 @@ func newSet(values ...string) set {
 	return s
 }
 
+// ContextName get the name of the current kubeconfig context.
 func (c *Config) ContextName() *string {
+	if c.configFlags == nil {
+		return nil
+	}
 	return c.configFlags.Context
 }

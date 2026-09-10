@@ -26,26 +26,44 @@ type GroupResource struct {
 
 // Report generates report rows.
 func (r GroupResource) Report(withSize, withError, withPages bool) []string {
+	namespaced := ""
+	if r.APIResource.Namespaced {
+		namespaced = "yes"
+	}
 	row := []string{
 		r.APIGroup,
 		r.APIVersion,
 		r.APIResource.Kind,
-		strconv.FormatBool(r.APIResource.Namespaced),
+		namespaced,
 		strconv.Itoa(r.Instances),
 		strconv.Itoa(r.ExportedInstances),
 	}
 	if withSize {
 		row = append(row, humanize.Bytes(uint64(r.ExportedSize)))
 	}
-	row = append(row, r.QueryDuration.String())
+	row = append(row, FormatDuration(r.QueryDuration))
 	if withPages {
 		row = append(row, strconv.Itoa(r.Pages))
 	}
-	row = append(row, r.ExportDuration.String())
+	row = append(row, FormatDuration(r.ExportDuration))
 	if withError {
 		row = append(row, r.Error)
 	}
 	return row
+}
+
+// FormatDuration formats a duration in a short, human friendly way.
+func FormatDuration(d time.Duration) string {
+	switch {
+	case d == 0:
+		return "0s"
+	case d < time.Millisecond:
+		return d.Round(time.Microsecond).String()
+	case d < time.Second:
+		return d.Round(time.Millisecond).String()
+	default:
+		return d.Round(10 * time.Millisecond).String()
+	}
 }
 
 // GroupKind get concatenated group and kind.
