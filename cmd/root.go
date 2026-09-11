@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -27,11 +29,17 @@ var (
 	printFlags  *genericclioptions.PrintFlags
 )
 
+// exitCodeCanceled is the exit code used when the export was canceled by the user.
+const exitCodeCanceled = 130
+
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
-	Use:     "kubexporter",
-	Version: fmt.Sprintf("%s (rev: %s; date: %s)", version.Version, version.Revision, version.BuildDate),
-	Short:   "easily export kubernetes resources",
+	// errors and the usage are printed by Execute
+	SilenceUsage:  true,
+	SilenceErrors: true,
+	Use:           "kubexporter",
+	Version:       fmt.Sprintf("%s (rev: %s; date: %s)", version.Version, version.Revision, version.BuildDate),
+	Short:         "easily export kubernetes resources",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {
@@ -148,13 +156,20 @@ func correctProgressForNonTerminalRun(config *types.Config) {
 func Execute() {
 	if err := run(); err != nil {
 		fmt.Println(err)
+		if errors.Is(err, context.Canceled) {
+			os.Exit(exitCodeCanceled)
+		}
 		os.Exit(1)
 	}
 }
 
 func run() error {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	// restore the default signal handling as soon as the first signal was received,
+	// so a second interrupt terminates the process immediately
+	stopAfterFunc := context.AfterFunc(ctx, stop)
+	defer stopAfterFunc()
 	return rootCmd.ExecuteContext(ctx)
 }
 

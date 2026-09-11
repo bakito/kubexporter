@@ -74,9 +74,9 @@ func TestWorker_exportProgressReaches100(t *testing.T) {
 			prog.NewExportBar(progress.Step{WorkerID: 1, Total: len(ul.Items)})
 
 			if tt.asLists {
-				w.exportLists(res, ul)
+				w.exportLists(t.Context(), res, ul)
 			} else {
-				w.exportSingleResources(res, ul)
+				w.exportSingleResources(t.Context(), res, ul)
 			}
 
 			if prog.increment != prog.total {

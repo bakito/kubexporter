@@ -63,13 +63,17 @@ type exporter struct {
 	stats           *worker.Stats
 	archive         string
 	deletedArchives []string
+	canceled        bool
 	ac              *client.APIClient
 }
 
 func (e *exporter) Export(ctx context.Context) error {
 	e.start = time.Now()
 
-	defer e.printStats()
+	defer func() {
+		e.canceled = ctx.Err() != nil
+		e.printStats()
+	}()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -117,6 +121,9 @@ func (e *exporter) Export(ctx context.Context) error {
 	var done chan struct{}
 	if prog.Async() {
 		done = make(chan struct{})
+		// make sure the progress ui also terminates when the export is canceled
+		stopProgress := context.AfterFunc(ctx, prog.Finish)
+		defer stopProgress()
 		go func() {
 			defer close(done)
 			defer prog.Finish()
@@ -140,6 +147,10 @@ func (e *exporter) Export(ctx context.Context) error {
 	}
 	if exportErr != nil {
 		return exportErr
+	}
+	if ctx.Err() != nil {
+		// the export was canceled, skip all post processing
+		return fmt.Errorf("export canceled: %w", context.Cause(ctx))
 	}
 
 	if e.config.Summary {
@@ -461,7 +472,11 @@ func (e *exporter) printIndented(block string) {
 }
 
 func (e *exporter) printStats() {
-	e.printHeading("✅", "Result")
+	if e.canceled {
+		e.printHeading("🛑", "Canceled")
+	} else {
+		e.printHeading("✅", "Result")
+	}
 	printEntries(e.l, e.statsEntries())
 }
 

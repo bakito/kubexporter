@@ -1,10 +1,12 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/ghodss/yaml"
@@ -132,7 +134,7 @@ func TestWorker_exportLists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w, tmpDir := setupWorker(t)
-			w.exportLists(tt.res, tt.ul)
+			w.exportLists(t.Context(), tt.res, tt.ul)
 			if tt.validate != nil {
 				tt.validate(t, tmpDir)
 			}
@@ -198,12 +200,58 @@ func TestWorker_exportSingleResources(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			w, tmpDir := setupWorker(t)
-			w.exportSingleResources(tt.res, tt.ul)
+			w.exportSingleResources(t.Context(), tt.res, tt.ul)
 			if tt.validate != nil {
 				tt.validate(t, tmpDir)
 			}
 		})
 	}
+}
+
+func TestWorker_GenerateWorkCanceled(t *testing.T) {
+	w, tmpDir := setupWorker(t)
+	res, _ := getTestData()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	var wg sync.WaitGroup
+	out := make(chan *types.GroupResource, 1)
+	wg.Add(1)
+	w.GenerateWork(ctx, &wg, out)(res)
+	wg.Wait()
+	close(out)
+
+	if got := <-out; got != res {
+		t.Error("expected the resource to be reported")
+	}
+	if res.Error != canceled {
+		t.Errorf("expected the resource to be %q, but got %q", canceled, res.Error)
+	}
+	if w.stats.Kinds != 0 {
+		t.Errorf("expected no exported kinds, but got %d", w.stats.Kinds)
+	}
+	if w.stats.HasErrors() {
+		t.Errorf("expected no errors, but got %d", w.stats.Errors)
+	}
+	checkDir(t, 0, tmpDir)
+}
+
+func TestWorker_exportSingleResourcesCanceled(t *testing.T) {
+	w, tmpDir := setupWorker(t)
+	res, ul := getTestData()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	cnt, size := w.exportSingleResources(ctx, res, ul)
+	if cnt != 0 || size != 0 {
+		t.Errorf("expected nothing to be exported, but got %d resources with size %d", cnt, size)
+	}
+	if res.Error != canceled {
+		t.Errorf("expected the resource to be %q, but got %q", canceled, res.Error)
+	}
+	checkDir(t, 0, tmpDir)
 }
 
 func TestWorker_namespacesForResource(t *testing.T) {
