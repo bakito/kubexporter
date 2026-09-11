@@ -43,57 +43,51 @@ func TestMainBarDoesNotOverflow(t *testing.T) {
 	}
 }
 
-func TestResourceBarsAreCompleted(t *testing.T) {
+// TestResourceBarIsReused makes sure every step reuses the same bar, so the number
+// of rendered lines stays constant and the output does not flicker.
+func TestResourceBarIsReused(t *testing.T) {
 	p := newTestProgress(1)
 	w := p.addWorker()
 
+	bar := w.resourceBar
+	if bar == nil {
+		t.Fatal("expected the worker to have a bar")
+	}
+
 	w.NewSearchBar(progress.Step{WorkerID: 1, CurrentKind: "Deployment"})
-	searchBar := w.resourceBar
 	w.IncrementResourceBarBy(1, 1)
-	if !searchBar.Completed() {
-		t.Error("expected search bar to be completed")
+	if w.resourceCurrent != w.resourceTotal {
+		t.Errorf("expected the search step to be at %d, but was at %d", w.resourceTotal, w.resourceCurrent)
 	}
 
 	w.NewExportBar(progress.Step{WorkerID: 1, CurrentKind: "Deployment", Total: 3})
-	exportBar := w.resourceBar
-	w.IncrementResourceBarBy(1, 3)
-	if !exportBar.Completed() {
-		t.Error("expected export bar to be completed")
+	if w.resourceCurrent != 0 || w.resourceTotal != 3 {
+		t.Errorf("expected the export step to be at 0/3, but was at %d/%d", w.resourceCurrent, w.resourceTotal)
 	}
+	w.IncrementResourceBarBy(1, 3)
 	// must not overflow
 	w.IncrementResourceBarBy(1, 10)
 	if w.resourceCurrent != 3 {
 		t.Errorf("expected resource bar to be at 3, but was at %d", w.resourceCurrent)
 	}
-}
 
-func TestIncompleteSearchBarIsCompletedOnNextBar(t *testing.T) {
-	p := newTestProgress(1)
-	w := p.addWorker()
-
-	// the search bar is never incremented
-	w.NewSearchBar(progress.Step{WorkerID: 1, CurrentKind: "Deployment"})
-	searchBar := w.resourceBar
-
-	w.NewExportBar(progress.Step{WorkerID: 1, CurrentKind: "Deployment", Total: 2})
-	if !searchBar.Completed() {
-		t.Error("expected search bar to be completed when it is replaced")
+	if w.resourceBar != bar {
+		t.Error("expected the worker bar to be reused for all steps")
+	}
+	if bar.Completed() {
+		t.Error("expected the reused bar to stay open until the export is finished")
 	}
 }
 
-func TestExportBarWithoutItemsCompletesSearchBar(t *testing.T) {
+func TestExportBarWithoutItemsFillsSearchStep(t *testing.T) {
 	p := newTestProgress(1)
 	w := p.addWorker()
 
 	w.NewSearchBar(progress.Step{WorkerID: 1, CurrentKind: "Deployment"})
-	searchBar := w.resourceBar
 	w.NewExportBar(progress.Step{WorkerID: 1, CurrentKind: "Deployment", Total: 0})
 
-	if !searchBar.Completed() {
-		t.Error("expected search bar to be completed")
-	}
-	if w.resourceBar != searchBar {
-		t.Error("expected no new bar to be created for an empty export")
+	if w.resourceCurrent != w.resourceTotal {
+		t.Errorf("expected the search step to be filled to %d, but was at %d", w.resourceTotal, w.resourceCurrent)
 	}
 }
 
@@ -137,6 +131,38 @@ func TestFinishCompletesEverything(t *testing.T) {
 	case <-done:
 	case <-time.After(10 * time.Second):
 		t.Fatal("Run() did not return, progress bars were not completed")
+	}
+}
+
+// TestRefresherOnlyRefreshesOnChange makes sure the console is not redrawn while
+// nothing changed, which is the main source of flickering on slow consoles.
+func TestRefresherOnlyRefreshesOnChange(t *testing.T) {
+	r := newRefresher(10*time.Millisecond, time.Hour)
+	defer r.close()
+
+	select {
+	case <-r.ch:
+		t.Error("expected no refresh while nothing changed")
+	case <-time.After(100 * time.Millisecond):
+	}
+
+	r.touch()
+	select {
+	case <-r.ch:
+	case <-time.After(time.Second):
+		t.Error("expected a refresh after a change")
+	}
+}
+
+// TestRefresherRefreshesWhenIdle makes sure the elapsed time columns keep running.
+func TestRefresherRefreshesWhenIdle(t *testing.T) {
+	r := newRefresher(10*time.Millisecond, 20*time.Millisecond)
+	defer r.close()
+
+	select {
+	case <-r.ch:
+	case <-time.After(time.Second):
+		t.Error("expected an idle refresh")
 	}
 }
 

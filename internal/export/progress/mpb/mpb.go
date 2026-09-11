@@ -2,8 +2,10 @@ package mpb
 
 import (
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"charm.land/lipgloss/v2"
@@ -37,7 +39,85 @@ func NewProgress(resources []*types.GroupResource) progress.Progress {
 	for _, res := range resources {
 		labelWidth = max(labelWidth, runewidth.StringWidth(res.GroupKind()))
 	}
-	return newMpbProgress(mpb.New(), len(resources), labelWidth)
+	// the bars are refreshed manually, so the console is only redrawn if something
+	// actually changed, which avoids flickering on slow consoles like the windows one
+	ref := newRefresher(refreshRate(), idleRefreshRate)
+	p := newMpbProgress(mpb.New(mpb.WithManualRefresh(ref.ch)), len(resources), labelWidth)
+	p.shared.refresh = ref
+	return p
+}
+
+// refreshRate is the shortest interval the bars are redrawn with. The windows console is
+// considerably slower at redrawing than other terminals, redrawing it less often
+// reduces flickering.
+func refreshRate() time.Duration {
+	if runtime.GOOS == "windows" {
+		return 250 * time.Millisecond
+	}
+	return 120 * time.Millisecond
+}
+
+// idleRefreshRate is the interval the bars are redrawn with when nothing changed.
+// It keeps the elapsed time columns running.
+const idleRefreshRate = time.Second
+
+// refresher triggers the render cycles of the progress container. A cycle is only
+// triggered if a bar was changed since the last one, or every idle interval, so the
+// unchanged view is not redrawn over and over again.
+type refresher struct {
+	ch       chan any
+	done     chan struct{}
+	stop     sync.Once
+	dirty    atomic.Bool
+	interval time.Duration
+	idle     time.Duration
+}
+
+func newRefresher(interval, idle time.Duration) *refresher {
+	r := &refresher{
+		ch:       make(chan any),
+		done:     make(chan struct{}),
+		interval: interval,
+		idle:     idle,
+	}
+	go r.run()
+	return r
+}
+
+func (r *refresher) run() {
+	ticker := time.NewTicker(r.interval)
+	defer ticker.Stop()
+	last := time.Now()
+	for {
+		select {
+		case <-r.done:
+			return
+		case t := <-ticker.C:
+			if !r.dirty.Swap(false) && t.Sub(last) < r.idle {
+				continue
+			}
+			last = t
+			select {
+			case r.ch <- nil:
+			case <-r.done:
+				return
+			}
+		}
+	}
+}
+
+// touch marks the view as changed, so the next cycle redraws it.
+func (r *refresher) touch() {
+	if r != nil {
+		r.dirty.Store(true)
+	}
+}
+
+// close stops triggering render cycles.
+func (r *refresher) close() {
+	if r != nil {
+		r.stop.Do(func() { close(r.done) })
+	}
 }
 
 func newMpbProgress(prog *mpb.Progress, resources, labelWidth int) *mpbProgress {
@@ -47,9 +127,8 @@ func newMpbProgress(prog *mpb.Progress, resources, labelWidth int) *mpbProgress 
 	}
 	sh.mainBar = newMpbMainBar(prog, resources, sh)
 	return &mpbProgress{
-		prog:             prog,
-		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-		shared:           sh,
+		prog:   prog,
+		shared: sh,
 	}
 }
 
@@ -61,14 +140,57 @@ type shared struct {
 	mainCurrent int64
 	labelWidth  int
 	workers     []*mpbProgress
+	refresh     *refresher
+}
+
+// barState is the mutable part rendered by the decorators of a worker bar.
+// It is guarded by its own mutex, which must never be held while calling
+// methods of the bar itself, as the bar renders its decorators in its own
+// goroutine.
+type barState struct {
+	mx      sync.Mutex
+	icon    string
+	label   string
+	details string
+	elapsed decor.Decorator
+}
+
+func (b *barState) set(icon, label, details string, elapsed decor.Decorator) {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	b.icon, b.label, b.details, b.elapsed = icon, label, details, elapsed
+}
+
+func (b *barState) iconAndLabel() (icon, label string) {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	return b.icon, b.label
+}
+
+func (b *barState) detailsValue() string {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	return b.details
+}
+
+func (b *barState) elapsedDecor() decor.Decorator {
+	b.mx.Lock()
+	defer b.mx.Unlock()
+	return b.elapsed
 }
 
 type mpbProgress struct {
-	id               int
-	prog             *mpb.Progress
-	elapsedDecorator decor.Decorator
-	shared           *shared
+	id     int
+	prog   *mpb.Progress
+	shared *shared
 
+	// state is the currently rendered step of the worker bar.
+	state barState
+	// kindElapsed measures the export duration of the current kind.
+	kindElapsed decor.Decorator
+
+	// resourceBar is the single bar of a worker. It is reused for all steps,
+	// so the number of rendered lines never changes and the output does not flicker.
 	resourceBar     *mpb.Bar
 	resourceTotal   int64
 	resourceCurrent int64
@@ -80,6 +202,7 @@ func (*mpbProgress) Async() bool {
 
 func (m *mpbProgress) Run() error {
 	m.prog.Wait()
+	m.shared.refresh.close()
 	return nil
 }
 
@@ -88,47 +211,67 @@ func (m *mpbProgress) NewWorker() progress.Progress {
 }
 
 func (m *mpbProgress) addWorker() *mpbProgress {
-	m.shared.mx.Lock()
-	defer m.shared.mx.Unlock()
 	w := &mpbProgress{
-		prog:             m.prog,
-		id:               len(m.shared.workers) + 1,
-		elapsedDecorator: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
-		shared:           m.shared,
+		prog:        m.prog,
+		shared:      m.shared,
+		kindElapsed: decor.NewElapsed(decor.ET_STYLE_GO, time.Now()),
 	}
+	m.shared.mx.Lock()
+	w.id = len(m.shared.workers) + 1
 	m.shared.workers = append(m.shared.workers, w)
+	m.shared.mx.Unlock()
+	w.resourceBar = w.newResourceBar()
 	return w
 }
 
+// newResourceBar creates the persistent bar of a worker. It is created with an
+// unknown total, so it never completes on its own and can be reused for all
+// steps of the worker. It is completed by Finish.
+func (m *mpbProgress) newResourceBar() *mpb.Bar {
+	return m.prog.New(0, barStyle(),
+		mpb.PrependDecorators(
+			elapsedDecorator(m.state.elapsedDecor),
+			labelDecorator(m.state.iconAndLabel, m.shared, styleLabel),
+		),
+		mpb.AppendDecorators(
+			countersDecorator(),
+			detailsDecorator(m.state.detailsValue),
+		),
+	)
+}
+
 func (m *mpbProgress) Reset() {
-	m.elapsedDecorator = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
+	m.kindElapsed = decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
 }
 
 // Finish completes all bars, making sure they all end up at 100%.
 func (m *mpbProgress) Finish() {
 	m.shared.mx.Lock()
-	defer m.shared.mx.Unlock()
-
-	for _, w := range m.shared.workers {
-		w.completeResourceBar()
-	}
-	m.completeResourceBar()
-
+	workers := append([]*mpbProgress{m}, m.shared.workers...)
 	if inc := m.shared.mainTotal - m.shared.mainCurrent; inc > 0 {
-		m.shared.mainBar.IncrInt64(inc)
 		m.shared.mainCurrent = m.shared.mainTotal
+		m.shared.mainBar.IncrInt64(inc)
+	}
+	m.shared.mx.Unlock()
+
+	for _, w := range workers {
+		w.completeResourceBar()
 	}
 }
 
-// completeResourceBar fills the current resource bar up to its total.
+// completeResourceBar fills the resource bar up to its total and completes it.
 func (m *mpbProgress) completeResourceBar() {
-	if m.resourceBar == nil {
+	m.shared.mx.Lock()
+	bar := m.resourceBar
+	total := m.resourceTotal
+	m.resourceCurrent = total
+	m.shared.mx.Unlock()
+
+	if bar == nil {
 		return
 	}
-	if inc := m.resourceTotal - m.resourceCurrent; inc > 0 {
-		m.resourceBar.IncrInt64(inc)
-	}
-	m.resourceCurrent = m.resourceTotal
+	bar.SetTotal(total, true)
+	m.shared.refresh.touch()
 }
 
 // barStyle is the common style of all bars.
@@ -144,73 +287,68 @@ func newMpbMainBar(prog *mpb.Progress, size int, sh *shared) *mpb.Bar {
 	elapsed := decor.NewElapsed(decor.ET_STYLE_GO, time.Now())
 	return prog.New(int64(size), barStyle(),
 		mpb.PrependDecorators(
-			elapsedDecorator(elapsed),
-			labelDecorator(iconMain, mainBarTitle, sh, styleMain),
+			elapsedDecorator(func() decor.Decorator { return elapsed }),
+			labelDecorator(func() (string, string) { return iconMain, mainBarTitle }, sh, styleMain),
 		),
 		mpb.AppendDecorators(
 			countersDecorator(),
-			detailsDecorator(""),
+			detailsDecorator(func() string { return "" }),
 		),
 	)
 }
 
 func (m *mpbProgress) NewSearchBar(step progress.Step) {
-	m.shared.mx.Lock()
-	defer m.shared.mx.Unlock()
-
-	// make sure the previous bar is completed before it is replaced
-	m.completeResourceBar()
-
-	newBar := m.prog.New(1, barStyle(),
-		mpb.PrependDecorators(
-			elapsedDecorator(nil),
-			labelDecorator(iconSearch, step.CurrentKind, m.shared, styleLabel),
-		),
-		mpb.AppendDecorators(
-			countersDecorator(),
-			detailsDecorator(pageDetails(step)),
-		),
-		mpb.BarQueueAfter(m.resourceBar),
-	)
-	m.resourceBar = newBar
-	m.resourceTotal = 1
-	m.resourceCurrent = 0
+	// the search has no known total, the bar is filled as soon as the query returned
+	m.startStep(iconSearch, step, 1, nil)
 }
 
 func (m *mpbProgress) NewExportBar(step progress.Step) {
-	m.shared.mx.Lock()
-	defer m.shared.mx.Unlock()
-
-	if m.resourceBar == nil || step.Total <= 0 {
-		// nothing to export, complete the current (search) bar
-		m.completeResourceBar()
+	if step.Total <= 0 {
+		// nothing to export, complete the current (search) step
+		m.fillResourceBar()
 		return
 	}
+	m.startStep(iconExport, step, int64(step.Total), m.kindElapsed)
+}
 
-	// make sure the previous bar is completed before it is replaced
-	m.completeResourceBar()
+// startStep points the reused resource bar to a new step.
+func (m *mpbProgress) startStep(icon string, step progress.Step, total int64, elapsed decor.Decorator) {
+	m.state.set(icon, step.CurrentKind, pageDetails(step), elapsed)
 
-	newBar := m.prog.New(int64(step.Total), barStyle(),
-		mpb.PrependDecorators(
-			elapsedDecorator(m.elapsedDecorator),
-			labelDecorator(iconExport, step.CurrentKind, m.shared, styleLabel),
-		),
-		mpb.AppendDecorators(
-			countersDecorator(),
-			detailsDecorator(pageDetails(step)),
-		),
-		mpb.BarQueueAfter(m.resourceBar),
-	)
-	m.resourceBar = newBar
-	m.resourceTotal = int64(step.Total)
+	m.shared.mx.Lock()
+	bar := m.resourceBar
+	m.resourceTotal = total
 	m.resourceCurrent = 0
+	m.shared.mx.Unlock()
+
+	if bar == nil {
+		return
+	}
+	bar.SetCurrent(0)
+	bar.SetTotal(total, false)
+	m.shared.refresh.touch()
+}
+
+// fillResourceBar fills the resource bar up to its total, without completing it.
+func (m *mpbProgress) fillResourceBar() {
+	m.shared.mx.Lock()
+	bar := m.resourceBar
+	inc := m.resourceTotal - m.resourceCurrent
+	m.resourceCurrent = m.resourceTotal
+	m.shared.mx.Unlock()
+
+	if bar == nil || inc <= 0 {
+		return
+	}
+	bar.IncrInt64(inc)
+	m.shared.refresh.touch()
 }
 
 // elapsedDecorator renders the elapsed time in a fixed width column.
-func elapsedDecorator(elapsed decor.Decorator) decor.Decorator {
+func elapsedDecorator(get func() decor.Decorator) decor.Decorator {
 	return decor.Meta(decor.Any(func(s decor.Statistics) string {
 		el := ""
-		if elapsed != nil {
+		if elapsed := get(); elapsed != nil {
 			el, _ = elapsed.Decor(s)
 		}
 		return fmt.Sprintf("%7s ", strings.TrimSpace(el))
@@ -218,9 +356,13 @@ func elapsedDecorator(elapsed decor.Decorator) decor.Decorator {
 }
 
 // labelDecorator renders the icon and the label in aligned columns.
-func labelDecorator(icon, value string, sh *shared, style lipgloss.Style) decor.Decorator {
+func labelDecorator(get func() (string, string), sh *shared, style lipgloss.Style) decor.Decorator {
 	return decor.Meta(decor.Any(func(decor.Statistics) string {
-		// the icons are emoji occupying two cells
+		icon, value := get()
+		if icon == "" {
+			// the icons are emoji occupying two cells
+			icon = "  "
+		}
 		return icon + " " + padTo(value, sh.labelWidth) + " "
 	}), render(style))
 }
@@ -238,9 +380,9 @@ func countersDecorator() decor.Decorator {
 }
 
 // detailsDecorator renders the trailing details in a fixed width column.
-func detailsDecorator(details string) decor.Decorator {
+func detailsDecorator(get func() string) decor.Decorator {
 	return decor.Meta(decor.Any(func(decor.Statistics) string {
-		return fmt.Sprintf("  %-9s", details)
+		return fmt.Sprintf("  %-9s", get())
 	}), render(styleDetails))
 }
 
@@ -266,20 +408,23 @@ func padTo(value string, width int) string {
 
 func (m *mpbProgress) IncrementMainBar() {
 	m.shared.mx.Lock()
-	defer m.shared.mx.Unlock()
-
 	if m.shared.mainCurrent >= m.shared.mainTotal {
+		m.shared.mx.Unlock()
 		return
 	}
 	m.shared.mainCurrent++
-	m.shared.mainBar.Increment()
+	bar := m.shared.mainBar
+	m.shared.mx.Unlock()
+
+	bar.Increment()
+	m.shared.refresh.touch()
 }
 
 func (m *mpbProgress) IncrementResourceBarBy(_, inc int) {
 	m.shared.mx.Lock()
-	defer m.shared.mx.Unlock()
-
-	if m.resourceBar == nil || inc <= 0 {
+	bar := m.resourceBar
+	if bar == nil || inc <= 0 {
+		m.shared.mx.Unlock()
 		return
 	}
 	// never increment beyond the total
@@ -287,8 +432,12 @@ func (m *mpbProgress) IncrementResourceBarBy(_, inc int) {
 		inc = int(remaining)
 	}
 	if inc <= 0 {
+		m.shared.mx.Unlock()
 		return
 	}
 	m.resourceCurrent += int64(inc)
-	m.resourceBar.IncrBy(inc)
+	m.shared.mx.Unlock()
+
+	bar.IncrBy(inc)
+	m.shared.refresh.touch()
 }
