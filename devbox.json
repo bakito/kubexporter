@@ -2,7 +2,8 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.5/.schema/devbox.schema.json",
   "packages": [
     "vhs@0.11.0",
-    "ffmpeg@9.0.1"
+    "ffmpeg@9.0.1",
+    "gifsicle@1.96"
   ],
   "shell": {
     "scripts": {
@@ -13,7 +14,9 @@
         "vhs docs/vhs/progress-bar.tape",
         "vhs docs/vhs/progress-bubbles.tape",
         "vhs docs/vhs/progress-simple.tape",
-        "vhs docs/vhs/progress-none.tape"
+        "vhs docs/vhs/progress-none.tape",
+        "# optimize the gifs the same way https://github.com/apps/imgbot would",
+        "gifsicle --batch --optimize=3 --careful --no-comments --no-names --no-extensions docs/vhs/*.gif"
       ]
     }
   }
