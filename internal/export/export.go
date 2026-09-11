@@ -1,6 +1,7 @@
 package export
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -10,6 +11,9 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/mattn/go-runewidth"
+	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -25,6 +29,12 @@ import (
 	"github.com/bakito/kubexporter/internal/types"
 	"github.com/bakito/kubexporter/version"
 )
+
+// enabled is the value used for entries that only represent an enabled flag.
+const enabled = "enabled"
+
+// indent is the indentation of all content printed below a heading.
+const indent = "  "
 
 // NewExporter create a new exporter.
 func NewExporter(config *types.Config) (Exporter, error) {
@@ -53,13 +63,17 @@ type exporter struct {
 	stats           *worker.Stats
 	archive         string
 	deletedArchives []string
+	canceled        bool
 	ac              *client.APIClient
 }
 
 func (e *exporter) Export(ctx context.Context) error {
 	e.start = time.Now()
 
-	defer e.printStats()
+	defer func() {
+		e.canceled = ctx.Err() != nil
+		e.printStats()
+	}()
 	if e.config.ClearTarget {
 		if err := e.purgeTarget(); err != nil {
 			return err
@@ -90,7 +104,7 @@ func (e *exporter) Export(ctx context.Context) error {
 
 	switch e.config.Progress {
 	case types.ProgressBar:
-		prog = mpb.NewProgress(len(resources))
+		prog = mpb.NewProgress(resources)
 	case types.ProgressBarBubbles:
 		prog = bubbles.NewProgress(resources)
 	default:
@@ -107,8 +121,12 @@ func (e *exporter) Export(ctx context.Context) error {
 	var done chan struct{}
 	if prog.Async() {
 		done = make(chan struct{})
+		// make sure the progress ui also terminates when the export is canceled
+		stopProgress := context.AfterFunc(ctx, prog.Finish)
+		defer stopProgress()
 		go func() {
 			defer close(done)
+			defer prog.Finish()
 			s, exportErr = worker.RunExport(ctx, workers, resources)
 			e.stats.Add(s)
 		}()
@@ -118,6 +136,7 @@ func (e *exporter) Export(ctx context.Context) error {
 	} else {
 		s, exportErr = worker.RunExport(ctx, workers, resources)
 		e.stats.Add(s)
+		prog.Finish()
 	}
 
 	if err := prog.Run(); err != nil {
@@ -128,6 +147,10 @@ func (e *exporter) Export(ctx context.Context) error {
 	}
 	if exportErr != nil {
 		return exportErr
+	}
+	if ctx.Err() != nil {
+		// the export was canceled, skip all post processing
+		return fmt.Errorf("export canceled: %w", context.Cause(ctx))
 	}
 
 	if e.config.Summary {
@@ -171,70 +194,132 @@ func (e *exporter) Export(ctx context.Context) error {
 	return nil
 }
 
+// entry is a single icon / label / value line of the intro or the final stats.
+type entry struct {
+	icon  string
+	label string
+	value string
+}
+
+// printEntries prints the entries as aligned label / value columns.
+// Entries without a value are skipped. All icons are emoji with an own emoji
+// presentation, occupying two cells; in simple mode they are omitted, so the
+// columns stay aligned in both cases.
+func printEntries(l log.YALI, entries []entry) {
+	width := 0
+	for _, en := range entries {
+		if en.value == "" {
+			continue
+		}
+		width = max(width, runewidth.StringWidth(en.label))
+	}
+	for _, en := range entries {
+		if en.value == "" {
+			continue
+		}
+		icon := ""
+		if !l.Simple() {
+			icon = en.icon + " "
+		}
+		pad := strings.Repeat(" ", max(width-runewidth.StringWidth(en.label), 0))
+		l.Printf(indent+icon+en.label+pad+"  %s\n", en.value)
+	}
+}
+
 func (e *exporter) writeIntro() {
-	e.l.Printf("Starting export ...\n")
-	e.l.Printf("  kubexporter version %q\n", version.Version)
-	e.l.Printf("  cluster %q\n", e.ac.RestConfig.Host)
+	e.printHeading("🚀", "kubexporter "+version.Version)
+	e.printHeading("🔧", "Configuration")
+	printEntries(e.l, e.introEntries())
+	e.l.Printf("\nExporting ...\n")
+}
+
+// printHeading prints a section heading underlined with a horizontal rule.
+func (e *exporter) printHeading(icon, heading string) {
+	rule := "─"
+	width := runewidth.StringWidth(heading)
+	if e.l.Simple() {
+		rule = "-"
+	} else if icon != "" {
+		heading = icon + " " + heading
+		// the icon is an emoji occupying two cells plus the separating space
+		width += 3
+	}
+	e.l.Printf("\n%s\n%s\n", heading, strings.Repeat(rule, width))
+}
+
+func (e *exporter) introEntries() []entry {
+	entries := []entry{
+		{"🌐", "cluster", e.ClusterHost()},
+	}
 	if e.config.ContextName() != nil {
-		e.l.Printf("  context name %q ️\n", *e.config.ContextName())
+		entries = append(entries, entry{"🔖", "context", *e.config.ContextName()})
 	}
 	if !e.config.HasNamespaces() {
-		e.l.Printf("  all namespaces 🏘️\n")
+		entries = append(entries, entry{"🏠", "namespaces", "all"})
 	} else {
-		e.l.Printf("  namespaces %s 🏠\n", strings.Join(e.config.Namespaces, ", "))
+		entries = append(entries, entry{"🏠", "namespaces", strings.Join(e.config.Namespaces, ", ")})
 		if e.config.IncludeClusterResources {
-			e.l.Printf("  include cluster resources 🌐\n")
+			entries = append(entries, entry{"🌍", "cluster resources", "included"})
 		}
 	}
-	e.l.Printf("  target %q 📁\n", e.config.Target)
-	e.l.Printf("  format %q 📜\n", e.config.OutputFormat())
+	entries = append(entries,
+		entry{"📁", "target", e.config.Target},
+		entry{"📜", "format", e.config.OutputFormat()},
+	)
 	if e.config.Worker > 1 {
-		if e.config.Progress == types.ProgressBar {
-			e.l.Printf("  worker %s\n", strings.Repeat("👷‍️", e.config.Worker))
-		} else {
-			e.l.Printf("  worker %d\n", e.config.Worker)
-		}
+		entries = append(entries, entry{"👷", "worker", strconv.Itoa(e.config.Worker)})
 	}
 	if e.config.Summary {
-		e.l.Printf("  summary 📊\n")
+		entries = append(entries, entry{"📊", "summary", enabled})
 	}
 	if e.config.ConsiderOwnerReferences {
-		e.l.Printf("  considering owner references 👑\n")
+		entries = append(entries, entry{"👑", "owner references", "considered"})
 	}
-
 	if len(e.config.Masked.KindFields) > 0 {
-		e.l.Printf("  masked fields 🤿 %v\n", e.config.Masked.KindFields)
+		entries = append(entries, entry{"🤿", "masked fields", e.config.Masked.KindFields.String()})
 	}
 	if len(e.config.Encrypted.KindFields) > 0 {
-		e.l.Printf("  encrypted fields 🔒 %v\n", e.config.Encrypted.KindFields)
+		entries = append(entries, entry{"🔒", "encrypted fields", e.config.Encrypted.KindFields.String()})
 	}
 	if e.config.CreatedWithin > 0 {
-		e.l.Printf("  created within %s ⏱️\n", e.config.CreatedWithin.String())
+		entries = append(entries, entry{"⏳", "created within", e.config.CreatedWithin.String()})
 	}
 	if e.config.AsLists {
-		e.l.Printf("  as lists 📦\n")
+		entries = append(entries, entry{"📦", "as lists", enabled})
 	} else if e.config.QueryPageSize != 0 {
-		e.l.Printf("  query page size %d 📃\n", e.config.QueryPageSize)
+		entries = append(entries, entry{"📃", "query page size", strconv.Itoa(e.config.QueryPageSize)})
 	}
 	if e.config.PrintSize {
-		e.l.Printf("  print size ⚖️\n")
+		entries = append(entries, entry{"📏", "print size", enabled})
 	}
-	if e.config.Archive {
-		e.l.Printf("  compress as archive ️🗜\n")
-		if e.config.ArchiveRetentionDays > 0 {
-			e.l.Printf("  delete archives older than %d days 🚮\n", e.config.ArchiveRetentionDays)
-		}
-		if e.config.S3Config != nil {
-			e.l.Printf("  upload to S3 🪣 %s/%s\n", e.config.S3Config.Endpoint, e.config.S3Config.Bucket)
-		}
-		if e.config.GCSConfig != nil {
-			e.l.Printf("  upload to GCS 🪣 %s\n", e.config.GCSConfig.Bucket)
-		}
-	}
+	entries = append(entries, e.introArchiveEntries()...)
 	if e.config.Metrics != nil && e.config.Metrics.OTLP.Enabled {
-		e.l.Printf("  export OTLP metrics to %s 📊\n", e.config.Metrics.OTLP.Endpoint)
+		entries = append(entries, entry{"📈", "OTLP metrics", e.config.Metrics.OTLP.Endpoint})
 	}
-	e.config.Logger().Printf("\nExporting ...\n")
+	return entries
+}
+
+func (e *exporter) introArchiveEntries() []entry {
+	if !e.config.Archive {
+		return nil
+	}
+	entries := []entry{{"💾", "archive", enabled}}
+	if e.config.ArchiveRetentionDays > 0 {
+		entries = append(entries, entry{
+			"🚮", "archive retention",
+			fmt.Sprintf("%d days", e.config.ArchiveRetentionDays),
+		})
+	}
+	if e.config.S3Config != nil {
+		entries = append(entries, entry{
+			"🪣", "S3 upload",
+			fmt.Sprintf("%s/%s", e.config.S3Config.Endpoint, e.config.S3Config.Bucket),
+		})
+	}
+	if e.config.GCSConfig != nil {
+		entries = append(entries, entry{"🪣", "GCS upload", e.config.GCSConfig.Bucket})
+	}
+	return entries
 }
 
 func (e *exporter) listResources() ([]*types.GroupResource, error) {
@@ -278,52 +363,72 @@ func allowsList(r metav1.APIResource) bool {
 
 func (e *exporter) printSummary(resources []*types.GroupResource) error {
 	withPages := e.config.QueryPageSize > 0
+	withErrors := e.config.Verbose && e.stats.HasErrors()
 
-	table := render.Table()
-	header := []string{
-		"Group",
-		"Version",
-		"Kind",
-		"Namespaced",
-		"Total Instances",
-		"Exported Instances",
+	header := []string{"Group", "Version", "Kind", "Namespaced", "Instances", "Exported"}
+	aligns := []tw.Align{
+		tw.AlignLeft,
+		tw.AlignLeft,
+		tw.AlignLeft,
+		tw.AlignCenter,
+		tw.AlignRight,
+		tw.AlignRight,
 	}
 	if e.config.PrintSize {
-		header = append(header, "Exported Size")
+		header = append(header, "Size")
+		aligns = append(aligns, tw.AlignRight)
 	}
 	header = append(header, "Query Duration")
+	aligns = append(aligns, tw.AlignRight)
 	if withPages {
-		header = append(header, "Query Pages")
+		header = append(header, "Pages")
+		aligns = append(aligns, tw.AlignRight)
 	}
 	header = append(header, "Export Duration")
-	if e.config.Verbose && e.stats.HasErrors() {
+	aligns = append(aligns, tw.AlignRight)
+	if withErrors {
 		header = append(header, "Error")
+		aligns = append(aligns, tw.AlignLeft)
 	}
+
+	alignment := tw.CellAlignment{PerColumn: aligns}
+	buf := &bytes.Buffer{}
+	table := render.TableTo(buf,
+		// borderless table, the header and the totals are separated by a line
+		tablewriter.WithRendition(tw.Rendition{
+			Borders: tw.Border{Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off},
+			Settings: tw.Settings{
+				Lines:      tw.Lines{ShowHeaderLine: tw.On, ShowFooterLine: tw.On},
+				Separators: tw.Separators{BetweenRows: tw.Off, BetweenColumns: tw.Off},
+			},
+		}),
+		tablewriter.WithHeaderAlignmentConfig(alignment),
+		tablewriter.WithRowAlignmentConfig(alignment),
+		tablewriter.WithFooterAlignmentConfig(alignment),
+	)
 	table.Header(header)
-	start := time.Now()
-	qd := start
-	ed := start
-	var inst int
+
+	var qd, ed time.Duration
+	var inst, totalInst, pages int
 	var size int64
-	var totalInst int
-	var pages int
 
 	for _, r := range resources {
-		if err := table.Append(r.Report(e.config.PrintSize, e.config.Verbose && e.stats.HasErrors(), withPages)); err != nil {
+		if err := table.Append(r.Report(e.config.PrintSize, withErrors, withPages)); err != nil {
 			return err
 		}
-		qd = qd.Add(r.QueryDuration)
-		ed = ed.Add(r.ExportDuration)
+		qd += r.QueryDuration
+		ed += r.ExportDuration
 		totalInst += r.Instances
 		inst += r.ExportedInstances
 		size += r.ExportedSize
 		pages += r.Pages
 	}
+
 	total := "TOTAL"
 	if e.config.Worker > 1 {
 		total = "CUMULATED " + total
 	}
-	totalRow := []string{
+	footer := []string{
 		total,
 		"",
 		"",
@@ -332,40 +437,70 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 		strconv.Itoa(inst),
 	}
 	if e.config.PrintSize {
-		totalRow = append(totalRow, humanize.Bytes(uint64(size)))
+		footer = append(footer, humanize.Bytes(uint64(size)))
 	}
-	totalRow = append(totalRow, qd.Sub(start).String())
+	footer = append(footer, types.FormatDuration(qd))
 	if withPages {
-		totalRow = append(totalRow, strconv.Itoa(pages))
+		footer = append(footer, strconv.Itoa(pages))
 	}
-	totalRow = append(totalRow, ed.Sub(start).String())
-	if err := table.Append(totalRow); err != nil {
+	footer = append(footer, types.FormatDuration(ed))
+	if withErrors {
+		footer = append(footer, "")
+	}
+	table.Footer(footer)
+
+	e.printHeading("📊", "Summary")
+	if err := table.Render(); err != nil {
 		return err
 	}
-	return table.Render()
+	e.printIndented(buf.String())
+	return nil
+}
+
+// printIndented prints the given block indented like all other content below a heading.
+func (e *exporter) printIndented(block string) {
+	for line := range strings.SplitSeq(strings.TrimRight(block, "\n"), "\n") {
+		// the table adds a leading padding space, replace it by the common indentation
+		if strings.HasPrefix(line, " ") {
+			line = strings.TrimPrefix(line, " ")
+		} else {
+			// separator lines have no padding, shorten them to the content width
+			line = strings.TrimSuffix(line, "─")
+		}
+		e.l.Printf("%s\n", indent+strings.TrimRight(line, " "))
+	}
 }
 
 func (e *exporter) printStats() {
-	fmt.Println()
+	if e.canceled {
+		e.printHeading("🛑", "Canceled")
+	} else {
+		e.printHeading("✅", "Result")
+	}
+	printEntries(e.l, e.statsEntries())
+}
+
+func (e *exporter) statsEntries() []entry {
+	var entries []entry
 	if e.archive != "" {
-		e.l.Checkf("🗜\tArchive %s\n", e.archive)
+		entries = append(entries, entry{"💾", "archive", e.archive})
 		if len(e.deletedArchives) > 0 {
-			e.l.Checkf("🚮\tDeleted old Archive(s) %d\n", len(e.deletedArchives))
+			entries = append(entries, entry{"🚮", "deleted archives", strconv.Itoa(len(e.deletedArchives))})
 		}
 	}
-	e.l.Checkf("📜\tKinds %d\n", e.stats.Kinds)
+	entries = append(entries, entry{"📜", "kinds", strconv.Itoa(e.stats.Kinds)})
 	if e.config.QueryPageSize > 0 {
-		e.l.Checkf("📃\tQuery Pages %d\n", e.stats.Pages)
+		entries = append(entries, entry{"📃", "query pages", strconv.Itoa(e.stats.Pages)})
 	}
-	e.l.Checkf("🗃\tExported Resources %d\n", e.stats.Resources)
+	entries = append(entries, entry{"📚", "exported resources", strconv.Itoa(e.stats.Resources)})
 	if e.config.PrintSize {
-		e.l.Checkf("⚖️\tExported Size %s\n", humanize.Bytes(uint64(e.stats.ExportedSize)))
+		entries = append(entries, entry{"📏", "exported size", humanize.Bytes(uint64(e.stats.ExportedSize))})
 	}
-	e.l.Checkf("🏠\tNamespaces %d\n", e.stats.Namespaces())
+	entries = append(entries, entry{"🏠", "namespaces", strconv.Itoa(e.stats.Namespaces())})
 	if e.stats.HasErrors() {
-		e.l.Checkf("⚠️\tErrors %d\n", e.stats.Errors)
+		entries = append(entries, entry{"❗", "errors", strconv.Itoa(e.stats.Errors)})
 	}
-	e.l.Checkf("⏱️\tDuration %s\n", time.Since(e.start).String())
+	return append(entries, entry{"⏳", "duration", types.FormatDuration(time.Since(e.start))})
 }
 
 func (e *exporter) purgeTarget() error {

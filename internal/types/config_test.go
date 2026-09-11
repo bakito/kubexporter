@@ -705,6 +705,27 @@ func TestConfig_ReadConfig(t *testing.T) {
 	})
 }
 
+func TestConfig_Logger(t *testing.T) {
+	tests := []struct {
+		progress   types.Progress
+		wantSimple bool
+	}{
+		{types.ProgressBar, false},
+		{types.ProgressBarBubbles, false},
+		{types.ProgressSimple, true},
+		{types.ProgressNone, true},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.progress), func(t *testing.T) {
+			cfg := types.NewConfig(nil, nil)
+			cfg.Progress = tt.progress
+			if simple := cfg.Logger().Simple(); simple != tt.wantSimple {
+				t.Errorf("expected simple %v for progress %q, but got %v", tt.wantSimple, tt.progress, simple)
+			}
+		})
+	}
+}
+
 func TestKindFields(t *testing.T) {
 	t.Run("Diff", func(t *testing.T) {
 		source := types.KindFields{

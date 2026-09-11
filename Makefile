@@ -48,3 +48,7 @@ mocks: tb.mockgen
 .PHONY: docs
 docs:
 	go run cmd/docs/main.go
+
+.PHONY: docs-gif
+docs-gif:
+	devbox run docs-gif

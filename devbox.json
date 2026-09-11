@@ -1,0 +1,20 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.5/.schema/devbox.schema.json",
+  "packages": [
+    "vhs@0.11.0",
+    "ffmpeg@9.0.1"
+  ],
+  "shell": {
+    "scripts": {
+      "docs-gif": [
+        "go build -o bin/kubexporter .",
+        "export PATH=$(pwd)/bin:$PATH",
+        "rm -f docs/vhs/*.gif",
+        "vhs docs/vhs/progress-bar.tape",
+        "vhs docs/vhs/progress-bubbles.tape",
+        "vhs docs/vhs/progress-simple.tape",
+        "vhs docs/vhs/progress-none.tape"
+      ]
+    }
+  }
+}

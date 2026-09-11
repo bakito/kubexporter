@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -21,6 +22,9 @@ import (
 	"github.com/bakito/kubexporter/internal/types"
 	"github.com/bakito/kubexporter/internal/utils"
 )
+
+// canceled is the error reported for a resource that was not exported because the export was canceled.
+const canceled = "Canceled"
 
 // Worker interface.
 type Worker interface {
@@ -141,16 +145,26 @@ func (w *worker) GenerateWork(
 ) func(resource *types.GroupResource) {
 	return func(res *types.GroupResource) {
 		defer wg.Done()
+		if ctx.Err() != nil {
+			// the export was canceled, skip the remaining resources
+			res.Error = canceled
+			w.prog.IncrementMainBar()
+			out <- res
+			return
+		}
 		w.stats.Kinds++
 		w.queryFinished = false
 		w.currentKind = res.GroupKind()
 		w.prog.Reset()
 
 		for _, namespace := range w.namespacesForResource(res) {
+			if ctx.Err() != nil {
+				break
+			}
 			hasMorePages := ""
 			for {
 				hasMorePages = w.listResources(ctx, res, namespace, hasMorePages)
-				if hasMorePages == "" {
+				if hasMorePages == "" || ctx.Err() != nil {
 					break
 				}
 			}
@@ -202,13 +216,18 @@ func (w *worker) listResources(
 	start = time.Now()
 
 	if err != nil {
-		w.stats.Errors++
 		switch {
-		case errors.IsNotFound(err):
+		case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):
+			// a canceled export is no export error
+			res.Error = canceled
+		case apierrors.IsNotFound(err):
+			w.stats.Errors++
 			res.Error = "Not Found"
-		case errors.IsMethodNotSupported(err):
+		case apierrors.IsMethodNotSupported(err):
+			w.stats.Errors++
 			res.Error = "Not Allowed"
 		default:
+			w.stats.Errors++
 			res.Error = "Error: " + err.Error()
 		}
 		return ""
@@ -225,9 +244,9 @@ func (w *worker) listResources(
 	var instances int
 	var exportedSize int64
 	if w.config.AsLists {
-		instances, exportedSize = w.exportLists(res, ul)
+		instances, exportedSize = w.exportLists(ctx, res, ul)
 	} else {
-		instances, exportedSize = w.exportSingleResources(res, ul)
+		instances, exportedSize = w.exportSingleResources(ctx, res, ul)
 	}
 	res.ExportedInstances += instances
 	res.ExportedSize += exportedSize
@@ -240,7 +259,11 @@ func (w *worker) listResources(
 	return ul.GetContinue()
 }
 
-func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.UnstructuredList) (int, int64) {
+func (w *worker) exportLists(
+	ctx context.Context,
+	res *types.GroupResource,
+	ul *unstructured.UnstructuredList,
+) (int, int64) {
 	if res == nil || ul == nil {
 		return 0, 0
 	}
@@ -267,14 +290,24 @@ func (w *worker) exportLists(res *types.GroupResource, ul *unstructured.Unstruct
 	}
 
 	cnt := 0
+	processed := 0
 	var exportedSize int64
 	for ns, usl := range perNs {
+		if ctx.Err() != nil {
+			res.Error = canceled
+			break
+		}
 		ok, s := w.exportOneSingleList(res, ns, usl)
 		if ok {
 			cnt += len(usl.Items)
 			exportedSize += s
 		}
+		processed += len(usl.Items)
 		w.prog.IncrementResourceBarBy(w.id, len(usl.Items))
+	}
+	// also account for the excluded instances, the progress bar total is based on all items
+	if skipped := len(ul.Items) - processed; skipped > 0 {
+		w.prog.IncrementResourceBarBy(w.id, skipped)
 	}
 	return cnt, exportedSize
 }
@@ -313,7 +346,11 @@ func (w *worker) exportOneSingleList(res *types.GroupResource, ns string, usl *u
 	return true, fi.Size()
 }
 
-func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructured.UnstructuredList) (int, int64) {
+func (w *worker) exportSingleResources(
+	ctx context.Context,
+	res *types.GroupResource,
+	ul *unstructured.UnstructuredList,
+) (int, int64) {
 	if res == nil || ul == nil {
 		return 0, 0
 	}
@@ -321,6 +358,10 @@ func (w *worker) exportSingleResources(res *types.GroupResource, ul *unstructure
 	cnt := 0
 	var exportedSize int64
 	for _, u := range ul.Items {
+		if ctx.Err() != nil {
+			res.Error = canceled
+			break
+		}
 		ok, s := w.exportOneSingleResource(res, u, names)
 		if ok {
 			cnt++

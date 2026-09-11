@@ -7,6 +7,8 @@ type Progress interface {
 	Run() error
 	Reset()
 	NewWorker() Progress
+	// Finish is called when the export is done. It must make sure all progress bars are completed (100%).
+	Finish()
 
 	IncrementMainBar()
 	IncrementResourceBarBy(id, inc int)
