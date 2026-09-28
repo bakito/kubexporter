@@ -165,7 +165,7 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		config.EncryptFields(res, *us)
 		encryptedCount := countEncryptedFields(us.Object)
 
-		err := table.Append(
+		err = table.Append(
 			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
 		if err != nil {
 			return err
