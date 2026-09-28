@@ -119,7 +119,7 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 			return err
 		}
 		err = table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)}
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
 		if err != nil {
 			return err
 		}
@@ -166,7 +166,7 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		encryptedCount := countEncryptedFields(us.Object)
 
 		err := table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)}
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
 		if err != nil {
 			return err
 		}
