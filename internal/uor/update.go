@@ -110,6 +110,7 @@ func updateFile(
 					ref.Name,
 					string(ref.UID),
 					string(owner.GetUID()),
+				)
 				if err != nil {
 					return false, err
 				}
