@@ -89,13 +89,14 @@ func updateFile(
 				if errors.IsNotFound(err) {
 					errMsg = "<NOT FOUND>"
 				}
-				if err := table.Append(
+				err = table.Append(
 					fileName,
 					ref.Kind,
 					ref.Name,
 					string(ref.UID),
 					errMsg,
-				); err != nil {
+				)
+				if err != nil {
 					return false, err
 				}
 				witContent = true
@@ -103,13 +104,14 @@ func updateFile(
 			}
 
 			if ref.UID != owner.GetUID() {
-				if err := table.Append(
+				err = table.Append(
 					fileName,
 					ref.Kind,
 					ref.Name,
 					string(ref.UID),
 					string(owner.GetUID()),
-				); err != nil {
+				)
+				if err != nil {
 					return false, err
 				}
 				witContent = true

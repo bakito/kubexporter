@@ -118,9 +118,9 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		if replaced, err = decryptFields(us.Object, gcm, nonceSize); err != nil {
 			return err
 		}
-		if err := table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)},
-		); err != nil {
+		err = table.Append(
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
+		if err != nil {
 			return err
 		}
 
@@ -165,9 +165,9 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		config.EncryptFields(res, *us)
 		encryptedCount := countEncryptedFields(us.Object)
 
-		if err := table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)},
-		); err != nil {
+		err = table.Append(
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
+		if err != nil {
 			return err
 		}
 
@@ -187,7 +187,8 @@ func decryptFields(obj map[string]any, gcm cipher.AEAD, nonceSize int) (int, err
 		case map[string]any:
 			var cnt int
 			var err error
-			if cnt, err = decryptFields(e, gcm, nonceSize); err != nil {
+			cnt, err = decryptFields(e, gcm, nonceSize)
+			if err != nil {
 				return 0, err
 			}
 			replaced += cnt
