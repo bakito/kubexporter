@@ -187,7 +187,8 @@ func decryptFields(obj map[string]any, gcm cipher.AEAD, nonceSize int) (int, err
 		case map[string]any:
 			var cnt int
 			var err error
-			if cnt, err = decryptFields(e, gcm, nonceSize); err != nil {
+			cnt, err = decryptFields(e, gcm, nonceSize)
+			if err != nil {
 				return 0, err
 			}
 			replaced += cnt
