@@ -33,9 +33,8 @@ brew install --cask kubexporter
 
 ### Use as kubectl plugin
 
-Rename the binary to kubectl-exporter.
-
 ```bash
+kubectl krew install exporter
 kubectl exporter ...
 ```
 
