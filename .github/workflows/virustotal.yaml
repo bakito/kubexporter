@@ -11,6 +11,13 @@ on:
         description: 'Release tag to scan (optional, defaults to latest)'
         required: false
         default: ''
+  workflow_call:
+    inputs:
+      release_tag:
+        description: 'Release tag to scan'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   scan_release:
@@ -19,7 +26,7 @@ jobs:
       - name: Get Latest Release Tag
         id: latest_release
         run: |
-          RELEASE_TAG=${{ github.event.release.tag_name }}
+          RELEASE_TAG=${{ inputs.release_tag || github.event.release.tag_name }}
           if [ -z "$RELEASE_TAG" ]; then
             RELEASE_TAG=${{ github.event.inputs.release_tag }}
           fi
