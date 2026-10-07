@@ -1,4 +1,4 @@
-name: create_release
+name: Create Release
 permissions: read-all
 
 on:
@@ -47,7 +47,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Release
-        run: make release-ci
+        run: make release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
