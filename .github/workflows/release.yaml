@@ -47,7 +47,7 @@ jobs:
           go-version-file: 'go.mod'
 
       - name: Release
-        run: make release
+        run: make release-ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

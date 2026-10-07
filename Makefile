@@ -28,6 +28,9 @@ release: tb.goreleaser tb.semver tb.syft tb.goversioninfo
 	git push origin $$version
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 2
 
+release-ci: tb.goreleaser tb.syft tb.goversioninfo
+        PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 2
+
 test-release: tb.goreleaser tb.syft tb.goversioninfo
 	@rm -f resource_windows*.syso
 	@TB_GORELEASER_ARGS="--skip=publish --snapshot --clean --parallelism 2"; \
