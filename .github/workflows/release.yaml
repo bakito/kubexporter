@@ -49,6 +49,4 @@ jobs:
   scan-virustotal:
     needs: release
     uses: ./.github/workflows/virustotal.yaml
-    with:
-      release_tag: ${{ github.ref_name }}
     secrets: inherit
