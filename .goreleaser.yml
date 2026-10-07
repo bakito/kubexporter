@@ -57,3 +57,14 @@ homebrew_casks:
     repository:
       owner: "bakito"
       name: "homebrew-tap"
+
+krews:
+  - name: exporter
+    ids:
+      - default
+    skip_upload: true
+    homepage: https://github.com/bakito/kubexporter
+    description: |
+      KubExporter allows you to export resources from Kubernetes as YAML or JSON files.
+      The configuration allows customization on which resources and which fields to exclude.
+    short_description: Export cluster resources as YAML or JSON

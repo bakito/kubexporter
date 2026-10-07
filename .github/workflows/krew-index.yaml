@@ -1,0 +1,12 @@
+name: Updte krew-index
+
+on:
+  release:
+    types: [ released ]
+
+jobs:
+  krew_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update new version in krew-index
+        uses: rajatjindal/krew-release-bot@c970b8a8f6dbc2f2285a26e3ae160903b87002c3 # v0.0.51

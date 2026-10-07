@@ -1,13 +1,13 @@
-# Gitleaks configuration file
+# Betterleaks configuration file
 # This file excludes false positives from test files containing AES keys
 
 [allowlist]
 # Allow AES keys in test files and config
 description = "Allow AES keys in test files and configuration"
 paths = [
-    "**/*_test.go",
-    "**/testdata/**",
-    "**/config.yaml"
+    '''_test\.go''',
+    '''testdata''',
+    '''config\.yaml'''
 ]
 
 # Allow specific test patterns
@@ -28,6 +28,6 @@ id = "generic-api-key"
 description = "Allow KUBEXPORTER_AES prefix in test files"
 regex = '''KUBEXPORTER_AES@'''
 paths = [
-    "**/*_test.go",
-    "**/testdata/**"
+    '''_test\.go''',
+    '''testdata'''
 ]
