@@ -1,4 +1,4 @@
-name: create_release
+name: Create Release
 permissions: read-all
 
 on:
@@ -50,6 +50,7 @@ jobs:
         run: make release-ci
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_GITHUB_API_TOKEN: ${{ secrets.HOMEBREW_GITHUB_API_TOKEN }}
 
       - name: Update new version in krew-index
         if: github.event_name != 'workflow_dispatch' || inputs.skip_publish != true
