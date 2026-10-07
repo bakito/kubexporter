@@ -1,8 +1,6 @@
 name: Scan GitHub Release with VirusTotal
 
 on:
-  release:
-    types: [released]
   schedule:
     - cron: '45 3 * * *'
   workflow_dispatch:
@@ -26,7 +24,7 @@ jobs:
       - name: Get Latest Release Tag
         id: latest_release
         run: |
-          RELEASE_TAG=${{ inputs.release_tag || github.event.release.tag_name }}
+          RELEASE_TAG=${{ inputs.release_tag }}
           if [ -z "$RELEASE_TAG" ]; then
             RELEASE_TAG=${{ github.event.inputs.release_tag }}
           fi

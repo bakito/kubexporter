@@ -22,11 +22,10 @@ test-ci:
 	@sed -i '/log/d'                     coverage.out
 	go tool cover -func coverage.out
 
-release: tb.goreleaser tb.semver tb.syft tb.goversioninfo
+release: tb.semver
 	@version=$$($(TB_SEMVER)); \
 	git tag -s $$version -m"Release $$version"; \
 	git push origin $$version
-	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 2
 
 release-ci: tb.goreleaser tb.syft tb.goversioninfo
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 2
