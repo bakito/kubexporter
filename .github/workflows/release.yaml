@@ -57,3 +57,24 @@ jobs:
         uses: rajatjindal/krew-release-bot@c970b8a8f6dbc2f2285a26e3ae160903b87002c3 # v0.0.51
         with:
           krew_template_file: dist/krew/exporter.yaml
+          krew_plugin_release_tag: ${{ inputs.tag_name }}
+
+  publish-images:
+    needs: release
+    if: github.event_name != 'workflow_dispatch' || inputs.skip_publish != true
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      tag_name: ${{ inputs.tag_name }}
+    secrets: inherit
+
+  scan-virustotal:
+    needs: release
+    if: github.event_name != 'workflow_dispatch' || inputs.skip_publish != true
+    uses: ./.github/workflows/virustotal.yaml
+    with:
+      release_tag: ${{ inputs.tag_name }}
+    secrets: inherit
