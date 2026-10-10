@@ -192,12 +192,12 @@ func TestDecryptFields(t *testing.T) {
 					"secret": tt.input,
 				},
 			}}
-			cnt, err := decryptFields(us.Object, enc.aes, nil)
+			res, err := decryptFields(us.Object, enc.aes, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if cnt != tt.expectedCount {
-				t.Errorf("expected %d decrypted field, but got %d", tt.expectedCount, cnt)
+			if res.count != tt.expectedCount {
+				t.Errorf("expected %d decrypted field, but got %d", tt.expectedCount, res.count)
 			}
 			secret, _, _ := unstructured.NestedString(us.Object, "data", "secret")
 			if secret != tt.expected {
@@ -358,12 +358,12 @@ func TestDecryptFields_Age(t *testing.T) {
 					"secret": tt.input,
 				},
 			}
-			cnt, err := decryptFields(obj, nil, ageEnc)
+			res, err := decryptFields(obj, nil, ageEnc)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if cnt != tt.expectedCount {
-				t.Errorf("expected %d decrypted field, but got %d", tt.expectedCount, cnt)
+			if res.count != tt.expectedCount {
+				t.Errorf("expected %d decrypted field, but got %d", tt.expectedCount, res.count)
 			}
 			secret, _, _ := unstructured.NestedString(obj, "data", "secret")
 			if secret != tt.expected {
@@ -411,12 +411,12 @@ func TestDecryptFields_Mixed(t *testing.T) {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}
 
-	cnt, err := decryptFields(obj, aesEncrypted.aes, ageDec)
+	res, err := decryptFields(obj, aesEncrypted.aes, ageDec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if cnt != 2 {
-		t.Errorf("expected 2 decrypted fields, but got %d", cnt)
+	if res.count != 2 {
+		t.Errorf("expected 2 decrypted fields, but got %d", res.count)
 	}
 
 	aesDecrypted, _, _ := unstructured.NestedString(obj, "data", "aes-field")

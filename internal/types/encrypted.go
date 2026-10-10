@@ -175,19 +175,29 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 	}
 
 	table := render.Table()
-	table.Header("File", "Namespace", "Kind", "Name", "Decrypted Fields")
+	table.Header("File", "Namespace", "Kind", "Name", "Algorithm", "Decrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
 		if err != nil {
 			return err
 		}
-		var replaced int
-		if replaced, err = decryptFields(us.Object, aesEnc, ageEnc); err != nil {
+		var res decryptResult
+		if res, err = decryptFields(us.Object, aesEnc, ageEnc); err != nil {
 			return err
 		}
+
+		algorithm := ""
+		if res.hasAES && res.hasAge {
+			algorithm = "AES + age"
+		} else if res.hasAES {
+			algorithm = "AES"
+		} else if res.hasAge {
+			algorithm = "age"
+		}
+
 		err = table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), algorithm, strconv.Itoa(res.count)})
 		if err != nil {
 			return err
 		}
@@ -217,7 +227,7 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 	}
 
 	table := render.Table()
-	table.Header("File", "Namespace", "Kind", "Name", "Encrypted Fields")
+	table.Header("File", "Namespace", "Kind", "Name", "Algorithm", "Encrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
@@ -234,7 +244,7 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		encryptedCount := countEncryptedFields(us.Object)
 
 		err = table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount)})
 		if err != nil {
 			return err
 		}
@@ -247,27 +257,37 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 	return table.Render()
 }
 
+// decryptResult holds the result of decrypting fields.
+type decryptResult struct {
+	count   int
+	hasAES  bool
+	hasAge  bool
+}
+
 // decryptFields recursively decrypts encrypted fields in the given object.
-func decryptFields(obj map[string]any, aesEnc *AesEncryptor, ageEnc *AgeEncryptor) (int, error) {
-	var replaced int
+func decryptFields(obj map[string]any, aesEnc *AesEncryptor, ageEnc *AgeEncryptor) (decryptResult, error) {
+	var res decryptResult
 	for key, value := range obj {
 		switch v := value.(type) {
 		case map[string]any:
-			cnt, err := decryptFields(v, aesEnc, ageEnc)
+			child, err := decryptFields(v, aesEnc, ageEnc)
 			if err != nil {
-				return 0, err
+				return res, err
 			}
-			replaced += cnt
+			res.count += child.count
+			res.hasAES = res.hasAES || child.hasAES
+			res.hasAge = res.hasAge || child.hasAge
 		case string:
 			// Try AES decryption
 			if aesEnc != nil {
 				if after, ok := strings.CutPrefix(v, aesPrefix); ok {
 					plaintext, err := aesEnc.Decrypt(after)
 					if err != nil {
-						return 0, err
+						return res, err
 					}
 					obj[key] = plaintext
-					replaced++
+					res.count++
+					res.hasAES = true
 					continue
 				}
 			}
@@ -277,16 +297,17 @@ func decryptFields(obj map[string]any, aesEnc *AesEncryptor, ageEnc *AgeEncrypto
 				if after, ok := strings.CutPrefix(v, agePrefix); ok {
 					plaintext, err := ageEnc.Decrypt(after)
 					if err != nil {
-						return 0, fmt.Errorf("age decryption failed: %w", err)
+						return res, fmt.Errorf("age decryption failed: %w", err)
 					}
 					obj[key] = plaintext
-					replaced++
+					res.count++
+					res.hasAge = true
 					continue
 				}
 			}
 		}
 	}
-	return replaced, nil
+	return res, nil
 }
 
 // countEncryptedFields counts the number of fields that have been encrypted.
