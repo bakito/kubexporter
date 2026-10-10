@@ -48,5 +48,7 @@ jobs:
 
   scan-virustotal:
     needs: release
+    permissions:
+      contents: write
     uses: ./.github/workflows/virustotal.yaml
     secrets: inherit
