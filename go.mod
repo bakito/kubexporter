@@ -9,7 +9,7 @@ require (
 	cloud.google.com/go/storage v1.69.0
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/bakito/docs-gen v0.0.8
-	github.com/charmbracelet/x/ansi v0.11.8
+	github.com/charmbracelet/x/ansi v0.11.9
 	github.com/dustin/go-humanize v1.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/uuid v1.6.0
