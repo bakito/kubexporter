@@ -18,7 +18,7 @@
 exports
 exports*.tar.gz
 dist
-kubexporter
+kubexporter*
 gomock_*
 bin
 .config.yaml
