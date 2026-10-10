@@ -25,6 +25,8 @@ clearTarget: true
 worker: 5
 encrypted:
   aesKey: "12345678901234567890123456789012"
+  # agePublicKey: "age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p"
+  # ageIdentity: "AGE-SECRET-KEY-1..."
   kindFields:
     Secret:
       - [data]

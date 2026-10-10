@@ -158,6 +158,10 @@ masked:
 encrypted:
   # The AES key to use for field encryption (string)
   aesKey:
+  # The age public key for encryption (recipient) (string)
+  agePublicKey:
+  # The age identity key for decryption (string)
+  ageIdentity:
   # The fields to encrypt for each kind (map[string:[][]string])
   kindFields:
 # sort the slice field value before exporting (map[string:[][]string])
@@ -353,8 +357,24 @@ kubexporter update-owner-references
 
 Exported files with encrypted values can be decrypted with the decrypt command.
 
-The aes key can b provided via arg `--aes-key`, env variable `KUBEXPORTER_AES_KEY`. If not provided the key can be
+The decrypt command supports both **AES** and **age** encryption modes. Encrypted values are automatically detected
+by their prefix (`KUBEXPORTER_AES@` for AES, `KUBEXPORTER_AGE@` for age).
+
+**Note:** For encryption, **age is preferred** over AES when both keys are configured. For decryption, both AES and
+age keys can be provided simultaneously, allowing files with mixed encrypted values (some AES, some age) to be
+decrypted in a single pass.
+
+#### AES Encryption
+
+The AES key can be provided via arg `--aes-key`, env variable `KUBEXPORTER_AES_KEY`. If not provided the key can be
 entered via password prompt.
+
+The AES key can also be stored in a Kubernetes Secret:
+
+```shell
+kubexporter encrypt --aes-key-secret-namespace default --aes-key-secret-name kubexporter-key --aes-key-secret-key aes-key exports/Secret.my-secret.yaml
+kubexporter decrypt --aes-key-secret-namespace default --aes-key-secret-name kubexporter-key --aes-key-secret-key aes-key exports/Secret.my-secret.yaml
+```
 
 1 - n file paths are defined via command arguments.
 
@@ -364,6 +384,35 @@ kubexporter decrypt exports/argocd/Secret.argocd-secret.yaml
  FILE                                      NAMESPACE  KIND    NAME           DECRYPTED FIELDS
  exports/argocd/Secret.argocd-secret.yaml  argocd     Secret  argocd-secret                 5
 
+```
+
+#### Age Encryption
+
+Age encryption uses public-key cryptography. To encrypt, provide an age public key (recipient). To decrypt, provide
+the corresponding age identity key.
+
+**Encrypt with age:**
+
+The age public key can be provided via `--age-public-key` flag, env variable `KUBEXPORTER_AGE_PUBLIC_KEY`, or from a
+Kubernetes Secret:
+
+```shell
+kubexporter encrypt --age-public-key age1ql3z7hjy54pw3hyww5ayyfg7zqgvc7w3j2elw8zmrj2kg5sfn9aqmcac8p exports/Secret.my-secret.yaml
+
+# Or from a Kubernetes Secret
+kubexporter encrypt --age-public-key-secret-namespace default --age-public-key-secret-name kubexporter-age-key --age-public-key-secret-key public-key exports/Secret.my-secret.yaml
+```
+
+**Decrypt with age:**
+
+The age identity can be provided via `--age-identity` flag, env variable `KUBEXPORTER_AGE_IDENTITY`, or from a
+Kubernetes Secret:
+
+```shell
+kubexporter decrypt --age-identity "AGE-SECRET-KEY-1..." exports/Secret.my-secret.yaml
+
+# Or from a Kubernetes Secret
+kubexporter decrypt --age-identity-secret-namespace default --age-identity-secret-name kubexporter-age-key --age-identity-secret-key identity exports/Secret.my-secret.yaml
 ```
 
 #### Decrypt multiple files

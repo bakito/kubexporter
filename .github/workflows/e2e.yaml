@@ -44,10 +44,6 @@ jobs:
     steps:
       - name: 🛎 Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: 🐹 Set up Go
-        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: "go.mod"
 
       - name: 🔧 Install jq
         uses: dcarbone/install-jq-action@4fcb5062d7ce9bc4382d1a352d19ba3ba2c317c1 # v4.0.1
@@ -57,6 +53,17 @@ jobs:
         with:
           name: image-tar
           path: /tmp
+
+      - name: 📦 Export binary from image
+        run: |
+          docker load -i /tmp/image.tar
+          docker create --name kubexporter-extract kubexporter:e2e
+          docker cp kubexporter-extract:/opt/go/kubexporter ./kubexporter-bin
+          docker rm kubexporter-extract
+          chmod +x ./kubexporter-bin
+
+      - name: 🔐 Install age
+        run: sudo apt-get update && sudo apt-get install -y age
 
       - name: ☸ Install kind with registry
         uses: bakito/kind-with-registry-action@b13dc5fd599a5c774e7ca721d6e7a34f7269d2d8 # v1.0.1
@@ -96,19 +103,19 @@ jobs:
       - name: 🌐 Export all namespaces
         run: |
           echo "## Export all namespaces" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --target exports-all --otlp-metrics=true >> $GITHUB_STEP_SUMMARY
+          ./kubexporter-bin --config config.yaml --progress simple --target exports-all --otlp-metrics=true >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-namespaces.sh exports-all e2e-ns1 e2e-ns2 e2e-ns3
 
       - name: 1️⃣ Export a single namespace
         run: |
           echo "## Export a single namespace" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --target exports-single --namespace e2e-ns1 --otlp-metrics=false >> $GITHUB_STEP_SUMMARY
+          ./kubexporter-bin --config config.yaml --progress simple --target exports-single --namespace e2e-ns1 --otlp-metrics=false >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-namespaces.sh exports-single e2e-ns1
 
       - name: 2️⃣ Export two namespaces
         run: |
           echo "## Export two namespaces" >> $GITHUB_STEP_SUMMARY
-          go run . --config config.yaml --progress simple --target exports-two --namespace e2e-ns1 --namespace e2e-ns2 --otlp-metrics=false >> $GITHUB_STEP_SUMMARY
+          ./kubexporter-bin --config config.yaml --progress simple --target exports-two --namespace e2e-ns1 --namespace e2e-ns2 --otlp-metrics=false >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-namespaces.sh exports-two e2e-ns1 e2e-ns2
 
       - name: 🚀 Run Exporter as k8s Job
@@ -137,3 +144,35 @@ jobs:
           cat /tmp/otel-output/metrics.json | jq >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           testdata/e2e/verify-metrics.sh /tmp/otel-output/metrics.json
+
+      - name: 🔑 Test AES encryption roundtrip
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-aes-encryption.sh
+          echo "## AES Encryption Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ AES encryption and decryption roundtrip passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔑 Test AES encryption with K8s secret
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-aes-encryption-k8s-secret.sh
+          echo "## AES Encryption with K8s Secret Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ AES encryption with K8s secret key resolution passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔐 Test age encryption roundtrip
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-age-encryption.sh
+          echo "## Age Encryption Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Age encryption and decryption roundtrip passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔐 Test age encryption with K8s secret
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-age-encryption-k8s-secret.sh
+          echo "## Age Encryption with K8s Secret Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Age encryption with K8s secret key resolution passed" >> $GITHUB_STEP_SUMMARY

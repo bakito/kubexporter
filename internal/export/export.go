@@ -461,8 +461,8 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 func (e *exporter) printIndented(block string) {
 	for line := range strings.SplitSeq(strings.TrimRight(block, "\n"), "\n") {
 		// the table adds a leading padding space, replace it by the common indentation
-		if strings.HasPrefix(line, " ") {
-			line = strings.TrimPrefix(line, " ")
+		if after, ok := strings.CutPrefix(line, " "); ok {
+			line = after
 		} else {
 			// separator lines have no padding, shorten them to the content width
 			line = strings.TrimSuffix(line, "─")
