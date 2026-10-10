@@ -28,11 +28,11 @@ release: tb.semver
 	git push origin $$version
 
 release-ci: tb.goreleaser tb.syft tb.goversioninfo
-	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 2
+	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 4
 
 test-release: tb.goreleaser tb.syft tb.goversioninfo
 	@rm -f resource_windows*.syso
-	@TB_GORELEASER_ARGS="--skip=publish --snapshot --clean --parallelism 2"; \
+	@TB_GORELEASER_ARGS="--skip=publish --snapshot --clean --parallelism 4"; \
 	TB_GORELEASER_EXTRA_ARGS=""; \
 	if ! command -v snapcraft >/dev/null 2>&1; then \
 		TB_GORELEASER_EXTRA_ARGS="--skip=snapcraft"; \
