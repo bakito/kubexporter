@@ -11,9 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
-	"charm.land/lipgloss/v2"
-	"charm.land/lipgloss/v2/table"
-
+	"github.com/bakito/kubexporter/internal/render"
 	"github.com/bakito/kubexporter/internal/utils"
 )
 
@@ -121,9 +119,8 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 		return err
 	}
 
-	tbl := table.New().
-		Headers("File", "Namespace", "Kind", "Name", "Algorithm", "Encrypted Fields").
-		Border(lipgloss.NormalBorder())
+	table := render.Table()
+	table.Header("File", "Namespace", "Kind", "Name", "Encrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
@@ -139,15 +136,18 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 		config.EncryptFields(res, *us)
 		encryptedCount := countEncryptedFields(us.Object)
 
-		tbl = tbl.Row(file, us.GetNamespace(), us.GetKind(), us.GetName(), "age", strconv.Itoa(encryptedCount))
+		err = table.Append(
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
+		if err != nil {
+			return err
+		}
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
 		}
 	}
 
-	fmt.Println(tbl.Render())
-	return nil
+	return table.Render()
 }
 
 func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity string, files ...string) error {
@@ -174,9 +174,8 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 		return errors.New("decrypt requires either an AES key or an age identity")
 	}
 
-	tbl := table.New().
-		Headers("File", "Namespace", "Kind", "Name", "Decrypted Fields").
-		Border(lipgloss.NormalBorder())
+	table := render.Table()
+	table.Header("File", "Namespace", "Kind", "Name", "Decrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
@@ -187,15 +186,18 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 		if replaced, err = decryptFields(us.Object, aesEnc, ageEnc); err != nil {
 			return err
 		}
-		tbl = tbl.Row(file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced))
+		err = table.Append(
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(replaced)})
+		if err != nil {
+			return err
+		}
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
 		}
 	}
 
-	fmt.Println(tbl.Render())
-	return nil
+	return table.Render()
 }
 
 // Encrypt encrypts secrets in exported resource files using AES encryption.
@@ -214,9 +216,8 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		return err
 	}
 
-	tbl := table.New().
-		Headers("File", "Namespace", "Kind", "Name", "Algorithm", "Encrypted Fields").
-		Border(lipgloss.NormalBorder())
+	table := render.Table()
+	table.Header("File", "Namespace", "Kind", "Name", "Encrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
@@ -232,15 +233,18 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		config.EncryptFields(res, *us)
 		encryptedCount := countEncryptedFields(us.Object)
 
-		tbl = tbl.Row(file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount))
+		err = table.Append(
+			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
+		if err != nil {
+			return err
+		}
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
 		}
 	}
 
-	fmt.Println(tbl.Render())
-	return nil
+	return table.Render()
 }
 
 // decryptFields recursively decrypts encrypted fields in the given object.
