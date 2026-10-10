@@ -48,7 +48,7 @@ generate_age_keypair() {
 export_secrets() {
   local target="$1"
   unset KUBEXPORTER_AES_KEY
-  $(get_bin) --progress simple --target "$target" --namespace e2e-ns1 --otlp-metrics=false
+  $(get_bin) --progress simple --target "$target" --namespace e2e-ns1 --include-kinds Secret --otlp-metrics=false
 }
 
 # Finds the first Secret.*.yaml file in the given export directory.
