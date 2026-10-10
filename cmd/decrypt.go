@@ -69,13 +69,13 @@ func evaluateAesKey(cmd *cobra.Command) (key string, err error) {
 	}
 
 	if key == "" {
+		// In non-TTY environments (e.g., CI), readKey fails with ioctl error.
+		// If age identity is provided (directly or via K8s secret), skip the AES key prompt.
+		if ageIdentity != "" || ageIdentitySecretNamespace != "" {
+			return "", nil
+		}
 		key, err = readKey()
 		if err != nil {
-			// In non-TTY environments (e.g., CI), readKey fails with ioctl error.
-			// If age identity is provided (directly or via K8s secret), we can skip the AES key.
-			if ageIdentity != "" || ageIdentitySecretNamespace != "" {
-				return "", nil
-			}
 			return "", err
 		}
 	}
