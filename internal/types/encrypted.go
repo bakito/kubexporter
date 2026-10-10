@@ -188,11 +188,12 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 		}
 
 		algorithm := ""
-		if res.hasAES && res.hasAge {
+		switch {
+		case res.hasAES && res.hasAge:
 			algorithm = "AES + age"
-		} else if res.hasAES {
+		case res.hasAES:
 			algorithm = "AES"
-		} else if res.hasAge {
+		case res.hasAge:
 			algorithm = "age"
 		}
 
@@ -259,9 +260,9 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 
 // decryptResult holds the result of decrypting fields.
 type decryptResult struct {
-	count   int
-	hasAES  bool
-	hasAge  bool
+	count  int
+	hasAES bool
+	hasAge bool
 }
 
 // decryptFields recursively decrypts encrypted fields in the given object.

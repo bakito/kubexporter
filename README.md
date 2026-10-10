@@ -364,28 +364,6 @@ by their prefix (`KUBEXPORTER_AES@` for AES, `KUBEXPORTER_AGE@` for age).
 age keys can be provided simultaneously, allowing files with mixed encrypted values (some AES, some age) to be
 decrypted in a single pass.
 
-#### AES Encryption
-
-The AES key can be provided via arg `--aes-key`, env variable `KUBEXPORTER_AES_KEY`. If not provided the key can be
-entered via password prompt.
-
-The AES key can also be stored in a Kubernetes Secret:
-
-```shell
-kubexporter encrypt --aes-key-secret-namespace default --aes-key-secret-name kubexporter-key --aes-key-secret-key aes-key exports/Secret.my-secret.yaml
-kubexporter decrypt --aes-key-secret-namespace default --aes-key-secret-name kubexporter-key --aes-key-secret-key aes-key exports/Secret.my-secret.yaml
-```
-
-1 - n file paths are defined via command arguments.
-
-```shell
-kubexporter decrypt exports/argocd/Secret.argocd-secret.yaml
-
- FILE                                      NAMESPACE  KIND    NAME           DECRYPTED FIELDS
- exports/argocd/Secret.argocd-secret.yaml  argocd     Secret  argocd-secret                 5
-
-```
-
 #### Age Encryption
 
 Age encryption uses public-key cryptography. To encrypt, provide an age public key (recipient). To decrypt, provide
@@ -413,6 +391,28 @@ kubexporter decrypt --age-identity "AGE-SECRET-KEY-1..." exports/Secret.my-secre
 
 # Or from a Kubernetes Secret
 kubexporter decrypt --age-identity-secret-namespace default --age-identity-secret-name kubexporter-age-key --age-identity-secret-key identity exports/Secret.my-secret.yaml
+```
+
+#### AES Encryption
+
+The AES key can be provided via arg `--aes-key`, env variable `KUBEXPORTER_AES_KEY`. If not provided the key can be
+entered via password prompt.
+
+The AES key can also be stored in a Kubernetes Secret:
+
+```shell
+kubexporter encrypt --aes-key-secret-namespace default --aes-key-secret-name kubexporter-key --aes-key-secret-key aes-key exports/Secret.my-secret.yaml
+kubexporter decrypt --aes-key-secret-namespace default --aes-key-secret-name kubexporter-key --aes-key-secret-key aes-key exports/Secret.my-secret.yaml
+```
+
+1 - n file paths are defined via command arguments.
+
+```shell
+kubexporter decrypt exports/argocd/Secret.argocd-secret.yaml
+
+ FILE                                      NAMESPACE  KIND    NAME           DECRYPTED FIELDS
+ exports/argocd/Secret.argocd-secret.yaml  argocd     Secret  argocd-secret                 5
+
 ```
 
 #### Decrypt multiple files
