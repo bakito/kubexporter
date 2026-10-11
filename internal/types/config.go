@@ -678,7 +678,7 @@ func (c *Config) Validate() error {
 		c.Progress = ProgressNone
 	}
 
-	if c.Progress != ProgressSimple && c.Progress != ProgressNone {
+	if c.Progress != ProgressSimple && c.Progress != ProgressNone && c.Progress != ProgressBarBubbles {
 		c.Progress = ProgressBar
 	}
 	return nil

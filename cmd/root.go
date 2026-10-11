@@ -143,6 +143,10 @@ func readConfig(
 }
 
 func correctProgressForNonTerminalRun(config *types.Config) {
+	if config.Quiet {
+		config.Progress = types.ProgressNone
+		return
+	}
 	if config.Progress != types.ProgressNone &&
 		config.Progress != types.ProgressSimple &&
 		!isatty.IsTerminal(os.Stdout.Fd()) &&
