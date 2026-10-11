@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mattn/go-runewidth"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
 	"github.com/bakito/kubexporter/internal/export/worker"
@@ -165,5 +166,153 @@ func TestPrintStatsSimpleHasNoIcons(t *testing.T) {
 		if c != columns[0] {
 			t.Errorf("value of line %d starts at %d, but expected %d:\n%s", i, c, columns[0], out)
 		}
+	}
+}
+
+func TestAllowsList(t *testing.T) {
+	t.Run("resource with list verb", func(t *testing.T) {
+		r := metav1.APIResource{Verbs: []string{"get", "list", "watch"}}
+		if !allowsList(r) {
+			t.Error("expected allowsList to be true")
+		}
+	})
+
+	t.Run("resource without list verb", func(t *testing.T) {
+		r := metav1.APIResource{Verbs: []string{"get", "create"}}
+		if allowsList(r) {
+			t.Error("expected allowsList to be false")
+		}
+	})
+
+	t.Run("resource with empty verbs", func(t *testing.T) {
+		r := metav1.APIResource{Verbs: []string{}}
+		if allowsList(r) {
+			t.Error("expected allowsList to be false")
+		}
+	})
+}
+
+func TestIntroEntries_with_config_options(t *testing.T) {
+	e := testExporter(t, types.ProgressBar)
+	e.config.CreatedWithin = time.Hour
+	e.config.AsLists = true
+	e.config.QueryPageSize = 50
+	e.config.PrintSize = true
+	e.config.Archive = true
+	e.config.ArchiveRetentionDays = 30
+
+	entries := e.introEntries()
+
+	// Verify entries contain expected labels
+	labels := make(map[string]bool)
+	for _, en := range entries {
+		labels[en.label] = true
+	}
+
+	expectedLabels := []string{"created within", "as lists", "print size", "archive", "archive retention"}
+	for _, label := range expectedLabels {
+		if !labels[label] {
+			t.Errorf("expected entry with label %q, got labels: %v", label, labels)
+		}
+	}
+}
+
+func TestIntroEntries_without_archive(t *testing.T) {
+	e := testExporter(t, types.ProgressBar)
+	e.config.Archive = false
+
+	entries := e.introEntries()
+
+	for _, en := range entries {
+		if en.label == "archive" {
+			t.Error("expected no archive entry when Archive is false")
+		}
+	}
+}
+
+func TestStatsEntries_with_archive(t *testing.T) {
+	e := testExporter(t, types.ProgressBar)
+	e.archive = "exports.tar.gz"
+	e.deletedArchives = []string{"old1.tar.gz", "old2.tar.gz"}
+	e.stats.Errors = 3
+	e.config.PrintSize = true
+	e.config.QueryPageSize = 50
+
+	entries := e.statsEntries()
+
+	labels := make(map[string]bool)
+	for _, en := range entries {
+		labels[en.label] = true
+	}
+
+	expectedLabels := []string{"archive", "deleted archives", "errors", "exported size", "query pages"}
+	for _, label := range expectedLabels {
+		if !labels[label] {
+			t.Errorf("expected entry with label %q, got labels: %v", label, labels)
+		}
+	}
+}
+
+func TestStatsEntries_without_errors(t *testing.T) {
+	e := testExporter(t, types.ProgressBar)
+	e.stats.Errors = 0
+
+	entries := e.statsEntries()
+
+	for _, en := range entries {
+		if en.label == "errors" {
+			t.Error("expected no errors entry when there are no errors")
+		}
+	}
+}
+
+func TestPrintHeading_simple_mode(t *testing.T) {
+	e := testExporter(t, types.ProgressSimple)
+
+	out := captureStdout(t, func() {
+		e.printHeading("", "Test Heading")
+	})
+
+	// In simple mode, the rule should use dashes instead of em-dashes
+	if strings.Contains(out, "─") {
+		t.Errorf("expected dash rule in simple mode, but got em-dash:\n%s", out)
+	}
+	if !strings.Contains(out, "-") {
+		t.Errorf("expected dash rule in simple mode, but got:\n%s", out)
+	}
+}
+
+func TestPrintHeading_with_icon(t *testing.T) {
+	e := testExporter(t, types.ProgressBar)
+
+	out := captureStdout(t, func() {
+		e.printHeading("🚀", "Test Heading")
+	})
+
+	if !strings.Contains(out, "🚀") {
+		t.Errorf("expected icon in heading, but got:\n%s", out)
+	}
+	if !strings.Contains(out, "Test Heading") {
+		t.Errorf("expected heading text, but got:\n%s", out)
+	}
+	// With icon, should use em-dash rule
+	if !strings.Contains(out, "─") {
+		t.Errorf("expected em-dash rule with icon, but got:\n%s", out)
+	}
+}
+
+func TestPrintHeading_without_icon(t *testing.T) {
+	e := testExporter(t, types.ProgressBar)
+
+	out := captureStdout(t, func() {
+		e.printHeading("", "Test Heading")
+	})
+
+	if !strings.Contains(out, "Test Heading") {
+		t.Errorf("expected heading text, but got:\n%s", out)
+	}
+	// Without icon, should still use em-dash rule in normal mode
+	if !strings.Contains(out, "─") {
+		t.Errorf("expected em-dash rule, but got:\n%s", out)
 	}
 }
