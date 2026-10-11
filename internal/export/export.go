@@ -49,6 +49,21 @@ func NewExporter(config *types.Config) (Exporter, error) {
 	}, nil
 }
 
+// newProgress creates the progress for the configured mode; quiet mode never shows any progress.
+func newProgress(config *types.Config, resources []*types.GroupResource) progress.Progress {
+	if config.Quiet {
+		return nop.NewProgress()
+	}
+	switch config.Progress {
+	case types.ProgressBar:
+		return mpb.NewProgress(resources)
+	case types.ProgressBarBubbles:
+		return bubbles.NewProgress(resources)
+	default:
+		return nop.NewProgress()
+	}
+}
+
 // Exporter interface.
 type Exporter interface {
 	Export(ctx context.Context) error
@@ -98,16 +113,7 @@ func (e *exporter) Export(ctx context.Context) error {
 		return strings.Compare(a.APIResource.Kind, b.APIResource.Kind)
 	})
 
-	var prog progress.Progress
-
-	switch e.config.Progress {
-	case types.ProgressBar:
-		prog = mpb.NewProgress(resources)
-	case types.ProgressBarBubbles:
-		prog = bubbles.NewProgress(resources)
-	default:
-		prog = nop.NewProgress()
-	}
+	prog := newProgress(e.config, resources)
 
 	var workers []worker.Worker
 	for i := range e.config.Worker {
