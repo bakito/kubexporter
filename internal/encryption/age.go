@@ -1,4 +1,4 @@
-package types
+package encryption
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"filippo.io/age/armor"
 )
 
-const agePrefix = "KUBEXPORTER_AGE@"
+const AgePrefix = "KUBEXPORTER_AGE@"
 
 // AgeEncryptor handles age-based encryption and decryption.
 type AgeEncryptor struct {
@@ -63,7 +63,7 @@ func (a *AgeEncryptor) Encrypt(plaintext string) string {
 		return plaintext
 	}
 
-	return agePrefix + buf.String()
+	return AgePrefix + buf.String()
 }
 
 // Decrypt decrypts the given armored age-encrypted value.

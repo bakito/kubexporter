@@ -1,4 +1,4 @@
-package types
+package encryption
 
 import (
 	"crypto/aes"
@@ -8,7 +8,7 @@ import (
 	"io"
 )
 
-const aesPrefix = "KUBEXPORTER_AES@"
+const AesPrefix = "KUBEXPORTER_AES@"
 
 // AesEncryptor handles AES-based encryption and decryption.
 type AesEncryptor struct {
@@ -98,7 +98,7 @@ func itoa(i int) string {
 // Encrypt encrypts the given plaintext value using AES-GCM.
 func (a *AesEncryptor) Encrypt(plaintext string) string {
 	data := []byte(plaintext)
-	return aesPrefix + base64.StdEncoding.EncodeToString(a.gcm.Seal(a.nonce, a.nonce, data, nil))
+	return AesPrefix + base64.StdEncoding.EncodeToString(a.gcm.Seal(a.nonce, a.nonce, data, nil))
 }
 
 // Decrypt decrypts the given base64-encoded ciphertext value using AES-GCM.
