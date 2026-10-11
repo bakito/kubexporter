@@ -12,8 +12,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/mattn/go-runewidth"
-	"github.com/olekukonko/tablewriter"
-	"github.com/olekukonko/tablewriter/tw"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -366,56 +364,28 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 	withErrors := e.config.Verbose && e.stats.HasErrors()
 
 	header := []string{"Group", "Version", "Kind", "Namespaced", "Instances", "Exported"}
-	aligns := []tw.Align{
-		tw.AlignLeft,
-		tw.AlignLeft,
-		tw.AlignLeft,
-		tw.AlignCenter,
-		tw.AlignRight,
-		tw.AlignRight,
-	}
 	if e.config.PrintSize {
 		header = append(header, "Size")
-		aligns = append(aligns, tw.AlignRight)
 	}
 	header = append(header, "Query Duration")
-	aligns = append(aligns, tw.AlignRight)
 	if withPages {
 		header = append(header, "Pages")
-		aligns = append(aligns, tw.AlignRight)
 	}
 	header = append(header, "Export Duration")
-	aligns = append(aligns, tw.AlignRight)
 	if withErrors {
 		header = append(header, "Error")
-		aligns = append(aligns, tw.AlignLeft)
 	}
 
-	alignment := tw.CellAlignment{PerColumn: aligns}
 	buf := &bytes.Buffer{}
-	table := render.TableTo(buf,
-		// borderless table, the header and the totals are separated by a line
-		tablewriter.WithRendition(tw.Rendition{
-			Borders: tw.Border{Left: tw.Off, Right: tw.Off, Top: tw.Off, Bottom: tw.Off},
-			Settings: tw.Settings{
-				Lines:      tw.Lines{ShowHeaderLine: tw.On, ShowFooterLine: tw.On},
-				Separators: tw.Separators{BetweenRows: tw.Off, BetweenColumns: tw.Off},
-			},
-		}),
-		tablewriter.WithHeaderAlignmentConfig(alignment),
-		tablewriter.WithRowAlignmentConfig(alignment),
-		tablewriter.WithFooterAlignmentConfig(alignment),
-	)
-	table.Header(header)
+	table := render.TableTo(buf)
+	table.Header(header...)
 
 	var qd, ed time.Duration
 	var inst, totalInst, pages int
 	var size int64
 
 	for _, r := range resources {
-		if err := table.Append(r.Report(e.config.PrintSize, withErrors, withPages)); err != nil {
-			return err
-		}
+		table.Append(r.Report(e.config.PrintSize, withErrors, withPages)...)
 		qd += r.QueryDuration
 		ed += r.ExportDuration
 		totalInst += r.Instances
@@ -447,7 +417,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 	if withErrors {
 		footer = append(footer, "")
 	}
-	table.Footer(footer)
+	table.Footer(footer...)
 
 	e.printHeading("📊", "Summary")
 	if err := table.Render(); err != nil {
@@ -460,14 +430,7 @@ func (e *exporter) printSummary(resources []*types.GroupResource) error {
 // printIndented prints the given block indented like all other content below a heading.
 func (e *exporter) printIndented(block string) {
 	for line := range strings.SplitSeq(strings.TrimRight(block, "\n"), "\n") {
-		// the table adds a leading padding space, replace it by the common indentation
-		if after, ok := strings.CutPrefix(line, " "); ok {
-			line = after
-		} else {
-			// separator lines have no padding, shorten them to the content width
-			line = strings.TrimSuffix(line, "─")
-		}
-		e.l.Printf("%s\n", indent+strings.TrimRight(line, " "))
+		e.l.Printf("%s%s\n", indent, strings.TrimRight(line, " "))
 	}
 }
 
