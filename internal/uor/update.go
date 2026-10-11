@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/olekukonko/tablewriter"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -65,12 +64,16 @@ func Update(ctx context.Context, config *types.Config) error {
 	return table.Render()
 }
 
+type tabler interface {
+	Append(cols ...string)
+}
+
 func updateFile(
 	ctx context.Context,
 	config *types.Config,
 	file string,
 	ac *client.APIClient,
-	table *tablewriter.Table,
+	table tabler,
 ) (bool, error) {
 	fileName := strings.Replace(file, config.Target+"/", "", 1)
 	us, err := utils.ReadFile(file)
@@ -89,31 +92,25 @@ func updateFile(
 				if errors.IsNotFound(err) {
 					errMsg = "<NOT FOUND>"
 				}
-				err = table.Append(
+				table.Append(
 					fileName,
 					ref.Kind,
 					ref.Name,
 					string(ref.UID),
 					errMsg,
 				)
-				if err != nil {
-					return false, err
-				}
 				witContent = true
 				continue
 			}
 
 			if ref.UID != owner.GetUID() {
-				err = table.Append(
+				table.Append(
 					fileName,
 					ref.Kind,
 					ref.Name,
 					string(ref.UID),
 					string(owner.GetUID()),
 				)
-				if err != nil {
-					return false, err
-				}
 				witContent = true
 				ref.UID = owner.GetUID()
 				changed = true

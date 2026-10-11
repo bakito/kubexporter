@@ -136,11 +136,8 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 		config.EncryptFields(res, *us)
 		encryptedCount := countEncryptedFields(us.Object)
 
-		err = table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount)})
-		if err != nil {
-			return err
-		}
+		table.Append(
+			file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount))
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
@@ -187,7 +184,7 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 			return err
 		}
 
-		algorithm := ""
+		algorithm := "none"
 		switch {
 		case res.hasAES && res.hasAge:
 			algorithm = "AES + age"
@@ -197,11 +194,8 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 			algorithm = "age"
 		}
 
-		err = table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), algorithm, strconv.Itoa(res.count)})
-		if err != nil {
-			return err
-		}
+		table.Append(
+			file, us.GetNamespace(), us.GetKind(), us.GetName(), algorithm, strconv.Itoa(res.count))
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
@@ -244,11 +238,8 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		config.EncryptFields(res, *us)
 		encryptedCount := countEncryptedFields(us.Object)
 
-		err = table.Append(
-			[]string{file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount)})
-		if err != nil {
-			return err
-		}
+		table.Append(
+			file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount))
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
