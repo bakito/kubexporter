@@ -362,3 +362,107 @@ func unstructuredFrom(t *testing.T, path ...string) *unstructured.Unstructured {
 	}
 	return u
 }
+
+func TestStats_Add(t *testing.T) {
+	t.Run("should do nothing with nil", func(t *testing.T) {
+		s := &Stats{Kinds: 1, Pages: 2, Resources: 3, ExportedSize: 100, Errors: 0}
+		s.Add(nil)
+		if s.Kinds != 1 || s.Pages != 2 || s.Resources != 3 || s.ExportedSize != 100 || s.Errors != 0 {
+			t.Error("expected stats to be unchanged after adding nil")
+		}
+	})
+
+	t.Run("should accumulate values", func(t *testing.T) {
+		s := &Stats{Kinds: 1, Pages: 2, Resources: 3, ExportedSize: 100, Errors: 0}
+		o := &Stats{Kinds: 5, Pages: 10, Resources: 20, ExportedSize: 500, Errors: 2}
+		s.Add(o)
+		if s.Kinds != 6 {
+			t.Errorf("expected Kinds 6, but got %d", s.Kinds)
+		}
+		if s.Pages != 12 {
+			t.Errorf("expected Pages 12, but got %d", s.Pages)
+		}
+		if s.Resources != 23 {
+			t.Errorf("expected Resources 23, but got %d", s.Resources)
+		}
+		if s.ExportedSize != 600 {
+			t.Errorf("expected ExportedSize 600, but got %d", s.ExportedSize)
+		}
+		if s.Errors != 2 {
+			t.Errorf("expected Errors 2, but got %d", s.Errors)
+		}
+	})
+
+	t.Run("should accumulate namespaces", func(t *testing.T) {
+		s := &Stats{namespaces: map[string]bool{"ns1": true}}
+		o := &Stats{namespaces: map[string]bool{"ns2": true, "ns3": true}}
+		s.Add(o)
+		if got := s.Namespaces(); got != 3 {
+			t.Errorf("expected 3 namespaces, but got %d", got)
+		}
+		if !s.namespaces["ns1"] || !s.namespaces["ns2"] || !s.namespaces["ns3"] {
+			t.Error("expected all namespaces to be present")
+		}
+	})
+}
+
+func TestStats_HasErrors(t *testing.T) {
+	t.Run("should return false with zero errors", func(t *testing.T) {
+		s := &Stats{Errors: 0}
+		if s.HasErrors() {
+			t.Error("expected HasErrors to be false")
+		}
+	})
+
+	t.Run("should return true with errors", func(t *testing.T) {
+		s := &Stats{Errors: 5}
+		if !s.HasErrors() {
+			t.Error("expected HasErrors to be true")
+		}
+	})
+}
+
+func TestStats_Namespaces(t *testing.T) {
+	t.Run("should return zero with no namespaces", func(t *testing.T) {
+		s := &Stats{}
+		if got := s.Namespaces(); got != 0 {
+			t.Errorf("expected 0 namespaces, but got %d", got)
+		}
+	})
+
+	t.Run("should return count of namespaces", func(t *testing.T) {
+		s := &Stats{namespaces: map[string]bool{"ns1": true, "ns2": true, "ns3": true}}
+		if got := s.Namespaces(); got != 3 {
+			t.Errorf("expected 3 namespaces, but got %d", got)
+		}
+	})
+}
+
+func TestStats_addNamespace(t *testing.T) {
+	t.Run("should skip empty namespace", func(t *testing.T) {
+		s := &Stats{}
+		s.addNamespace("")
+		if s.namespaces != nil {
+			t.Error("expected namespaces map to be nil after adding empty namespace")
+		}
+	})
+
+	t.Run("should add namespace and initialize map", func(t *testing.T) {
+		s := &Stats{}
+		s.addNamespace("default")
+		if s.namespaces == nil {
+			t.Fatal("expected namespaces map to be initialized")
+		}
+		if !s.namespaces["default"] {
+			t.Error("expected default namespace to be present")
+		}
+	})
+
+	t.Run("should not duplicate existing namespace", func(t *testing.T) {
+		s := &Stats{namespaces: map[string]bool{"default": true}}
+		s.addNamespace("default")
+		if got := s.Namespaces(); got != 1 {
+			t.Errorf("expected 1 namespace, but got %d", got)
+		}
+	})
+}

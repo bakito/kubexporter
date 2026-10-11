@@ -7,6 +7,8 @@ import (
 	"filippo.io/age"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/bakito/kubexporter/internal/encryption"
 )
 
 func TestEncrypted_Setup(t *testing.T) {
@@ -72,10 +74,11 @@ func TestEncrypted_Setup(t *testing.T) {
 
 func TestConfig_EncryptFields(t *testing.T) {
 	tests := []struct {
-		name     string
-		aesKey   string
-		input    string
-		validate func(t *testing.T, got string)
+		name      string
+		aesKey    string
+		input     string
+		skipSetup bool
+		validate  func(t *testing.T, got string)
 	}{
 		{
 			name:   "should encrypt the Secret data",
@@ -83,8 +86,8 @@ func TestConfig_EncryptFields(t *testing.T) {
 			input:  "don't tell anyone!",
 			validate: func(t *testing.T, got string) {
 				t.Helper()
-				if !strings.HasPrefix(got, aesPrefix) {
-					t.Errorf("expected secret to have prefix %q, but got %q", aesPrefix, got)
+				if !strings.HasPrefix(got, encryption.AesPrefix) {
+					t.Errorf("expected secret to have prefix %q, but got %q", encryption.AesPrefix, got)
 				}
 			},
 		},
@@ -98,6 +101,7 @@ func TestConfig_EncryptFields(t *testing.T) {
 					t.Errorf("expected empty secret, but got %q", got)
 				}
 			},
+			skipSetup: true,
 		},
 		{
 			name:   "should not encrypt if already encrypted",
@@ -144,7 +148,9 @@ func TestConfig_EncryptFields(t *testing.T) {
 					"Secret": {{"data"}},
 				},
 			}
-			_ = enc.Setup()
+			if !tt.skipSetup {
+				_ = enc.Setup()
+			}
 			config := &Config{Encrypted: enc}
 
 			us := unstructured.Unstructured{Object: map[string]any{
@@ -192,7 +198,7 @@ func TestDecryptFields(t *testing.T) {
 					"secret": tt.input,
 				},
 			}}
-			res, err := decryptFields(us.Object, enc.aes, nil)
+			res, err := decryptFields(us.Object, enc.aes.(*encryption.AesEncryptor), nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -290,12 +296,12 @@ func TestEncrypted_Age_RoundTrip(t *testing.T) {
 	plaintext := "super secret password"
 	encrypted := enc.doEncrypt(plaintext)
 
-	if !strings.HasPrefix(encrypted, agePrefix) {
-		t.Errorf("expected encrypted value to have prefix %q, but got %q", agePrefix, encrypted)
+	if !strings.HasPrefix(encrypted, encryption.AgePrefix) {
+		t.Errorf("expected encrypted value to have prefix %q, but got %q", encryption.AgePrefix, encrypted)
 	}
 
-	afterPrefix, _ := strings.CutPrefix(encrypted, agePrefix)
-	ageEnc, err := NewAgeEncryptor("", identity.String())
+	afterPrefix, _ := strings.CutPrefix(encrypted, encryption.AgePrefix)
+	ageEnc, err := encryption.NewAgeEncryptor("", identity.String())
 	if err != nil {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}
@@ -326,7 +332,7 @@ func TestDecryptFields_Age(t *testing.T) {
 	plaintext := "my secret value"
 	encrypted := enc.doEncrypt(plaintext)
 
-	ageEnc, err := NewAgeEncryptor("", identity.String())
+	ageEnc, err := encryption.NewAgeEncryptor("", identity.String())
 	if err != nil {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}
@@ -406,12 +412,12 @@ func TestDecryptFields_Mixed(t *testing.T) {
 		},
 	}
 
-	ageDec, err := NewAgeEncryptor("", identity.String())
+	ageDec, err := encryption.NewAgeEncryptor("", identity.String())
 	if err != nil {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}
 
-	res, err := decryptFields(obj, aesEncrypted.aes, ageDec)
+	res, err := decryptFields(obj, aesEncrypted.aes.(*encryption.AesEncryptor), ageDec)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

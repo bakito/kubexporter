@@ -11,15 +11,43 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/bakito/kubexporter/internal/encryption"
 	"github.com/bakito/kubexporter/internal/render"
 	"github.com/bakito/kubexporter/internal/utils"
 )
 
 const (
-	EnvAesKey       = "KUBEXPORTER_AES_KEY"
-	EnvAgePublicKey = "KUBEXPORTER_AGE_PUBLIC_KEY"
-	EnvAgeIdentity  = "KUBEXPORTER_AGE_IDENTITY"
+	// EnvAesKey is the environment variable for the AES key.
+	EnvAesKey = encryption.EnvAesKey
+	// EnvAgePublicKey is the environment variable for the age public key.
+	EnvAgePublicKey = encryption.EnvAgePublicKey
+	// EnvAgeIdentity is the environment variable for the age identity.
+	EnvAgeIdentity = encryption.EnvAgeIdentity
 )
+
+// Encryptor is the interface for encrypting values.
+type Encryptor interface {
+	Encrypt(plaintext string) string
+}
+
+// Decryptor is the interface for decrypting values.
+type Decryptor interface {
+	Decrypt(ciphertext string) (string, error)
+}
+
+// AesEncryptorInterface is the interface for AES encryption.
+type AesEncryptorInterface interface {
+	Encryptor
+	Decryptor
+}
+
+// AgeEncryptorInterface is the interface for age encryption.
+type AgeEncryptorInterface interface {
+	Encryptor
+	Decryptor
+	HasRecipients() bool
+	HasIdentities() bool
+}
 
 // LookupEnvAgePublicKey returns the age public key from the environment variable.
 func LookupEnvAgePublicKey() (string, bool) {
@@ -34,13 +62,22 @@ type Encrypted struct {
 	AgeIdentity  string     `docs:"The age identity key for decryption"           json:"ageIdentity"  yaml:"ageIdentity"`
 	KindFields   KindFields `docs:"The fields to encrypt for each kind"           json:"kindFields"   yaml:"kindFields"`
 
-	aes *AesEncryptor
-	age *AgeEncryptor
+	aes AesEncryptorInterface
+	age AgeEncryptorInterface
 }
 
 // Setup initializes the encrypted config, resolving environment variables and
 // creating the appropriate encryptors.
 func (e *Encrypted) Setup() error {
+	// Validate before reading environment variables: if kind fields are configured
+	// but no key is explicitly set, fail early.
+	if len(e.KindFields) > 0 && e.AesKey == "" && e.AgePublicKey == "" {
+		return fmt.Errorf("encrypted mode needs a valid aesKey or agePublicKey."+
+			" please remove the 'encrypted config' or provide the 'aesKey' via env variable %q or 'agePublicKey' via env variable %q",
+			EnvAesKey, EnvAgePublicKey,
+		)
+	}
+
 	if k, ok := os.LookupEnv(EnvAesKey); ok {
 		e.AesKey = k
 	}
@@ -52,7 +89,7 @@ func (e *Encrypted) Setup() error {
 	}
 
 	if e.AesKey != "" {
-		aes, err := NewAesEncryptor(e.AesKey)
+		aes, err := encryption.NewAesEncryptor(e.AesKey)
 		if err != nil {
 			return err
 		}
@@ -60,19 +97,13 @@ func (e *Encrypted) Setup() error {
 	}
 
 	if e.AgePublicKey != "" || e.AgeIdentity != "" {
-		age, err := NewAgeEncryptor(e.AgePublicKey, e.AgeIdentity)
+		age, err := encryption.NewAgeEncryptor(e.AgePublicKey, e.AgeIdentity)
 		if err != nil {
 			return err
 		}
 		e.age = age
 	}
 
-	if len(e.KindFields) > 0 && e.AesKey == "" && e.AgePublicKey == "" {
-		return fmt.Errorf("encrypted mode needs a valid aesKey or agePublicKey."+
-			" please remove the 'encrypted config' or provide the 'aesKey' via env variable %q or 'agePublicKey' via env variable %q",
-			EnvAesKey, EnvAgePublicKey,
-		)
-	}
 	return nil
 }
 
@@ -82,8 +113,8 @@ func (e *Encrypted) doEncrypt(val any) string {
 	strVal := fmt.Sprintf("%v", val)
 
 	// Don't encrypt if already encrypted or empty
-	if strings.HasPrefix(strVal, aesPrefix) ||
-		strings.HasPrefix(strVal, agePrefix) || strVal == "" {
+	if strings.HasPrefix(strVal, encryption.AesPrefix) ||
+		strings.HasPrefix(strVal, encryption.AgePrefix) || strVal == "" {
 		return strVal
 	}
 
@@ -103,6 +134,48 @@ func (e *Encrypted) doEncrypt(val any) string {
 // EncryptFields encrypts fields for a given resource.
 func (c *Config) EncryptFields(res *GroupResource, us unstructured.Unstructured) {
 	transformNestedFields(c.Encrypted.KindFields, c.Encrypted.doEncrypt, res.GroupKind(), us)
+}
+
+// Encrypt encrypts secrets in exported resource files using AES encryption.
+func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...string) error {
+	config := &Config{
+		Encrypted: &Encrypted{
+			AesKey: aesKey,
+			KindFields: KindFields{
+				"Secret": {{"data"}, {"stringData"}},
+			},
+		},
+	}
+	if err := config.Encrypted.Setup(); err != nil {
+		return err
+	}
+
+	table := render.Table()
+	table.Header("File", "Namespace", "Kind", "Name", "Algorithm", "Encrypted Fields")
+
+	for _, file := range files {
+		us, err := utils.ReadFile(file)
+		if err != nil {
+			return err
+		}
+
+		res := &GroupResource{
+			APIResource: metav1.APIResource{
+				Kind: us.GetKind(),
+			},
+		}
+		config.EncryptFields(res, *us)
+		encryptedCount := countEncryptedFields(us.Object)
+
+		table.Append(
+			file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount))
+
+		if err := utils.WriteFile(printFlags, file, us); err != nil {
+			return err
+		}
+	}
+
+	return table.Render()
 }
 
 // EncryptWithAge encrypts secrets in exported resource files using age encryption.
@@ -147,13 +220,14 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 	return table.Render()
 }
 
+// Decrypt decrypts encrypted fields in exported resource files.
 func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity string, files ...string) error {
-	var aesEnc *AesEncryptor
-	var ageEnc *AgeEncryptor
+	var aesEnc *encryption.AesEncryptor
+	var ageEnc *encryption.AgeEncryptor
 
 	if aesKey != "" {
 		var err error
-		aesEnc, err = NewAesEncryptor(aesKey)
+		aesEnc, err = encryption.NewAesEncryptor(aesKey)
 		if err != nil {
 			return err
 		}
@@ -161,7 +235,7 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 
 	if ageIdentity != "" {
 		var err error
-		ageEnc, err = NewAgeEncryptor("", ageIdentity)
+		ageEnc, err = encryption.NewAgeEncryptor("", ageIdentity)
 		if err != nil {
 			return err
 		}
@@ -205,50 +279,6 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 	return table.Render()
 }
 
-// Encrypt encrypts secrets in exported resource files using AES encryption.
-func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...string) error {
-	// Create a config with encryption settings for Secrets only
-	// TODO: it could read the config from the file for flexibility
-	config := &Config{
-		Encrypted: &Encrypted{
-			AesKey: aesKey,
-			KindFields: KindFields{
-				"Secret": {{"data"}, {"stringData"}},
-			},
-		},
-	}
-	if err := config.Encrypted.Setup(); err != nil {
-		return err
-	}
-
-	table := render.Table()
-	table.Header("File", "Namespace", "Kind", "Name", "Algorithm", "Encrypted Fields")
-
-	for _, file := range files {
-		us, err := utils.ReadFile(file)
-		if err != nil {
-			return err
-		}
-
-		res := &GroupResource{
-			APIResource: metav1.APIResource{
-				Kind: us.GetKind(),
-			},
-		}
-		config.EncryptFields(res, *us)
-		encryptedCount := countEncryptedFields(us.Object)
-
-		table.Append(
-			file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount))
-
-		if err := utils.WriteFile(printFlags, file, us); err != nil {
-			return err
-		}
-	}
-
-	return table.Render()
-}
-
 // decryptResult holds the result of decrypting fields.
 type decryptResult struct {
 	count  int
@@ -257,7 +287,11 @@ type decryptResult struct {
 }
 
 // decryptFields recursively decrypts encrypted fields in the given object.
-func decryptFields(obj map[string]any, aesEnc *AesEncryptor, ageEnc *AgeEncryptor) (decryptResult, error) {
+func decryptFields(
+	obj map[string]any,
+	aesEnc *encryption.AesEncryptor,
+	ageEnc *encryption.AgeEncryptor,
+) (decryptResult, error) {
 	var res decryptResult
 	for key, value := range obj {
 		switch v := value.(type) {
@@ -272,7 +306,7 @@ func decryptFields(obj map[string]any, aesEnc *AesEncryptor, ageEnc *AgeEncrypto
 		case string:
 			// Try AES decryption
 			if aesEnc != nil {
-				if after, ok := strings.CutPrefix(v, aesPrefix); ok {
+				if after, ok := strings.CutPrefix(v, encryption.AesPrefix); ok {
 					plaintext, err := aesEnc.Decrypt(after)
 					if err != nil {
 						return res, err
@@ -286,10 +320,10 @@ func decryptFields(obj map[string]any, aesEnc *AesEncryptor, ageEnc *AgeEncrypto
 
 			// Try age decryption
 			if ageEnc != nil && ageEnc.HasIdentities() {
-				if after, ok := strings.CutPrefix(v, agePrefix); ok {
+				if after, ok := strings.CutPrefix(v, encryption.AgePrefix); ok {
 					plaintext, err := ageEnc.Decrypt(after)
 					if err != nil {
-						return res, fmt.Errorf("age decryption failed: %w", err)
+						return res, err
 					}
 					obj[key] = plaintext
 					res.count++
@@ -310,7 +344,7 @@ func countEncryptedFields(obj map[string]any) int {
 		case map[string]any:
 			count += countEncryptedFields(e)
 		case string:
-			if strings.HasPrefix(e, aesPrefix) || strings.HasPrefix(e, agePrefix) {
+			if strings.HasPrefix(e, encryption.AesPrefix) || strings.HasPrefix(e, encryption.AgePrefix) {
 				count++
 			}
 		}
