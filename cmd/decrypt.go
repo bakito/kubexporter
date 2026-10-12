@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 
+	"github.com/bakito/kubexporter/internal/encryption"
 	"github.com/bakito/kubexporter/internal/secret"
 	"github.com/bakito/kubexporter/internal/types"
 )
@@ -113,7 +114,8 @@ func evaluateAgeKey(cmd *cobra.Command) (key string, err error) {
 		}
 	}
 
-	return key, nil
+	// The identity might be a file path, so read it if necessary
+	return encryption.ReadAgeIdentity(key)
 }
 
 func init() {
@@ -134,7 +136,8 @@ func aesKeyFlags(cmd *cobra.Command, mode string) {
 
 func ageKeyFlags(cmd *cobra.Command, mode string) {
 	cmd.PersistentFlags().StringVar(&agePublicKey, "age-public-key", "", "the age public key for "+mode)
-	cmd.PersistentFlags().StringVar(&ageIdentity, "age-identity", "", "the age identity for "+mode)
+	cmd.PersistentFlags().
+		StringVar(&ageIdentity, "age-identity", "", "the age identity for "+mode+" (can be a file path or the identity string)")
 	cmd.PersistentFlags().
 		StringVar(&ageIdentitySecretNamespace, "age-identity-secret-namespace", "", fmt.Sprintf("the namespace of the %s age identity secret", mode))
 	cmd.PersistentFlags().

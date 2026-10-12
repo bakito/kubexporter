@@ -43,7 +43,7 @@ kubectl exporter ...
 
 <!-- cli-doc-start -->
 ```
-easily export kubernetes resources
+Export k8s cluster resources as YAML or JSON
 
 Usage:
   kubexporter [flags]
@@ -161,7 +161,7 @@ encrypted:
   aesKey:
   # The age public key for encryption (recipient) (string)
   agePublicKey:
-  # The age identity for decryption (string)
+  # The age identity for decryption (string or file path) (string)
   ageIdentity:
   # The fields to encrypt for each kind (map[string:[][]string])
   kindFields:
@@ -385,10 +385,15 @@ kubexporter encrypt --age-public-key-secret-namespace default --age-public-key-s
 **Decrypt with age:**
 
 The age identity can be provided via `--age-identity` flag, env variable `KUBEXPORTER_AGE_IDENTITY`, or from a
-Kubernetes Secret:
+Kubernetes Secret. The identity can be passed as a string or as a file path pointing to a file containing the
+identity:
 
 ```shell
+# Pass the identity string directly
 kubexporter decrypt --age-identity "AGE-SECRET-KEY-1..." exports/Secret.my-secret.yaml
+
+# Or pass a file path containing the identity
+kubexporter decrypt --age-identity /path/to/age-identity.txt exports/Secret.my-secret.yaml
 
 # Or from a Kubernetes Secret
 kubexporter decrypt --age-identity-secret-namespace default --age-identity-secret-name kubexporter-age-key --age-identity-secret-key identity exports/Secret.my-secret.yaml
