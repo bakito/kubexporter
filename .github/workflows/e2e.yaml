@@ -176,3 +176,19 @@ jobs:
           testdata/e2e/test-age-encryption-k8s-secret.sh
           echo "## Age Encryption with K8s Secret Test" >> $GITHUB_STEP_SUMMARY
           echo "✓ Age encryption with K8s secret key resolution passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔑 Test AES encryption during export
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-aes-encryption-during-export.sh
+          echo "## AES Encryption During Export Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ AES encryption during export passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔐 Test age encryption during export
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-age-encryption-during-export.sh
+          echo "## Age Encryption During Export Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Age encryption during export passed" >> $GITHUB_STEP_SUMMARY

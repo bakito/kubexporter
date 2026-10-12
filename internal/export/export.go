@@ -284,6 +284,9 @@ func (e *exporter) introEntries() []entry {
 	}
 	if len(e.config.Encrypted.KindFields) > 0 {
 		entries = append(entries, entry{"🔒", "encrypted fields", e.config.Encrypted.KindFields.String()})
+		if algo := e.config.Encrypted.Algorithm(); algo != "" {
+			entries = append(entries, entry{"🔐", "encryption algorithm", algo})
+		}
 	}
 	if e.config.CreatedWithin > 0 {
 		entries = append(entries, entry{"⏳", "created within", e.config.CreatedWithin.String()})

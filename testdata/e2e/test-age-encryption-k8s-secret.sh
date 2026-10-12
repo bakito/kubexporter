@@ -5,7 +5,7 @@
 #
 # Generates an age keypair, stores it in a Kubernetes Secret, exports a secret,
 # encrypts it using the public key from the K8s secret, decrypts using the
-# identity from the K8s secret, and verifies the roundtrip.
+# secret key from the K8s secret, and verifies the roundtrip.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

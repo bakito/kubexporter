@@ -69,6 +69,9 @@ stringData:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("KUBEXPORTER_AGE_PUBLIC_KEY", "")
+			t.Setenv("KUBEXPORTER_AGE_IDENTITY", "")
+
 			cmd := &cobra.Command{}
 			cmd.AddCommand(encrypt)
 			cmd.SetArgs([]string{"encrypt", testFile, "--aes-key", tt.aesKey})

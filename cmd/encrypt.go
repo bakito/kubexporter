@@ -29,8 +29,10 @@ var (
 			// Use age encryption if age public key is provided (directly, via env, or via K8s secret)
 			if agePublicKey != "" || agePublicKeySecretNamespace != "" {
 				pk := agePublicKey
-				if k, ok := os.LookupEnv(types.EnvAgePublicKey); ok {
-					pk = k
+				if pk == "" {
+					if k, ok := os.LookupEnv(types.EnvAgePublicKey); ok {
+						pk = k
+					}
 				}
 				if agePublicKeySecretNamespace != "" && agePublicKeySecretName != "" && agePublicKeySecretKey != "" {
 					config, err := readConfig(cmd, configFlags, printFlags)
