@@ -28,7 +28,7 @@ var (
 		Use:   "decrypt <file-path(s)>",
 		Short: "Decrypt secrets in exported resource files",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Evaluate both AES and age keys to support mixed encrypted files
+			// Evaluate both age and AES keys to support mixed encrypted files
 			key, err := evaluateAesKey(cmd)
 			if err != nil {
 				return err

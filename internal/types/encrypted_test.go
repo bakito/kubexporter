@@ -379,7 +379,7 @@ func TestDecryptFields_Age(t *testing.T) {
 	}
 }
 
-// TestDecryptFields_Mixed tests decryptFields with both AES and age encrypted values.
+// TestDecryptFields_Mixed tests decryptFields with both age and AES encrypted values.
 func TestDecryptFields_Mixed(t *testing.T) {
 	aesEncrypted := &Encrypted{
 		AesKey: "1234567890123456",

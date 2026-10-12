@@ -358,11 +358,11 @@ kubexporter update-owner-references
 
 Exported files with encrypted values can be decrypted with the decrypt command.
 
-The decrypt command supports both **AES** and **age** encryption modes. Encrypted values are automatically detected
-by their prefix (`KUBEXPORTER_AES@` for AES, `KUBEXPORTER_AGE@` for age).
+The decrypt command supports both **age** and **AES** encryption modes. Encrypted values are automatically detected
+by their prefix (`KUBEXPORTER_AGE@` for age, `KUBEXPORTER_AES@` for AES).
 
-**Note:** For encryption, **age is preferred** over AES when both keys are configured. For decryption, both AES and
-age keys can be provided simultaneously, allowing files with mixed encrypted values (some AES, some age) to be
+**Note:** For encryption, **age is preferred** over AES when both keys are configured. For decryption, both age and
+AES keys can be provided simultaneously, allowing files with mixed encrypted values (some age, some AES) to be
 decrypted in a single pass.
 
 #### Age Encryption

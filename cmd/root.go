@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	Use:           "kubexporter",
 	Version:       fmt.Sprintf("%s (rev: %s; date: %s)", version.Version, version.Revision, version.BuildDate),
-	Short:         "easily export kubernetes resources",
+	Short:         "Export k8s cluster resources as YAML or JSON",
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {

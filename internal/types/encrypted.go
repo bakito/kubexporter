@@ -55,7 +55,7 @@ func LookupEnvAgePublicKey() (string, bool) {
 }
 
 // Encrypted holds configuration for encrypting and decrypting resource fields.
-// It supports both AES and age encryption, using the corresponding encryptor types.
+// It supports both age and AES encryption, using the corresponding encryptor types.
 type Encrypted struct {
 	AesKey       string     `docs:"The AES key to use for field encryption"       json:"aesKey"       yaml:"aesKey"`
 	AgePublicKey string     `docs:"The age public key for encryption (recipient)" json:"agePublicKey" yaml:"agePublicKey"`
@@ -69,21 +69,21 @@ type Encrypted struct {
 // Setup initializes the encrypted config, resolving environment variables and
 // creating the appropriate encryptors.
 func (e *Encrypted) Setup() error {
-	// Validate before reading environment variables: if kind fields are configured
-	// but no key is explicitly set, fail early.
-	if len(e.KindFields) > 0 && e.AesKey == "" && e.AgePublicKey == "" {
-		return fmt.Errorf("encrypted mode needs a valid aesKey or agePublicKey."+
-			" please remove the 'encrypted config' or provide the 'aesKey' via env variable %q or 'agePublicKey' via env variable %q",
-			EnvAesKey, EnvAgePublicKey,
-		)
-	}
-
 	if k, ok := os.LookupEnv(EnvAesKey); ok {
 		e.AesKey = k
 	}
 	if pk, ok := os.LookupEnv(EnvAgePublicKey); ok {
 		e.AgePublicKey = pk
 	}
+
+	// Validate if kind fields are configured but no key is explicitly set, fail early.
+	if len(e.KindFields) > 0 && e.AesKey == "" && e.AgePublicKey == "" {
+		return fmt.Errorf("encrypted mode needs a valid agePublicKey or aesKey."+
+			" please remove the 'encrypted config' or provide the 'agePublicKey' via env variable %q or 'aesKey' via env variable %q",
+			EnvAgePublicKey, EnvAesKey,
+		)
+	}
+
 	if id, ok := os.LookupEnv(EnvAgeIdentity); ok {
 		e.AgeIdentity = id
 	}
@@ -107,8 +107,26 @@ func (e *Encrypted) Setup() error {
 	return nil
 }
 
+// Algorithm returns the name of the encryption algorithm that will be used.
+// It returns "age" when age is configured, "AES" when only AES is configured,
+// and "age + AES" when both are configured.
+func (e *Encrypted) Algorithm() string {
+	hasAge := e.age != nil && e.age.HasRecipients()
+	hasAES := e.aes != nil
+	switch {
+	case hasAge && hasAES:
+		return "age + AES"
+	case hasAge:
+		return "age"
+	case hasAES:
+		return "AES"
+	default:
+		return ""
+	}
+}
+
 // doEncrypt encrypts the given value using the configured encryption method.
-// Age encryption is preferred over AES when both are available.
+// Age encryption is preferred over AES when both are configured.
 func (e *Encrypted) doEncrypt(val any) string {
 	strVal := fmt.Sprintf("%v", val)
 
@@ -168,7 +186,7 @@ func Encrypt(printFlags *genericclioptions.PrintFlags, aesKey string, files ...s
 		encryptedCount := countEncryptedFields(us.Object)
 
 		table.Append(
-			file, us.GetNamespace(), us.GetKind(), us.GetName(), "AES", strconv.Itoa(encryptedCount))
+			file, us.GetNamespace(), us.GetKind(), us.GetName(), config.Encrypted.Algorithm(), strconv.Itoa(encryptedCount))
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
@@ -193,7 +211,7 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 	}
 
 	table := render.Table()
-	table.Header("File", "Namespace", "Kind", "Name", "Encrypted Fields")
+	table.Header("File", "Namespace", "Kind", "Name", "Algorithm", "Encrypted Fields")
 
 	for _, file := range files {
 		us, err := utils.ReadFile(file)
@@ -210,7 +228,7 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 		encryptedCount := countEncryptedFields(us.Object)
 
 		table.Append(
-			file, us.GetNamespace(), us.GetKind(), us.GetName(), strconv.Itoa(encryptedCount))
+			file, us.GetNamespace(), us.GetKind(), us.GetName(), config.Encrypted.Algorithm(), strconv.Itoa(encryptedCount))
 
 		if err := utils.WriteFile(printFlags, file, us); err != nil {
 			return err
@@ -242,7 +260,7 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 	}
 
 	if aesEnc == nil && (!ageEnc.HasIdentities()) {
-		return errors.New("decrypt requires either an AES key or an age identity")
+		return errors.New("decrypt requires either an age identity or an AES key")
 	}
 
 	table := render.Table()

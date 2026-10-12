@@ -68,4 +68,4 @@ krews:
     description: |
       KubExporter allows you to export resources from Kubernetes as YAML or JSON files.
       The configuration allows customization on which resources and which fields to exclude.
-    short_description: Export cluster resources as YAML or JSON
+    short_description: Export k8s cluster resources as YAML or JSON

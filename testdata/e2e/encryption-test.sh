@@ -140,7 +140,7 @@ decrypt_age_k8s() {
 }
 
 # Verifies that a file contains the expected encryption prefix.
-# Args: $1 = file path, $2 = prefix (e.g. "KUBEXPORTER_AES@" or "KUBEXPORTER_AGE@")
+# Args: $1 = file path, $2 = prefix (e.g. "KUBEXPORTER_AGE@" or "KUBEXPORTER_AES@")
 # Returns 0 if prefix found, 1 otherwise.
 verify_encrypted() {
   local file="$1" prefix="$2"
