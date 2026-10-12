@@ -48,7 +48,67 @@ generate_age_keypair() {
 export_secrets() {
   local target="$1"
   unset KUBEXPORTER_AES_KEY
+  unset KUBEXPORTER_AGE_PUBLIC_KEY
   $(get_bin) --progress simple --target "$target" --namespace e2e-ns1 --include-kinds Secret --otlp-metrics=false
+}
+
+# Creates a temporary config file with AES encryption enabled.
+# Args: $1 = AES key, $2 = output config file path
+create_aes_export_config() {
+  local key="$1" config_file="$2"
+  cat > "$config_file" <<EOF
+encrypted:
+  aesKey: "$key"
+  kindFields:
+    Secret:
+      - [data]
+      - [stringData]
+EOF
+}
+
+# Creates a temporary config file with age encryption enabled.
+# Args: $1 = age public key, $2 = output config file path
+create_age_export_config() {
+  local public_key="$1" config_file="$2"
+  cat > "$config_file" <<EOF
+encrypted:
+  agePublicKey: "$public_key"
+  kindFields:
+    Secret:
+      - [data]
+      - [stringData]
+EOF
+}
+
+# Exports secrets from the cluster with encryption enabled via config file.
+# Args: $1 = target directory, $2 = config file path
+export_secrets_with_config() {
+  local target="$1" config_file="$2"
+  $(get_bin) --config "$config_file" --progress simple --target "$target" --namespace e2e-ns1 --include-kinds Secret --otlp-metrics=false
+}
+
+# Exports secrets from the cluster with AES encryption via environment variable.
+# Args: $1 = target directory
+# Uses variable AES_KEY.
+export_secrets_with_aes_env() {
+  local target="$1"
+  local tmp_config
+  tmp_config=$(mktemp /tmp/kubexporter-config-XXXXXX.yaml)
+  trap "rm -f $tmp_config" RETURN
+  create_aes_export_config "$AES_KEY" "$tmp_config"
+  export_secrets_with_config "$target" "$tmp_config"
+}
+
+# Exports secrets from the cluster with age encryption via environment variable.
+# Args: $1 = target directory
+# Uses variable PUBLIC_KEY.
+export_secrets_with_age_env() {
+  local target="$1"
+  local tmp_config
+  tmp_config=$(mktemp /tmp/kubexporter-config-XXXXXX.yaml)
+  trap "rm -f $tmp_config" RETURN
+  create_age_export_config "$PUBLIC_KEY" "$tmp_config"
+  export_secrets_with_config "$target" "$tmp_config"
 }
 
 # Finds the first Secret.*.yaml file in the given export directory.

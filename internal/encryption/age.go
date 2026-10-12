@@ -12,6 +12,9 @@ import (
 
 const AgePrefix = "KUBEXPORTER_AGE@"
 
+// AgeSecretKeyPrefix is the Bech32 prefix for age secret keys (covers both X25519 and PQ variants).
+const AgeSecretKeyPrefix = "AGE-SECRET-KEY"
+
 // AgeEncryptor handles age-based encryption and decryption.
 type AgeEncryptor struct {
 	recipients []age.Recipient
@@ -31,6 +34,10 @@ func NewAgeEncryptor(publicKey, identity string) (*AgeEncryptor, error) {
 	}
 
 	if identity != "" {
+		// Validate that the secret key has the correct prefix before parsing.
+		if !strings.HasPrefix(identity, AgeSecretKeyPrefix) {
+			return nil, fmt.Errorf("invalid age secret key: must start with %q", AgeSecretKeyPrefix)
+		}
 		identities, err := age.ParseIdentities(strings.NewReader(identity))
 		if err != nil {
 			return nil, fmt.Errorf("invalid age identity: %w", err)

@@ -198,6 +198,43 @@ func TestNewAgeEncryptor_invalid_secret_key(t *testing.T) {
 	if err == nil {
 		t.Error("expected error for invalid secret key")
 	}
+	// Verify the error mentions the prefix requirement
+	if !strings.Contains(err.Error(), "must start with") {
+		t.Errorf("expected error to mention prefix, got %q", err.Error())
+	}
+}
+
+func TestAgeSecretKeyPrefix(t *testing.T) {
+	if AgeSecretKeyPrefix != "AGE-SECRET-KEY" {
+		t.Errorf("expected AgeSecretKeyPrefix to be %q, got %q", "AGE-SECRET-KEY", AgeSecretKeyPrefix)
+	}
+}
+
+func TestNewAgeEncryptor_secret_key_prefix_validation(t *testing.T) {
+	// Test that a key with wrong prefix is rejected
+	_, err := NewAgeEncryptor("", "WRONG-PREFIX-KEY")
+	if err == nil {
+		t.Error("expected error for secret key with wrong prefix")
+	}
+
+	// Test that a valid X25519 secret key passes prefix check
+	secretKey, err := age.GenerateX25519Identity()
+	if err != nil {
+		t.Fatalf("failed to generate identity: %v", err)
+	}
+	keyStr := secretKey.String()
+	if !strings.HasPrefix(keyStr, AgeSecretKeyPrefix) {
+		t.Errorf("generated secret key should have prefix %q, got %q", AgeSecretKeyPrefix, keyStr)
+	}
+
+	// The valid key should pass
+	enc, err := NewAgeEncryptor("", keyStr)
+	if err != nil {
+		t.Fatalf("expected no error for valid secret key, got %v", err)
+	}
+	if !enc.HasIdentities() {
+		t.Error("expected HasIdentities to be true for valid secret key")
+	}
 }
 
 func TestNewAgeEncryptor_no_keys(t *testing.T) {
