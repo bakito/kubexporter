@@ -69,11 +69,15 @@ type Encrypted struct {
 // Setup initializes the encrypted config, resolving environment variables and
 // creating the appropriate encryptors.
 func (e *Encrypted) Setup() error {
-	if k, ok := os.LookupEnv(EnvAesKey); ok {
-		e.AesKey = k
+	if e.AesKey == "" {
+		if k, ok := os.LookupEnv(EnvAesKey); ok {
+			e.AesKey = k
+		}
 	}
-	if pk, ok := os.LookupEnv(EnvAgePublicKey); ok {
-		e.AgePublicKey = pk
+	if e.AgePublicKey == "" {
+		if pk, ok := os.LookupEnv(EnvAgePublicKey); ok {
+			e.AgePublicKey = pk
+		}
 	}
 
 	// Validate if kind fields are configured but no key is explicitly set, fail early.
@@ -84,8 +88,10 @@ func (e *Encrypted) Setup() error {
 		)
 	}
 
-	if id, ok := os.LookupEnv(EnvAgeIdentity); ok {
-		e.AgeIdentity = id
+	if e.AgeIdentity == "" {
+		if id, ok := os.LookupEnv(EnvAgeIdentity); ok {
+			e.AgeIdentity = id
+		}
 	}
 
 	if e.AesKey != "" {

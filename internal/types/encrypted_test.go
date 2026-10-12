@@ -46,6 +46,7 @@ func TestEncrypted_Setup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(EnvAgePublicKey, "")
 			enc := &Encrypted{
 				AesKey:     tt.aesKey,
 				KindFields: tt.kindFields,
@@ -142,6 +143,7 @@ func TestConfig_EncryptFields(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(EnvAgePublicKey, "")
 			enc := &Encrypted{
 				AesKey: tt.aesKey,
 				KindFields: map[string][][]string{
@@ -166,6 +168,7 @@ func TestConfig_EncryptFields(t *testing.T) {
 }
 
 func TestDecryptFields(t *testing.T) {
+	t.Setenv(EnvAgePublicKey, "")
 	enc := &Encrypted{
 		AesKey: "1234567890123456",
 	}
@@ -250,6 +253,8 @@ func TestEncrypted_Setup_Age(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(EnvAgePublicKey, "")
+			t.Setenv(EnvAgeIdentity, "")
 			enc := &Encrypted{
 				AgePublicKey: tt.agePublicKey,
 				AgeIdentity:  tt.ageIdentity,
@@ -277,6 +282,7 @@ func TestEncrypted_Setup_Age(t *testing.T) {
 
 // TestEncrypted_Age_RoundTrip tests age encryption and decryption roundtrip.
 func TestEncrypted_Age_RoundTrip(t *testing.T) {
+	t.Setenv(EnvAgePublicKey, "")
 	identity, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate age identity: %v", err)
@@ -316,6 +322,7 @@ func TestEncrypted_Age_RoundTrip(t *testing.T) {
 
 // TestDecryptFields_Age tests decryptFields with age encrypted values.
 func TestDecryptFields_Age(t *testing.T) {
+	t.Setenv(EnvAgePublicKey, "")
 	identity, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate age identity: %v", err)
@@ -381,6 +388,7 @@ func TestDecryptFields_Age(t *testing.T) {
 
 // TestDecryptFields_Mixed tests decryptFields with both age and AES encrypted values.
 func TestDecryptFields_Mixed(t *testing.T) {
+	t.Setenv(EnvAgePublicKey, "")
 	aesEncrypted := &Encrypted{
 		AesKey: "1234567890123456",
 	}
