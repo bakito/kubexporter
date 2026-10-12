@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"filippo.io/age"
@@ -11,6 +12,27 @@ import (
 )
 
 const AgePrefix = "KUBEXPORTER_AGE@"
+
+// ReadAgeIdentity reads the age identity from the given value.
+// If the value is a file path (does not start with AGE-SECRET-KEY-),
+// it reads the identity from the file. Otherwise, it returns the value as-is.
+func ReadAgeIdentity(value string) (string, error) {
+	if value == "" {
+		return "", nil
+	}
+
+	// If it looks like an age identity, return it directly
+	if strings.HasPrefix(value, "AGE-SECRET-KEY-") {
+		return value, nil
+	}
+
+	// Otherwise, treat it as a file path
+	content, err := os.ReadFile(value)
+	if err != nil {
+		return "", fmt.Errorf("failed to read age identity file %q: %w", value, err)
+	}
+	return strings.TrimSpace(string(content)), nil
+}
 
 // AgeEncryptor handles age-based encryption and decryption.
 type AgeEncryptor struct {
