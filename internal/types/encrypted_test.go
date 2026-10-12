@@ -218,7 +218,7 @@ func TestDecryptFields(t *testing.T) {
 
 // TestEncrypted_Setup_Age tests age encryption setup.
 func TestEncrypted_Setup_Age(t *testing.T) {
-	secretKey, err := age.GenerateX25519Identity()
+	identity, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate age identity: %v", err)
 	}
@@ -226,17 +226,17 @@ func TestEncrypted_Setup_Age(t *testing.T) {
 	tests := []struct {
 		name         string
 		agePublicKey string
-		ageSecretKey string
+		ageIdentity  string
 		kindFields   KindFields
 		wantErr      bool
 	}{
 		{
 			name:         "age public key setup should succeed",
-			agePublicKey: secretKey.Recipient().String(),
+			agePublicKey: identity.Recipient().String(),
 		},
 		{
-			name:         "age secret key setup should succeed",
-			ageSecretKey: secretKey.String(),
+			name:        "age identity setup should succeed",
+			ageIdentity: identity.String(),
 		},
 		{
 			name:         "invalid age public key should fail",
@@ -254,10 +254,10 @@ func TestEncrypted_Setup_Age(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv(EnvAgePublicKey, "")
-			t.Setenv(EnvAgeSecretKey, "")
+			t.Setenv(EnvAgeIdentity, "")
 			enc := &Encrypted{
 				AgePublicKey: tt.agePublicKey,
-				AgeSecretKey: tt.ageSecretKey,
+				AgeIdentity:  tt.ageIdentity,
 				KindFields:   tt.kindFields,
 			}
 
@@ -271,7 +271,7 @@ func TestEncrypted_Setup_Age(t *testing.T) {
 					t.Error("expected age recipients to be set")
 				}
 			}
-			if !tt.wantErr && tt.ageSecretKey != "" {
+			if !tt.wantErr && tt.ageIdentity != "" {
 				if enc.age == nil || !enc.age.HasIdentities() {
 					t.Error("expected age identities to be set")
 				}
@@ -283,11 +283,11 @@ func TestEncrypted_Setup_Age(t *testing.T) {
 // TestEncrypted_Age_RoundTrip tests age encryption and decryption roundtrip.
 func TestEncrypted_Age_RoundTrip(t *testing.T) {
 	t.Setenv(EnvAgePublicKey, "")
-	secretKey, err := age.GenerateX25519Identity()
+	identity, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate age identity: %v", err)
 	}
-	publicKey := secretKey.Recipient().String()
+	publicKey := identity.Recipient().String()
 
 	enc := &Encrypted{
 		AgePublicKey: publicKey,
@@ -307,7 +307,7 @@ func TestEncrypted_Age_RoundTrip(t *testing.T) {
 	}
 
 	afterPrefix, _ := strings.CutPrefix(encrypted, encryption.AgePrefix)
-	ageEnc, err := encryption.NewAgeEncryptor("", secretKey.String())
+	ageEnc, err := encryption.NewAgeEncryptor("", identity.String())
 	if err != nil {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}
@@ -323,11 +323,11 @@ func TestEncrypted_Age_RoundTrip(t *testing.T) {
 // TestDecryptFields_Age tests decryptFields with age encrypted values.
 func TestDecryptFields_Age(t *testing.T) {
 	t.Setenv(EnvAgePublicKey, "")
-	secretKey, err := age.GenerateX25519Identity()
+	identity, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate age identity: %v", err)
 	}
-	publicKey := secretKey.Recipient().String()
+	publicKey := identity.Recipient().String()
 
 	enc := &Encrypted{
 		AgePublicKey: publicKey,
@@ -339,7 +339,7 @@ func TestDecryptFields_Age(t *testing.T) {
 	plaintext := "my secret value"
 	encrypted := enc.doEncrypt(plaintext)
 
-	ageEnc, err := encryption.NewAgeEncryptor("", secretKey.String())
+	ageEnc, err := encryption.NewAgeEncryptor("", identity.String())
 	if err != nil {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}
@@ -396,12 +396,12 @@ func TestDecryptFields_Mixed(t *testing.T) {
 		t.Fatalf("AES Setup failed: %v", err)
 	}
 
-	secretKey, err := age.GenerateX25519Identity()
+	identity, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate age identity: %v", err)
 	}
 	ageEncrypted := &Encrypted{
-		AgePublicKey: secretKey.Recipient().String(),
+		AgePublicKey: identity.Recipient().String(),
 	}
 	if err := ageEncrypted.Setup(); err != nil {
 		t.Fatalf("Age Setup failed: %v", err)
@@ -420,7 +420,7 @@ func TestDecryptFields_Mixed(t *testing.T) {
 		},
 	}
 
-	ageDec, err := encryption.NewAgeEncryptor("", secretKey.String())
+	ageDec, err := encryption.NewAgeEncryptor("", identity.String())
 	if err != nil {
 		t.Fatalf("NewAgeEncryptor failed: %v", err)
 	}

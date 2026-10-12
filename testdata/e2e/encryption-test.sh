@@ -32,14 +32,14 @@ generate_aes_key() {
 }
 
 # Generates an age keypair using the system age-keygen binary.
-# Sets variables PUBLIC_KEY and SECRET_KEY.
+# Sets variables PUBLIC_KEY and IDENTITY.
 generate_age_keypair() {
   local tmp_key
   tmp_key="/tmp/age-key-$$-$(date +%s%N)"
   age-keygen -o "$tmp_key" >/dev/null 2>&1
 
   PUBLIC_KEY=$(grep '^# public key:' "$tmp_key" | sed 's/^# public key: //')
-  SECRET_KEY=$(grep '^AGE-SECRET-KEY-' "$tmp_key")
+  IDENTITY=$(grep '^AGE-SECRET-KEY-' "$tmp_key")
   rm -f "$tmp_key"
 }
 
@@ -171,10 +171,10 @@ decrypt_aes() {
 
 # Decrypts a secret file using age.
 # Args: $1 = secret file path
-# Uses variable SECRET_KEY.
+# Uses variable IDENTITY.
 decrypt_age() {
   local file="$1"
-  $(get_bin) decrypt --age-secret-key "$SECRET_KEY" "$file"
+  $(get_bin) decrypt --age-identity "$IDENTITY" "$file"
 }
 
 # Decrypts a secret file using AES key from a K8s secret.
@@ -188,14 +188,14 @@ decrypt_aes_k8s() {
     "$file"
 }
 
-# Decrypts a secret file using age secret key from a K8s secret.
+# Decrypts a secret file using age identity from a K8s secret.
 # Args: $1 = secret file, $2 = namespace, $3 = secret name, $4 = secret key
 decrypt_age_k8s() {
   local file="$1" ns="$2" name="$3" key="$4"
   $(get_bin) decrypt \
-    --age-secret-key-secret-namespace "$ns" \
-    --age-secret-key-secret-name "$name" \
-    --age-secret-key-secret-key "$key" \
+    --age-identity-secret-namespace "$ns" \
+    --age-identity-secret-name "$name" \
+    --age-identity-secret-key "$key" \
     "$file"
 }
 

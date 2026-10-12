@@ -21,7 +21,7 @@ create_test_namespace "$TEST_NS"
 kubectl create secret generic "$SECRET_NAME" \
   --namespace "$TEST_NS" \
   --from-literal=public-key="$PUBLIC_KEY" \
-  --from-literal=secret-key="$SECRET_KEY" \
+  --from-literal=identity="$IDENTITY" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 export_secrets "exports-age-k8s-test"
@@ -40,7 +40,7 @@ else
   exit 1
 fi
 
-decrypt_age_k8s "$SECRET_FILE" "$TEST_NS" "$SECRET_NAME" "secret-key"
+decrypt_age_k8s "$SECRET_FILE" "$TEST_NS" "$SECRET_NAME" "identity"
 
 if verify_decrypted "$SECRET_FILE" "KUBEXPORTER_AGE@"; then
   echo "✅ Age decryption successful"
