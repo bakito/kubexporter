@@ -67,10 +67,10 @@ stringData:
 		},
 	}
 
- for _, tt := range tests {
+	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Setenv("KUBEXPORTER_AGE_PUBLIC_KEY", "")
-			t.Setenv("KUBEXPORTER_AGE_IDENTITY", "")
+			t.Setenv("KUBEXPORTER_AGE_SECRET_KEY", "")
 
 			cmd := &cobra.Command{}
 			cmd.AddCommand(encrypt)

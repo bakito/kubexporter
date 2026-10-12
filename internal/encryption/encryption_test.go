@@ -165,13 +165,13 @@ func TestAgePrefix(t *testing.T) {
 }
 
 func TestNewAgeEncryptor_valid_keys(t *testing.T) {
-	identity, err := age.GenerateX25519Identity()
+	secretKey, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate identity: %v", err)
 	}
-	publicKey := identity.Recipient()
+	publicKey := secretKey.Recipient()
 
-	enc, err := NewAgeEncryptor(publicKey.String(), identity.String())
+	enc, err := NewAgeEncryptor(publicKey.String(), secretKey.String())
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -193,10 +193,10 @@ func TestNewAgeEncryptor_invalid_public_key(t *testing.T) {
 	}
 }
 
-func TestNewAgeEncryptor_invalid_identity(t *testing.T) {
-	_, err := NewAgeEncryptor("", "not-a-valid-age-identity")
+func TestNewAgeEncryptor_invalid_secret_key(t *testing.T) {
+	_, err := NewAgeEncryptor("", "not-a-valid-age-secret-key")
 	if err == nil {
-		t.Error("expected error for invalid identity")
+		t.Error("expected error for invalid secret key")
 	}
 }
 
@@ -226,13 +226,13 @@ func TestAgeEncryptor_Encrypt_no_recipients(t *testing.T) {
 }
 
 func TestAgeEncryptor_Encrypt_Decrypt_Roundtrip(t *testing.T) {
-	identity, err := age.GenerateX25519Identity()
+	secretKey, err := age.GenerateX25519Identity()
 	if err != nil {
 		t.Fatalf("failed to generate identity: %v", err)
 	}
-	publicKey := identity.Recipient()
+	publicKey := secretKey.Recipient()
 
-	enc, err := NewAgeEncryptor(publicKey.String(), identity.String())
+	enc, err := NewAgeEncryptor(publicKey.String(), secretKey.String())
 	if err != nil {
 		t.Fatalf("failed to create encryptor: %v", err)
 	}

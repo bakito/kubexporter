@@ -18,11 +18,11 @@ var (
 	aesKeySecretName      string
 	aesKeySecretKey       string
 
-	agePublicKey               string
-	ageIdentity                string
-	ageIdentitySecretNamespace string
-	ageIdentitySecretName      string
-	ageIdentitySecretKey       string
+	agePublicKey                string
+	ageSecretKey                string
+	ageSecretKeySecretNamespace string
+	ageSecretKeySecretName      string
+	ageSecretKeySecretKey       string
 
 	decrypt = &cobra.Command{
 		Use:   "decrypt <file-path(s)>",
@@ -53,8 +53,10 @@ func evaluateAesKey(cmd *cobra.Command) (key string, err error) {
 	// 	use flag aes key value
 	key = aesKey
 
-	if k, ok := os.LookupEnv(types.EnvAesKey); ok {
-		key = k
+	if key == "" {
+		if k, ok := os.LookupEnv(types.EnvAesKey); ok {
+			key = k
+		}
 	}
 
 	if aesKeySecretNamespace != "" && aesKeySecretName != "" && aesKeySecretKey != "" {
@@ -70,8 +72,8 @@ func evaluateAesKey(cmd *cobra.Command) (key string, err error) {
 
 	if key == "" {
 		// In non-TTY environments (e.g., CI), readKey fails with ioctl error.
-		// If age identity is provided (directly or via K8s secret), skip the AES key prompt.
-		if ageIdentity != "" || ageIdentitySecretNamespace != "" {
+		// If age secret key is provided (directly or via K8s secret), skip the AES key prompt.
+		if ageSecretKey != "" || ageSecretKeySecretNamespace != "" {
 			return "", nil
 		}
 		key, err = readKey()
@@ -83,13 +85,15 @@ func evaluateAesKey(cmd *cobra.Command) (key string, err error) {
 }
 
 func evaluateAgeKey(cmd *cobra.Command) (key string, err error) {
-	key = ageIdentity
+	key = ageSecretKey
 
-	if k, ok := os.LookupEnv(types.EnvAgeIdentity); ok {
-		key = k
+	if key == "" {
+		if k, ok := os.LookupEnv(types.EnvAgeSecretKey); ok {
+			key = k
+		}
 	}
 
-	if ageIdentitySecretNamespace != "" && ageIdentitySecretName != "" && ageIdentitySecretKey != "" {
+	if ageSecretKeySecretNamespace != "" && ageSecretKeySecretName != "" && ageSecretKeySecretKey != "" {
 		config, err := readConfig(cmd, configFlags, printFlags)
 		if err != nil {
 			return "", err
@@ -97,9 +101,9 @@ func evaluateAgeKey(cmd *cobra.Command) (key string, err error) {
 		key, err = secret.ReadKey(
 			cmd.Context(),
 			config,
-			ageIdentitySecretNamespace,
-			ageIdentitySecretName,
-			ageIdentitySecretKey,
+			ageSecretKeySecretNamespace,
+			ageSecretKeySecretName,
+			ageSecretKeySecretKey,
 		)
 		if err != nil {
 			return "", err
@@ -127,11 +131,11 @@ func aesKeyFlags(cmd *cobra.Command, mode string) {
 
 func ageKeyFlags(cmd *cobra.Command, mode string) {
 	cmd.PersistentFlags().StringVar(&agePublicKey, "age-public-key", "", "the age public key for "+mode)
-	cmd.PersistentFlags().StringVar(&ageIdentity, "age-identity", "", "the age identity key for "+mode)
+	cmd.PersistentFlags().StringVar(&ageSecretKey, "age-secret-key", "", "the age secret key for "+mode)
 	cmd.PersistentFlags().
-		StringVar(&ageIdentitySecretNamespace, "age-identity-secret-namespace", "", fmt.Sprintf("the namespace of the %s age identity secret", mode))
+		StringVar(&ageSecretKeySecretNamespace, "age-secret-key-secret-namespace", "", fmt.Sprintf("the namespace of the %s age secret key secret", mode))
 	cmd.PersistentFlags().
-		StringVar(&ageIdentitySecretName, "age-identity-secret-name", "", fmt.Sprintf("the name of the %s age identity secret", mode))
+		StringVar(&ageSecretKeySecretName, "age-secret-key-secret-name", "", fmt.Sprintf("the name of the %s age secret key secret", mode))
 	cmd.PersistentFlags().
-		StringVar(&ageIdentitySecretKey, "age-identity-secret-key", "", fmt.Sprintf("the key of the %s age identity secret", mode))
+		StringVar(&ageSecretKeySecretKey, "age-secret-key-secret-key", "", fmt.Sprintf("the key of the %s age secret key secret", mode))
 }

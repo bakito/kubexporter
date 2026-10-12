@@ -5,7 +5,7 @@
 #
 # Generates an age keypair, stores it in a Kubernetes Secret, exports a secret,
 # encrypts it using the public key from the K8s secret, decrypts using the
-# identity from the K8s secret, and verifies the roundtrip.
+# secret key from the K8s secret, and verifies the roundtrip.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -21,7 +21,7 @@ create_test_namespace "$TEST_NS"
 kubectl create secret generic "$SECRET_NAME" \
   --namespace "$TEST_NS" \
   --from-literal=public-key="$PUBLIC_KEY" \
-  --from-literal=identity="$IDENTITY" \
+  --from-literal=secret-key="$SECRET_KEY" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 export_secrets "exports-age-k8s-test"
@@ -40,7 +40,7 @@ else
   exit 1
 fi
 
-decrypt_age_k8s "$SECRET_FILE" "$TEST_NS" "$SECRET_NAME" "identity"
+decrypt_age_k8s "$SECRET_FILE" "$TEST_NS" "$SECRET_NAME" "secret-key"
 
 if verify_decrypted "$SECRET_FILE" "KUBEXPORTER_AGE@"; then
   echo "✅ Age decryption successful"

@@ -5,8 +5,8 @@ const (
 	EnvAesKey = "KUBEXPORTER_AES_KEY"
 	// EnvAgePublicKey is the environment variable for the age public key.
 	EnvAgePublicKey = "KUBEXPORTER_AGE_PUBLIC_KEY"
-	// EnvAgeIdentity is the environment variable for the age identity.
-	EnvAgeIdentity = "KUBEXPORTER_AGE_IDENTITY"
+	// EnvAgeSecretKey is the environment variable for the age secret key.
+	EnvAgeSecretKey = "KUBEXPORTER_AGE_SECRET_KEY"
 )
 
 // DecryptResult holds the result of decrypting fields.

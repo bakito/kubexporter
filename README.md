@@ -161,8 +161,8 @@ encrypted:
   aesKey:
   # The age public key for encryption (recipient) (string)
   agePublicKey:
-  # The age identity key for decryption (string)
-  ageIdentity:
+  # The age secret key for decryption (string)
+  ageSecretKey:
   # The fields to encrypt for each kind (map[string:[][]string])
   kindFields:
 # sort the slice field value before exporting (map[string:[][]string])
@@ -368,7 +368,7 @@ decrypted in a single pass.
 #### Age Encryption
 
 Age encryption uses public-key cryptography. To encrypt, provide an age public key (recipient). To decrypt, provide
-the corresponding age identity key.
+the corresponding age secret key.
 
 **Encrypt with age:**
 
@@ -384,14 +384,14 @@ kubexporter encrypt --age-public-key-secret-namespace default --age-public-key-s
 
 **Decrypt with age:**
 
-The age identity can be provided via `--age-identity` flag, env variable `KUBEXPORTER_AGE_IDENTITY`, or from a
+The age secret key can be provided via `--age-secret-key` flag, env variable `KUBEXPORTER_AGE_SECRET_KEY`, or from a
 Kubernetes Secret:
 
 ```shell
-kubexporter decrypt --age-identity "AGE-SECRET-KEY-1..." exports/Secret.my-secret.yaml
+kubexporter decrypt --age-secret-key "AGE-SECRET-KEY-1..." exports/Secret.my-secret.yaml
 
 # Or from a Kubernetes Secret
-kubexporter decrypt --age-identity-secret-namespace default --age-identity-secret-name kubexporter-age-key --age-identity-secret-key identity exports/Secret.my-secret.yaml
+kubexporter decrypt --age-secret-key-secret-namespace default --age-secret-key-secret-name kubexporter-age-key --age-secret-key-secret-key identity exports/Secret.my-secret.yaml
 ```
 
 #### AES Encryption

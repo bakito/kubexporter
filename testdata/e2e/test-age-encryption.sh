@@ -4,7 +4,7 @@
 # Usage: test-age-encryption.sh
 #
 # Generates an age keypair, exports a secret, encrypts it with the public key,
-# verifies the KUBEXPORTER_AGE@ prefix, decrypts with the identity, and confirms
+# verifies the KUBEXPORTER_AGE@ prefix, decrypts with the secret key, and confirms
 # the prefix is removed.
 set -euo pipefail
 

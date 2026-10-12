@@ -21,8 +21,8 @@ const (
 	EnvAesKey = encryption.EnvAesKey
 	// EnvAgePublicKey is the environment variable for the age public key.
 	EnvAgePublicKey = encryption.EnvAgePublicKey
-	// EnvAgeIdentity is the environment variable for the age identity.
-	EnvAgeIdentity = encryption.EnvAgeIdentity
+	// EnvAgeSecretKey is the environment variable for the age secret key.
+	EnvAgeSecretKey = encryption.EnvAgeSecretKey
 )
 
 // Encryptor is the interface for encrypting values.
@@ -59,7 +59,7 @@ func LookupEnvAgePublicKey() (string, bool) {
 type Encrypted struct {
 	AesKey       string     `docs:"The AES key to use for field encryption"       json:"aesKey"       yaml:"aesKey"`
 	AgePublicKey string     `docs:"The age public key for encryption (recipient)" json:"agePublicKey" yaml:"agePublicKey"`
-	AgeIdentity  string     `docs:"The age identity key for decryption"           json:"ageIdentity"  yaml:"ageIdentity"`
+	AgeSecretKey string     `docs:"The age secret key for decryption"             json:"ageSecretKey" yaml:"ageSecretKey"`
 	KindFields   KindFields `docs:"The fields to encrypt for each kind"           json:"kindFields"   yaml:"kindFields"`
 
 	aes AesEncryptorInterface
@@ -88,9 +88,9 @@ func (e *Encrypted) Setup() error {
 		)
 	}
 
-	if e.AgeIdentity == "" {
-		if id, ok := os.LookupEnv(EnvAgeIdentity); ok {
-			e.AgeIdentity = id
+	if e.AgeSecretKey == "" {
+		if id, ok := os.LookupEnv(EnvAgeSecretKey); ok {
+			e.AgeSecretKey = id
 		}
 	}
 
@@ -102,8 +102,8 @@ func (e *Encrypted) Setup() error {
 		e.aes = aes
 	}
 
-	if e.AgePublicKey != "" || e.AgeIdentity != "" {
-		age, err := encryption.NewAgeEncryptor(e.AgePublicKey, e.AgeIdentity)
+	if e.AgePublicKey != "" || e.AgeSecretKey != "" {
+		age, err := encryption.NewAgeEncryptor(e.AgePublicKey, e.AgeSecretKey)
 		if err != nil {
 			return err
 		}
@@ -245,7 +245,7 @@ func EncryptWithAge(printFlags *genericclioptions.PrintFlags, agePublicKey strin
 }
 
 // Decrypt decrypts encrypted fields in exported resource files.
-func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity string, files ...string) error {
+func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageSecretKey string, files ...string) error {
 	var aesEnc *encryption.AesEncryptor
 	var ageEnc *encryption.AgeEncryptor
 
@@ -257,16 +257,16 @@ func Decrypt(printFlags *genericclioptions.PrintFlags, aesKey, ageIdentity strin
 		}
 	}
 
-	if ageIdentity != "" {
+	if ageSecretKey != "" {
 		var err error
-		ageEnc, err = encryption.NewAgeEncryptor("", ageIdentity)
+		ageEnc, err = encryption.NewAgeEncryptor("", ageSecretKey)
 		if err != nil {
 			return err
 		}
 	}
 
 	if aesEnc == nil && (!ageEnc.HasIdentities()) {
-		return errors.New("decrypt requires either an age identity or an AES key")
+		return errors.New("decrypt requires either an age secret key or an AES key")
 	}
 
 	table := render.Table()
