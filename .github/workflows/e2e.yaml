@@ -192,3 +192,11 @@ jobs:
           testdata/e2e/test-age-encryption-during-export.sh
           echo "## Age Encryption During Export Test" >> $GITHUB_STEP_SUMMARY
           echo "✓ Age encryption during export passed" >> $GITHUB_STEP_SUMMARY
+
+      - name: 🔐 Test age identity file path
+        env:
+          KUBEXPORTER_BIN: ./kubexporter-bin
+        run: |
+          testdata/e2e/test-age-identity-file.sh
+          echo "## Age Identity File Path Test" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Age identity file path decryption passed" >> $GITHUB_STEP_SUMMARY

@@ -14,24 +14,23 @@ import (
 const AgePrefix = "KUBEXPORTER_AGE@"
 
 // ReadAgeIdentity reads the age identity from the given value.
-// If the value is a file path (does not start with AGE-SECRET-KEY-),
-// it reads the identity from the file. Otherwise, it returns the value as-is.
+// If the value is an existing file path, it reads the identity from the file.
+// Otherwise, it returns the value as-is.
 func ReadAgeIdentity(value string) (string, error) {
 	if value == "" {
 		return "", nil
 	}
 
-	// If it looks like an age identity, return it directly
-	if strings.HasPrefix(value, "AGE-SECRET-KEY-") {
-		return value, nil
+	// If the value is an existing file, read it
+	if info, err := os.Stat(value); err == nil && !info.IsDir() {
+		content, err := os.ReadFile(value)
+		if err != nil {
+			return "", fmt.Errorf("failed to read age identity file %q: %w", value, err)
+		}
+		return strings.TrimSpace(string(content)), nil
 	}
 
-	// Otherwise, treat it as a file path
-	content, err := os.ReadFile(value)
-	if err != nil {
-		return "", fmt.Errorf("failed to read age identity file %q: %w", value, err)
-	}
-	return strings.TrimSpace(string(content)), nil
+	return value, nil
 }
 
 // AgeEncryptor handles age-based encryption and decryption.

@@ -57,10 +57,10 @@ func LookupEnvAgePublicKey() (string, bool) {
 // Encrypted holds configuration for encrypting and decrypting resource fields.
 // It supports both age and AES encryption, using the corresponding encryptor types.
 type Encrypted struct {
-	AesKey       string     `docs:"The AES key to use for field encryption"       json:"aesKey"       yaml:"aesKey"`
-	AgePublicKey string     `docs:"The age public key for encryption (recipient)" json:"agePublicKey" yaml:"agePublicKey"`
-	AgeIdentity  string     `docs:"The age identity for decryption"               json:"ageIdentity"  yaml:"ageIdentity"`
-	KindFields   KindFields `docs:"The fields to encrypt for each kind"           json:"kindFields"   yaml:"kindFields"`
+	AesKey       string     `docs:"The AES key to use for field encryption"               json:"aesKey"       yaml:"aesKey"`
+	AgePublicKey string     `docs:"The age public key for encryption (recipient)"         json:"agePublicKey" yaml:"agePublicKey"`
+	AgeIdentity  string     `docs:"The age identity for decryption (string or file path)" json:"ageIdentity"  yaml:"ageIdentity"`
+	KindFields   KindFields `docs:"The fields to encrypt for each kind"                   json:"kindFields"   yaml:"kindFields"`
 
 	aes AesEncryptorInterface
 	age AgeEncryptorInterface
@@ -92,6 +92,15 @@ func (e *Encrypted) Setup() error {
 		if id, ok := os.LookupEnv(EnvAgeIdentity); ok {
 			e.AgeIdentity = id
 		}
+	}
+
+	// The identity might be a file path, so read it if necessary
+	if e.AgeIdentity != "" {
+		id, err := encryption.ReadAgeIdentity(e.AgeIdentity)
+		if err != nil {
+			return err
+		}
+		e.AgeIdentity = id
 	}
 
 	if e.AesKey != "" {

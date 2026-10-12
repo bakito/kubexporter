@@ -43,6 +43,21 @@ generate_age_keypair() {
   rm -f "$tmp_key"
 }
 
+# Generates an age keypair and keeps the file on disk for file-path testing.
+# Sets variables PUBLIC_KEY, IDENTITY, and IDENTITY_FILE.
+generate_age_keypair_file() {
+  IDENTITY_FILE="/tmp/age-identity-$$-$(date +%s%N).txt"
+  age-keygen -o "$IDENTITY_FILE" >/dev/null 2>&1
+
+  PUBLIC_KEY=$(grep '^# public key:' "$IDENTITY_FILE" | sed 's/^# public key: //')
+  IDENTITY=$(grep '^AGE-SECRET-KEY-' "$IDENTITY_FILE")
+}
+
+# Cleans up the age identity file created by generate_age_keypair_file.
+cleanup_age_keypair_file() {
+  rm -f "$IDENTITY_FILE" 2>/dev/null || true
+}
+
 # Exports secrets from the cluster without encryption.
 # Args: $1 = target directory name
 export_secrets() {
@@ -175,6 +190,22 @@ decrypt_aes() {
 decrypt_age() {
   local file="$1"
   $(get_bin) decrypt --age-identity "$IDENTITY" "$file"
+}
+
+# Decrypts a secret file using age identity from a file path (flag).
+# Args: $1 = secret file path
+# Uses variable IDENTITY_FILE.
+decrypt_age_from_file() {
+  local file="$1"
+  $(get_bin) decrypt --age-identity "$IDENTITY_FILE" "$file"
+}
+
+# Decrypts a secret file using age identity from a file path via env var.
+# Args: $1 = secret file path
+# Uses variable IDENTITY_FILE.
+decrypt_age_from_file_env() {
+  local file="$1"
+  KUBEXPORTER_AGE_IDENTITY="$IDENTITY_FILE" $(get_bin) decrypt "$file"
 }
 
 # Decrypts a secret file using AES key from a K8s secret.
