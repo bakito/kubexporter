@@ -58,7 +58,9 @@ jobs:
       - name: Sign release image
         if: ${{ inputs.tag_name != '' }}
         run: |
-          cosign sign --yes ghcr.io/bakito/kubexporter@${{ steps.docker_build_release.outputs.digest }}
+          cosign sign --yes ghcr.io/bakito/kubexporter@${STEPS_DOCKER_BUILD_RELEASE_OUTPUTS_DIGEST}
+        env:
+          STEPS_DOCKER_BUILD_RELEASE_OUTPUTS_DIGEST: ${{ steps.docker_build_release.outputs.digest }}
 
       - name: Build and push main
         id: docker_build_main
@@ -76,7 +78,12 @@ jobs:
       - name: Sign main image
         if: ${{ inputs.tag_name == '' }}
         run: |
-          cosign sign --yes ghcr.io/bakito/kubexporter@${{ steps.docker_build_main.outputs.digest }}
+          cosign sign --yes ghcr.io/bakito/kubexporter@${STEPS_DOCKER_BUILD_MAIN_OUTPUTS_DIGEST}
+        env:
+          STEPS_DOCKER_BUILD_MAIN_OUTPUTS_DIGEST: ${{ steps.docker_build_main.outputs.digest }}
 
       - name: Image digest
-        run: echo ${{ steps.docker_build_release.outputs.digest }}${{ steps.docker_build_main.outputs.digest }}
+        run: echo ${STEPS_DOCKER_BUILD_RELEASE_OUTPUTS_DIGEST}${STEPS_DOCKER_BUILD_MAIN_OUTPUTS_DIGEST}
+        env:
+          STEPS_DOCKER_BUILD_RELEASE_OUTPUTS_DIGEST: ${{ steps.docker_build_release.outputs.digest }}
+          STEPS_DOCKER_BUILD_MAIN_OUTPUTS_DIGEST: ${{ steps.docker_build_main.outputs.digest }}
