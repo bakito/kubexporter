@@ -24,14 +24,17 @@ jobs:
       - name: Get Latest Release Tag
         id: latest_release
         run: |
-          RELEASE_TAG=${{ inputs.release_tag }}
+          RELEASE_TAG=${INPUTS_RELEASE_TAG}
           if [ -z "$RELEASE_TAG" ]; then
-            RELEASE_TAG=${{ github.event.inputs.release_tag }}
+            RELEASE_TAG=${GITHUB_EVENT_INPUTS_RELEASE_TAG}
           fi
           if [ -z "$RELEASE_TAG" ]; then
             RELEASE_TAG=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
           fi
           echo "tag_name=$RELEASE_TAG" >> $GITHUB_OUTPUT
+        env:
+          INPUTS_RELEASE_TAG: ${{ inputs.release_tag }}
+          GITHUB_EVENT_INPUTS_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
 
       - name: Analyze Build Assets
         uses: bakito/virustotal-action@336abda806a77344443c4411d653b3f947c1349e # v2.0.2

@@ -17,11 +17,13 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: 'go.mod'
+          cache: false
 
       - name: Release
         run: make release-ci
@@ -41,7 +43,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/publish.yml
+    uses: $/.github/workflows/publish.yml
     with:
       tag_name: ${{ github.ref_name }}
     secrets: inherit
@@ -50,5 +52,5 @@ jobs:
     needs: release
     permissions:
       contents: write
-    uses: ./.github/workflows/virustotal.yaml
+    uses: $/.github/workflows/virustotal.yaml
     secrets: inherit
