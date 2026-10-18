@@ -1,6 +1,7 @@
 [![Go](https://github.com/bakito/kubexporter/workflows/Go/badge.svg)](https://github.com/bakito/kubexporter/actions?query=workflow%3AGo)
 [![GitHub Release](https://img.shields.io/github/release/bakito/kubexporter.svg?style=flat)](https://github.com/bakito/kubexporter/releases)
 [![Coverage Status](https://coveralls.io/repos/github/bakito/kubexporter/badge.svg?branch=main)](https://coveralls.io/github/bakito/kubexporter?branch=main)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/bakito/kubexporter/badge)](https://securityscorecards.dev/viewer/?uri=github.com%2Fbakito%2Fkubexporter)
 [![Static Badge](https://img.shields.io/badge/try_me-on_Killercoda-black)](https://killercoda.com/bakito/scenario/kubernetes-kubexporter)
 [![krew install](https://img.shields.io/badge/krew-install-326CE5?logo=kubernetes&logoColor=white)](#use-as-kubectl-plugin)
 [![brew install](https://img.shields.io/badge/brew-install-FBB040?logo=homebrew&logoColor=black)](#brew)

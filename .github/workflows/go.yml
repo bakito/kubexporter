@@ -1,5 +1,7 @@
 name: Go
 
+permissions: read-all
+
 on:
   push:
     branches: [ main ]
@@ -52,6 +54,8 @@ jobs:
   test-release:
     name: test release
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
 
       - name: Check out code into the Go module directory
@@ -63,6 +67,9 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: "go.mod"
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
       - name: Cache binaries
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -80,3 +87,20 @@ jobs:
           name: kubexporter.exe
           path: dist/default_windows_amd64_v1/kubexporter.exe
           retention-days: 1
+
+  fuzz:
+    name: fuzz
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: "go.mod"
+
+      - name: Run fuzz tests
+        run: make fuzz

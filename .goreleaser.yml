@@ -35,6 +35,7 @@ archives:
 
 checksum:
   name_template: 'checksums.txt'
+  algorithm: sha256
 
 snapshot:
   version_template: "{{ .Version }}-next"
@@ -49,6 +50,18 @@ changelog:
       - '^chore'
 sboms:
   - artifacts: archive
+
+signs:
+  - id: default
+    cmd: cosign
+    args:
+      - "sign-blob"
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - "--yes"
+    signature: "${artifact}.sigstore.json"
+    artifacts: checksum
+    output: true
 
 homebrew_casks:
   - name: kubexporter

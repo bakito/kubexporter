@@ -11,6 +11,19 @@
       "matchStrings": [
         "# renovate: packageName=(?<packageName>.+?)\\s+.+?_VERSION \\?= (?<currentValue>.+?)\\s"
       ]
+    },
+    {
+      "customType": "regex",
+      "datasourceTemplate": "docker",
+      "description": "Update base image in .ko.yaml",
+      "managerFilePatterns": [
+        "/^\\.ko\\.yaml$/"
+      ],
+      "matchStrings": [
+        "(?<replaceString>defaultBaseImage:\\s+(?<depName>[a-z0-9._/-]+):(?<currentValue>[^@\\s]+)@sha256:(?<currentDigest>[a-f0-9]+))"
+      ],
+      "autoReplaceStringTemplate": "defaultBaseImage: {{{depName}}}:{{{newValue}}}@sha256:{{{newDigest}}}",
+      "versioningTemplate": "docker"
     }
   ],
   "dependencyDashboard": true

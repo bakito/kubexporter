@@ -47,6 +47,19 @@ mocks: tb.mockgen
 	$(TB_MOCKGEN) -destination internal/mocks/client/mock.go   k8s.io/client-go/dynamic Interface,NamespaceableResourceInterface,ResourceInterface
 	$(TB_MOCKGEN) -destination internal/mocks/mapper/mock.go   k8s.io/apimachinery/pkg/api/meta RESTMapper
 
+# Run fuzz tests
+fuzz:
+	go test -fuzz=FuzzAesDecrypt -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzAesEncrypt_Decrypt_Roundtrip -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzAgeEncrypt_Decrypt_Roundtrip -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzAgeDecrypt -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzNewAgeEncryptor_PublicKey -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzNewAgeEncryptor_Identity -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzAesKeySetup -fuzztime=10s ./internal/encryption/
+	go test -fuzz=FuzzConfigYAML -fuzztime=10s ./internal/types/
+	go test -fuzz=FuzzConfigFileNameTemplate -fuzztime=10s ./internal/types/
+	go test -fuzz=FuzzMaskedSetup -fuzztime=10s ./internal/types/
+
 .PHONY: docs
 docs:
 	go run cmd/docs/main.go
