@@ -75,10 +75,9 @@ jobs:
           name: image-tar
           path: /tmp
 
-      - name: 🖼️ Load and tag docker image
+      - name: 🖼️ Load docker image
         run: |
           docker load -i /tmp/image.tar
-          docker tag kubexporter:e2e ghcr.io/bakito/kubexporter:latest
 
       - name: 📦 Extract binary from docker image
         run: |
