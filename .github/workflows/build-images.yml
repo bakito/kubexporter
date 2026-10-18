@@ -59,7 +59,7 @@ jobs:
           KO_TAGS: latest,${{ inputs.tag_name }}
           KO_PLATFORM_SPECIFIERS: linux/amd64
         run: |
-          ko build --bare --sbom=none ./
+          ko build --bare --sbom=spdx ./
 
       - name: Sign release image
         if: ${{ inputs.tag_name != '' && github.event_name != 'pull_request' }}
@@ -78,7 +78,7 @@ jobs:
           KO_TAGS: main
           KO_PLATFORM_SPECIFIERS: linux/amd64
         run: |
-          ko build --bare --sbom=none ./
+          ko build --bare --sbom=spdx ./
 
       - name: Sign main image
         if: ${{ inputs.tag_name == '' && github.event_name != 'pull_request' }}
@@ -94,4 +94,4 @@ jobs:
           KO_DATA_PATH: /tmp/ko-data
         run: |
           mkdir -p $KO_DATA_PATH
-          ko build --bare --push=false --sbom=none ./
+          ko build --bare --push=false --sbom=spdx ./
