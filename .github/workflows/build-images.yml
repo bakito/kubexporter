@@ -9,6 +9,13 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag name'
+        required: false
+        type: string
+        default: ''
   workflow_call:
     inputs:
       tag_name:
