@@ -90,3 +90,9 @@ docs:
 .PHONY: docs-gif
 docs-gif:
 	devbox run docs-gif
+
+# Run OSSF Scorecard locally via Docker (requires GITHUB_AUTH_TOKEN)
+.PHONY: scorecard
+scorecard:
+	@if [ -z "$$GITHUB_TOKEN" ]; then echo "Error: GITHUB_TOKEN is not set" && exit 1; fi
+	docker run --rm -e GITHUB_AUTH_TOKEN="$$GITHUB_TOKEN" ghcr.io/ossf/scorecard/v5 --show-details --repo=github.com/bakito/kubexporter
