@@ -1,6 +1,6 @@
 name: Build images
 
-permissions: read-all
+permissions: {}
 
 on:
   push:
@@ -63,8 +63,10 @@ jobs:
       - name: Sign release image
         if: ${{ inputs.tag_name != '' && github.event_name != 'pull_request' }}
         run: |
-          cosign sign --yes ghcr.io/bakito/kubexporter:${{ inputs.tag_name }}
+          cosign sign --yes ghcr.io/bakito/kubexporter:${INPUTS_TAG_NAME}
           cosign sign --yes ghcr.io/bakito/kubexporter:latest
+        env:
+          INPUTS_TAG_NAME: ${{ inputs.tag_name }}
 
       - name: Build and push main image with ko
         id: ko_build_main
