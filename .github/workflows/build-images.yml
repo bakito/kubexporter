@@ -63,17 +63,18 @@ jobs:
           REVISION: ${{ github.sha }}
           BUILD_DATE: ${{ github.event.head_commit.timestamp }}
           KO_DOCKER_REPO: ghcr.io/bakito/kubexporter
-          KO_TAGS: latest,${{ inputs.tag_name }}
+          KO_BUILD_ARGS: --tags=latest,${{ inputs.tag_name }}
           KO_PLATFORM_SPECIFIERS: linux/amd64
-        run: make ko-build
+        run: |
+          IMAGE=$((make ko-build 2>&1) | grep 'Published ghcr.io' | grep -v '.sbom' | awk '{print $NF}')
+          echo "image=$IMAGE" >> "${GITHUB_OUTPUT}"
 
       - name: Sign release image
         if: ${{ inputs.tag_name != '' && github.event_name != 'pull_request' }}
         run: |
-          cosign sign --yes ghcr.io/bakito/kubexporter:${INPUTS_TAG_NAME}
-          cosign sign --yes ghcr.io/bakito/kubexporter:latest
+          cosign sign --yes "${IMAGE}"
         env:
-          INPUTS_TAG_NAME: ${{ inputs.tag_name }}
+          IMAGE: ${{ steps.ko_build_release.outputs.image }}
 
       - name: Build and push main image with ko
         id: ko_build_main
@@ -83,14 +84,18 @@ jobs:
           REVISION: ${{ github.sha }}
           BUILD_DATE: ${{ github.event.head_commit.timestamp }}
           KO_DOCKER_REPO: ghcr.io/bakito/kubexporter
-          KO_TAGS: main
+          KO_BUILD_ARGS: --tags=main
           KO_PLATFORM_SPECIFIERS: linux/amd64
-        run: make ko-build
+        run: |
+          IMAGE=$((make ko-build 2>&1) | grep 'Published ghcr.io' | grep -v '.sbom' | awk '{print $NF}')
+          echo "image=$IMAGE" >> "${GITHUB_OUTPUT}"
 
       - name: Sign main image
         if: ${{ inputs.tag_name == '' && github.event_name != 'pull_request' }}
         run: |
-          cosign sign --yes ghcr.io/bakito/kubexporter:main
+          cosign sign --yes "${IMAGE}"
+        env:
+          IMAGE: ${{ steps.ko_build_main.outputs.image }}
 
       - name: Build image for PR (no push)
         if: ${{ github.event_name == 'pull_request' }}

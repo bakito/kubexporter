@@ -1,4 +1,4 @@
-name: Scan GitHub Release with VirusTotal
+name: Scan Release with VirusTotal
 
 permissions: {}
 
@@ -22,6 +22,8 @@ on:
 jobs:
   scan_release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Get Latest Release Tag
         id: latest_release
