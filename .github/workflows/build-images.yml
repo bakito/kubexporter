@@ -55,17 +55,17 @@ jobs:
           VERSION: ${{ inputs.tag_name }}
           REVISION: ${{ github.sha }}
           BUILD_DATE: ${{ github.event.head_commit.timestamp }}
-          KO_DOCKER_REPO: ghcr.io/bakito
+          KO_DOCKER_REPO: ghcr.io/bakito/kubexporter
           KO_TAGS: latest,${{ inputs.tag_name }}
           KO_PLATFORM_SPECIFIERS: linux/amd64
         run: |
-          ko build --bare ./
+          ko build --bare --sbom=none ./
 
       - name: Sign release image
         if: ${{ inputs.tag_name != '' && github.event_name != 'pull_request' }}
         run: |
-          cosign sign --yes ghcr.io/bakito:${{ inputs.tag_name }}
-          cosign sign --yes ghcr.io/bakito:latest
+          cosign sign --yes ghcr.io/bakito/kubexporter:${{ inputs.tag_name }}
+          cosign sign --yes ghcr.io/bakito/kubexporter:latest
 
       - name: Build and push main image with ko
         id: ko_build_main
@@ -74,16 +74,16 @@ jobs:
           VERSION: main
           REVISION: ${{ github.sha }}
           BUILD_DATE: ${{ github.event.head_commit.timestamp }}
-          KO_DOCKER_REPO: ghcr.io/bakito
+          KO_DOCKER_REPO: ghcr.io/bakito/kubexporter
           KO_TAGS: main
           KO_PLATFORM_SPECIFIERS: linux/amd64
         run: |
-          ko build --bare ./
+          ko build --bare --sbom=none ./
 
       - name: Sign main image
         if: ${{ inputs.tag_name == '' && github.event_name != 'pull_request' }}
         run: |
-          cosign sign --yes ghcr.io/bakito:main
+          cosign sign --yes ghcr.io/bakito/kubexporter:main
 
       - name: Build image for PR (no push)
         if: ${{ github.event_name == 'pull_request' }}
