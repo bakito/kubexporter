@@ -39,6 +39,29 @@ test-release: tb.goreleaser tb.syft tb.goversioninfo
 	fi; \
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) $${TB_GORELEASER_ARGS} $${TB_GORELEASER_EXTRA_ARGS}
 
+# OCI image metadata, shared by all ko builds (no commas allowed in values)
+IMAGE_SOURCE        ?= https://github.com/bakito/kubexporter
+IMAGE_URL           ?= https://github.com/bakito/kubexporter
+IMAGE_DOCUMENTATION ?= https://github.com/bakito/kubexporter\#readme
+IMAGE_DESCRIPTION   ?= Export Kubernetes resources for backup and migration
+IMAGE_LICENSES      ?= Apache-2.0
+KO_IMAGE_METADATA    = \
+	--image-label "org.opencontainers.image.source=$(IMAGE_SOURCE)" \
+	--image-label "org.opencontainers.image.url=$(IMAGE_URL)" \
+	--image-label "org.opencontainers.image.documentation=$(IMAGE_DOCUMENTATION)" \
+	--image-label "org.opencontainers.image.description=$(IMAGE_DESCRIPTION)" \
+	--image-label "org.opencontainers.image.licenses=$(IMAGE_LICENSES)" \
+	--image-annotation "org.opencontainers.image.source=$(IMAGE_SOURCE)" \
+	--image-annotation "org.opencontainers.image.url=$(IMAGE_URL)" \
+	--image-annotation "org.opencontainers.image.documentation=$(IMAGE_DOCUMENTATION)" \
+	--image-annotation "org.opencontainers.image.description=$(IMAGE_DESCRIPTION)" \
+	--image-annotation "org.opencontainers.image.licenses=$(IMAGE_LICENSES)"
+
+# Build the image with ko; pass extra flags via KO_BUILD_ARGS
+.PHONY: ko-build
+ko-build:
+	ko build --bare --sbom=spdx $(KO_IMAGE_METADATA) $(KO_BUILD_ARGS) ./
+
 check-vulnerabilities:
 	go run golang.org/x/vuln/cmd/govulncheck@latest -show verbose,color ./...
 
