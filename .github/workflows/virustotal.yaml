@@ -1,6 +1,6 @@
 name: Scan GitHub Release with VirusTotal
 
-permissions: read-all
+permissions: {}
 
 on:
   schedule:
