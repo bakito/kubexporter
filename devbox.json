@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.17.5/.schema/devbox.schema.json",
   "packages": [
     "vhs@0.12.1",
-    "ffmpeg@9.0.1",
+    "ffmpeg@9.0.2",
     "gifsicle@1.96"
   ],
   "shell": {
