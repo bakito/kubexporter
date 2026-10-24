@@ -1,6 +1,7 @@
 package client
 
 import (
+	openreportsversioned "github.com/openreports/reports-api/pkg/client/clientset/versioned"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
@@ -11,10 +12,11 @@ import (
 )
 
 type APIClient struct {
-	RestConfig      *rest.Config
-	Client          dynamic.Interface
-	Mapper          *restmapper.DeferredDiscoveryRESTMapper
-	DiscoveryClient *discovery.DiscoveryClient
+	RestConfig        *rest.Config
+	Client            dynamic.Interface
+	Mapper            *restmapper.DeferredDiscoveryRESTMapper
+	DiscoveryClient   *discovery.DiscoveryClient
+	OpenReportsClient *openreportsversioned.Clientset
 }
 
 func NewAPIClient(config *types.Config) (*APIClient, error) {
@@ -34,5 +36,17 @@ func NewAPIClient(config *types.Config) (*APIClient, error) {
 	}
 
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dcl))
-	return &APIClient{RestConfig: rc, Client: client, Mapper: mapper, DiscoveryClient: dcl}, nil
+
+	openReportsClient, err := openreportsversioned.NewForConfig(rc)
+	if err != nil {
+		return nil, err
+	}
+
+	return &APIClient{
+		RestConfig:        rc,
+		Client:            client,
+		Mapper:            mapper,
+		DiscoveryClient:   dcl,
+		OpenReportsClient: openReportsClient,
+	}, nil
 }

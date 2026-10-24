@@ -145,34 +145,35 @@ func NewConfig(configFlags *genericclioptions.ConfigFlags, printFlags *genericcl
 
 // Config export config.
 type Config struct {
-	Excluded                Excluded      `docs:"Excluded resources"                                                     json:"excluded"                      yaml:"excluded"`
-	Included                Included      `docs:"Included resources"                                                     json:"included"                      yaml:"included"`
-	CreatedWithin           time.Duration `docs:"The max allowed age duration for the resources"                         docs-cli:"created-within"            json:"createdWithin"           yaml:"createdWithin"`
-	ConsiderOwnerReferences bool          `docs:"Consider owner references for not excluded resources"                   json:"considerOwnerReferences"       yaml:"considerOwnerReferences"`
-	Masked                  *Masked       `docs:"Field masking config"                                                   json:"masked"                        yaml:"masked"`
-	Encrypted               *Encrypted    `docs:"Field encryption config"                                                json:"encrypted"                     yaml:"encrypted"`
-	SortSlices              KindFields    `docs:"sort the slice field value before exporting"                            json:"sortSlices"                    yaml:"sortSlices"`
-	FileNameTemplate        string        `docs:"Custom resource file name template"                                     json:"fileNameTemplate"              yaml:"fileNameTemplate"`
-	ListFileNameTemplate    string        `docs:"Custom resource list file name template"                                json:"listFileNameTemplate"          yaml:"listFileNameTemplate"`
-	AsLists                 bool          `docs:"Export as lists instead of individual files"                            docs-cli:"lists"                     json:"asLists"                 yaml:"asLists"`
-	QueryPageSize           int           `docs:"Kubernetes query page size (0 use default)"                             json:"queryPageSize"                 yaml:"queryPageSize"`
-	Target                  string        `docs:"The target directory"                                                   docs-cli:"target"                    json:"target"                  yaml:"target"`
-	ClearTarget             bool          `docs:"Clear the target directory before exporting"                            docs-cli:"clear-target"              json:"clearTarget"             yaml:"clearTarget"`
-	Summary                 bool          `docs:"If enabled, a summary is printed"                                       docs-cli:"summary"                   json:"summary"                 yaml:"summary"`
-	Progress                Progress      `docs:"Progress mode bar|bubbles|simple|none"                                  docs-cli:"progress"                  json:"progress"                yaml:"progress"`
-	Namespace               *string       `docs:"A single namespace (default all)"                                       docs-cli:"namespace"                 json:"namespace,omitempty"     yaml:"namespace,omitempty"`
-	Namespaces              []string      `docs:"Multiple namespaces (joined with namespace, if both are set)"           json:"namespaces,omitempty"          yaml:"namespaces,omitempty"`
-	IncludeClusterResources bool          `docs:"Export cluster-scoped resources too, when a namespace filter is active" docs-cli:"include-cluster-resources" json:"includeClusterResources" yaml:"includeClusterResources"`
-	Worker                  int           `docs:"The number of parallel worker"                                          docs-cli:"worker"                    json:"worker"                  yaml:"worker"`
-	Archive                 bool          `docs:"Create a tar.gz archive"                                                docs-cli:"archive"                   json:"archive"                 yaml:"archive"`
-	ArchiveRetentionDays    int           `docs:"Number of days to keep old archives"                                    json:"archiveRetentionDays"          yaml:"archiveRetentionDays"`
-	ArchiveTarget           string        `docs:"The target directory for the archive(default \"exports\")"              json:"archiveTarget"                 yaml:"archiveTarget"`
-	S3Config                *S3Config     `docs:"S3 Configuration to upload the archive to an S3 compatible storage"     json:"s3"                            yaml:"s3"`
-	GCSConfig               *GCSConfig    `docs:"Google storage bucket configuration"                                    json:"gcs"                           yaml:"gcs"`
-	Metrics                 *Metrics      `docs:"Metrics configuration"                                                  json:"metrics"                       yaml:"metrics"`
-	Quiet                   bool          `docs:"Output is prevented"                                                    docs-cli:"quiet"                     json:"quiet"                   yaml:"quiet"`
-	Verbose                 bool          `docs:"Errors during export are listed in summary"                             docs-cli:"verbose"                   json:"verbose"                 yaml:"verbose"`
-	PrintSize               bool          `docs:"Print the size of the exported files"                                   docs-cli:"size"                      json:"printSize"               yaml:"printSize"`
+	Excluded                Excluded           `docs:"Excluded resources"                                                     json:"excluded"                      yaml:"excluded"`
+	Included                Included           `docs:"Included resources"                                                     json:"included"                      yaml:"included"`
+	CreatedWithin           time.Duration      `docs:"The max allowed age duration for the resources"                         docs-cli:"created-within"            json:"createdWithin"           yaml:"createdWithin"`
+	ConsiderOwnerReferences bool               `docs:"Consider owner references for not excluded resources"                   json:"considerOwnerReferences"       yaml:"considerOwnerReferences"`
+	Masked                  *Masked            `docs:"Field masking config"                                                   json:"masked"                        yaml:"masked"`
+	Encrypted               *Encrypted         `docs:"Field encryption config"                                                json:"encrypted"                     yaml:"encrypted"`
+	SortSlices              KindFields         `docs:"sort the slice field value before exporting"                            json:"sortSlices"                    yaml:"sortSlices"`
+	FileNameTemplate        string             `docs:"Custom resource file name template"                                     json:"fileNameTemplate"              yaml:"fileNameTemplate"`
+	ListFileNameTemplate    string             `docs:"Custom resource list file name template"                                json:"listFileNameTemplate"          yaml:"listFileNameTemplate"`
+	AsLists                 bool               `docs:"Export as lists instead of individual files"                            docs-cli:"lists"                     json:"asLists"                 yaml:"asLists"`
+	QueryPageSize           int                `docs:"Kubernetes query page size (0 use default)"                             json:"queryPageSize"                 yaml:"queryPageSize"`
+	Target                  string             `docs:"The target directory"                                                   docs-cli:"target"                    json:"target"                  yaml:"target"`
+	ClearTarget             bool               `docs:"Clear the target directory before exporting"                            docs-cli:"clear-target"              json:"clearTarget"             yaml:"clearTarget"`
+	Summary                 bool               `docs:"If enabled, a summary is printed"                                       docs-cli:"summary"                   json:"summary"                 yaml:"summary"`
+	Progress                Progress           `docs:"Progress mode bar|bubbles|simple|none"                                  docs-cli:"progress"                  json:"progress"                yaml:"progress"`
+	Namespace               *string            `docs:"A single namespace (default all)"                                       docs-cli:"namespace"                 json:"namespace,omitempty"     yaml:"namespace,omitempty"`
+	Namespaces              []string           `docs:"Multiple namespaces (joined with namespace, if both are set)"           json:"namespaces,omitempty"          yaml:"namespaces,omitempty"`
+	IncludeClusterResources bool               `docs:"Export cluster-scoped resources too, when a namespace filter is active" docs-cli:"include-cluster-resources" json:"includeClusterResources" yaml:"includeClusterResources"`
+	Worker                  int                `docs:"The number of parallel worker"                                          docs-cli:"worker"                    json:"worker"                  yaml:"worker"`
+	Archive                 bool               `docs:"Create a tar.gz archive"                                                docs-cli:"archive"                   json:"archive"                 yaml:"archive"`
+	ArchiveRetentionDays    int                `docs:"Number of days to keep old archives"                                    json:"archiveRetentionDays"          yaml:"archiveRetentionDays"`
+	ArchiveTarget           string             `docs:"The target directory for the archive(default \"exports\")"              json:"archiveTarget"                 yaml:"archiveTarget"`
+	S3Config                *S3Config          `docs:"S3 Configuration to upload the archive to an S3 compatible storage"     json:"s3"                            yaml:"s3"`
+	GCSConfig               *GCSConfig         `docs:"Google storage bucket configuration"                                    json:"gcs"                           yaml:"gcs"`
+	Metrics                 *Metrics           `docs:"Metrics configuration"                                                  json:"metrics"                       yaml:"metrics"`
+	OpenReports             *OpenReportsConfig `docs:"OpenReports configuration"                                              json:"openReports"                   yaml:"openReports"`
+	Quiet                   bool               `docs:"Output is prevented"                                                    docs-cli:"quiet"                     json:"quiet"                   yaml:"quiet"`
+	Verbose                 bool               `docs:"Errors during export are listed in summary"                             docs-cli:"verbose"                   json:"verbose"                 yaml:"verbose"`
+	PrintSize               bool               `docs:"Print the size of the exported files"                                   docs-cli:"size"                      json:"printSize"               yaml:"printSize"`
 
 	excludedSet set
 	includedSet set
@@ -223,6 +224,12 @@ type S3Config struct {
 
 type GCSConfig struct {
 	Bucket string `docs:"Bucket name" json:"bucket" yaml:"bucket"`
+}
+
+type OpenReportsConfig struct {
+	Enabled       bool   `docs:"OpenReports is enabled"      docs-cli:"openreports"                json:"enabled"       yaml:"enabled"`
+	Namespace     string `docs:"Target namespace for Report" docs-cli:"openreports-namespace"      json:"namespace"     yaml:"namespace"`
+	ClusterReport bool   `docs:"Create a ClusterReport"      docs-cli:"openreports-cluster-report" json:"clusterReport" yaml:"clusterReport"`
 }
 
 type Metrics struct {
@@ -680,6 +687,17 @@ func (c *Config) Validate() error {
 
 	if c.Progress != ProgressSimple && c.Progress != ProgressNone && c.Progress != ProgressBarBubbles {
 		c.Progress = ProgressBar
+	}
+	if c.OpenReports != nil && c.OpenReports.Enabled && !c.OpenReports.ClusterReport && c.OpenReports.Namespace == "" {
+		return errors.New("openreports namespace must be set when enabled and clusterReport is false")
+	}
+	return nil
+}
+
+// ValidateOpenReports checks that OpenReports configuration is valid.
+func (c *Config) ValidateOpenReports() error {
+	if c.OpenReports != nil && c.OpenReports.Enabled && !c.OpenReports.ClusterReport && c.OpenReports.Namespace == "" {
+		return errors.New("openreports namespace must be set when enabled and clusterReport is false")
 	}
 	return nil
 }
