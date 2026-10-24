@@ -42,7 +42,7 @@ const CLUSTER_REPORT_GVK = {
   plural: 'clusterreports',
 };
 
-const LABEL_SELECTOR = 'app.kubernetes.io/name=kubexporter';
+const LABEL_SELECTOR = 'app.kubernetes.io/managed-by=kubexporter';
 
 // Unique key of a report: names alone are not unique, as a ClusterReport and
 // Reports in different namespaces may share the same name.
