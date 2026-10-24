@@ -26,7 +26,7 @@ export interface ReportSummary {
 
 export interface OpenReport {
   apiVersion: string;
-  kind: 'Report' | 'ClusterReport';
+  kind: 'Report';
   metadata: {
     name: string;
     namespace?: string;

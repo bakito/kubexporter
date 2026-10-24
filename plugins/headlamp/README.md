@@ -56,10 +56,6 @@ Coming soon.
 Run kubexporter with the OpenReports flag to create a report:
 
 ```bash
-# Create a ClusterReport (cluster-scoped)
-kubexporter --openreports --openreports-cluster-report
-
-# Create a namespaced Report
 kubexporter --openreports --openreports-namespace=default
 ```
 
@@ -91,7 +87,7 @@ Sortable, paginated table showing per-resource-kind details:
 
 ## Architecture
 
-The plugin fetches OpenReports `Report` and `ClusterReport` CRDs directly from the Kubernetes API via Headlamp's proxy. It filters for reports with `source: kubexporter` and parses the structured results into dashboard components.
+The plugin fetches OpenReports `Report` CRDs directly from the Kubernetes API via Headlamp's proxy. It filters for reports with `source: kubexporter` and parses the structured results into dashboard components.
 
 ## Project Structure
 
