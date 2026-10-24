@@ -328,38 +328,3 @@ func TestBuildReport(t *testing.T) {
 		t.Errorf("summary %+v does not match results", report.Summary)
 	}
 }
-
-func TestBuildClusterReport(t *testing.T) {
-	report := buildClusterReport(&worker.Stats{}, time.Now(), nil, "exports")
-
-	if report.Name != "kubexporter-exports" {
-		t.Errorf("unexpected name: %q", report.Name)
-	}
-	if !reportNamePattern.MatchString(report.Name) {
-		t.Errorf("name %q is not a valid resource name", report.Name)
-	}
-	if report.GenerateName != "" {
-		t.Errorf("expected empty generateName, got %q", report.GenerateName)
-	}
-	if _, ok := report.Annotations[lastExportAnnotation]; !ok {
-		t.Errorf("expected %s annotation", lastExportAnnotation)
-	}
-	if report.Labels["app.kubernetes.io/managed-by"] != "kubexporter" {
-		t.Errorf("unexpected managed-by label: %q", report.Labels["app.kubernetes.io/managed-by"])
-	}
-	if report.Labels["app.kubernetes.io/name"] != "kubexporter" {
-		t.Errorf("unexpected name label: %q", report.Labels["app.kubernetes.io/name"])
-	}
-	if report.APIVersion != openreportsv1alpha1.SchemeGroupVersion.String() {
-		t.Errorf("unexpected API version: %q", report.APIVersion)
-	}
-	if report.Kind != "ClusterReport" {
-		t.Errorf("unexpected kind: %q", report.Kind)
-	}
-	if report.Source != "kubexporter" {
-		t.Errorf("unexpected source: %q", report.Source)
-	}
-	if report.Summary != buildSummary(report.Results) {
-		t.Errorf("summary %+v does not match results", report.Summary)
-	}
-}

@@ -233,8 +233,6 @@ openReports:
   enabled:
   # Target namespace for Report (string)
   namespace:
-  # Create a ClusterReport (bool)
-  clusterReport:
 # Output is prevented (bool)
 quiet:
 # Errors during export are listed in summary (bool)
@@ -354,7 +352,7 @@ E.g: `KUBEXPORTER_METRICS_OTLP_HEADER_Authorization="Bearer <yourToken>`
 
 ### OpenReports
 
-kubexporter can create [OpenReports](https://openreports.io/) `Report` or `ClusterReport` resources summarizing export results.
+kubexporter can create [OpenReports](https://openreports.io/) `Report` resources summarizing export results.
 
 #### Configuration
 
@@ -362,12 +360,10 @@ kubexporter can create [OpenReports](https://openreports.io/) `Report` or `Clust
 openReports:
   enabled: true
   namespace: default
-  clusterReport: false
 ```
 
 * `enabled`: Enable OpenReports integration.
-* `namespace`: Target namespace for the `Report` resource (required when `clusterReport` is `false`).
-* `clusterReport`: Set to `true` to create a `ClusterReport` instead of a namespaced `Report`.
+* `namespace`: Target namespace for the `Report` resource (required when enabled, unless running in a CronJob pod, where the pod's namespace is used automatically).
 
 You can also enable OpenReports via CLI flag:
 
@@ -409,6 +405,12 @@ rules:
   - apiGroups: ["openreports.io"]
     resources: ["reports"]
     verbs: ["create", "update", "get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -425,31 +427,7 @@ subjects:
     namespace: default
 ```
 
-For a `ClusterReport`:
-
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kubexporter-openreports
-rules:
-  - apiGroups: ["openreports.io"]
-    resources: ["clusterreports"]
-    verbs: ["create", "update", "get"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kubexporter-openreports
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubexporter-openreports
-subjects:
-  - kind: ServiceAccount
-    name: <your-service-account>
-    namespace: default
-```
+**CronJob Owner Reference:** When kubexporter runs inside a pod that belongs to a CronJob, it automatically adds an owner reference to that CronJob on the Report and uses the pod's namespace for the Report. The `namespace` configuration is not required in this case. If a different namespace is configured, an error is returned — the Report must be created in the same namespace as the running pod. This requires additional permissions to read Pods and Jobs, as shown above.
 
 ### Update Owner References
 

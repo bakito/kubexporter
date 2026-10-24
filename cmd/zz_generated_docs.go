@@ -18,7 +18,6 @@ var docsCobraMapping = map[string]string{
 	`otlp-metrics`: `OTLP Metrics are enabled`,
 	`openreports`: `OpenReports is enabled`,
 	`openreports-namespace`: `Target namespace for Report`,
-	`openreports-cluster-report`: `Create a ClusterReport`,
 	`quiet`: `Output is prevented`,
 	`verbose`: `Errors during export are listed in summary`,
 	`size`: `Print the size of the exported files`,

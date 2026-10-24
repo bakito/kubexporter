@@ -312,11 +312,7 @@ func (e *exporter) introEntries() []entry {
 		entries = append(entries, entry{"📈", "OTLP metrics", e.config.Metrics.OTLP.Endpoint})
 	}
 	if e.config.OpenReports != nil && e.config.OpenReports.Enabled {
-		kind := "Report"
-		if e.config.OpenReports.ClusterReport {
-			kind = "ClusterReport"
-		}
-		entries = append(entries, entry{"📋", "OpenReports", kind})
+		entries = append(entries, entry{"📋", "OpenReports", "Report"})
 	}
 	return entries
 }

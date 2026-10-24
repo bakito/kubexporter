@@ -14,7 +14,6 @@ metrics:
 openReports:
   enabled: false
   namespace: default
-#   clusterReport: false
 
 namespace:
 # namespace: ns1
