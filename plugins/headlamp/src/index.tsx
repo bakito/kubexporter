@@ -4,16 +4,16 @@ import {
 } from '@kinvolk/headlamp-plugin/lib';
 import KubexporterDashboard from './KubexporterDashboard';
 
-// Register a top-level "Kubexporter" section in the cluster sidebar
+// Register a top-level "KubExporter" section in the cluster sidebar
 registerSidebarEntry({
   parent: '',
   name: 'kubexporter',
-  label: 'Kubexporter',
+  label: 'KubExporter',
   url: '/kubexporter',
   icon: 'mdi:database-export',
 });
 
-// Register the dashboard entry inside the "Kubexporter" section
+// Register the dashboard entry inside the "KubExporter" section
 registerSidebarEntry({
   parent: 'kubexporter',
   name: 'kubexporter-dashboard',
