@@ -13,12 +13,51 @@ import {
   TableSortLabel,
   TablePagination,
   Paper,
+  Tooltip,
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { ResourceKindStats } from '../types';
-import { formatBytes, formatNumber } from '../utils';
+import { formatBytes, formatNumber, getTrend } from '../utils';
 
 type SortDirection = 'asc' | 'desc';
+
+// Renders a trend arrow icon next to a value
+function TrendIcon({ current, previous }: { current: number; previous?: number }) {
+  const trend = getTrend(current, previous);
+  if (trend === 'none') return null;
+
+  let icon: string;
+  let color: string;
+  switch (trend) {
+    case 'up':
+      icon = 'mdi:arrow-up';
+      color = '#388e3c';
+      break;
+    case 'down':
+      icon = 'mdi:arrow-down';
+      color = '#d32f2f';
+      break;
+    default:
+      icon = 'mdi:minus';
+      color = '#757575';
+  }
+
+  const iconEl = (
+    <Box component="span" sx={{ ml: 0.5, color, verticalAlign: 'middle' }}>
+      <Icon icon={icon} width={14} />
+    </Box>
+  );
+
+  if (previous !== undefined) {
+    return (
+      <Tooltip title={`Previous: ${previous.toLocaleString('en-US')}`}>
+        {iconEl}
+      </Tooltip>
+    );
+  }
+
+  return iconEl;
+}
 
 interface ResourceTableProps {
   resources: ResourceKindStats[];
@@ -133,14 +172,23 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
-                    {formatNumber(res.instances)}
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      {formatNumber(res.instances)}
+                      <TrendIcon current={res.instances} previous={res.prevInstances} />
+                    </Box>
                   </TableCell>
                   <TableCell align="right">
-                    {formatNumber(res.exportedInstances)}
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      {formatNumber(res.exportedInstances)}
+                      <TrendIcon current={res.exportedInstances} previous={res.prevExportedInstances} />
+                    </Box>
                   </TableCell>
                   <TableCell align="right">{res.pages}</TableCell>
                   <TableCell align="right">
-                    {formatBytes(res.exportedSizeBytes)}
+                    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                      {formatBytes(res.exportedSizeBytes)}
+                      <TrendIcon current={res.exportedSizeBytes} previous={res.prevExportedSizeBytes} />
+                    </Box>
                   </TableCell>
                   <TableCell>{res.queryDuration}</TableCell>
                   <TableCell>{res.exportDuration}</TableCell>

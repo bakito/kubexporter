@@ -49,6 +49,9 @@ export interface OpenReport {
   results: ReportResult[];
 }
 
+// Trend direction for comparing current vs previous values
+export type TrendDirection = 'up' | 'down' | 'same' | 'none';
+
 // Parsed kubexporter export statistics from a report
 export interface ExportStats {
   kinds: number;
@@ -58,6 +61,12 @@ export interface ExportStats {
   namespaces: number;
   errors: number;
   duration: string;
+  prevKinds?: number;
+  prevPages?: number;
+  prevResources?: number;
+  prevSize?: number;
+  prevNamespaces?: number;
+  prevErrors?: number;
 }
 
 // Per-resource-kind details
@@ -70,4 +79,7 @@ export interface ResourceKindStats {
   queryDuration: string;
   exportDuration: string;
   error?: string;
+  prevInstances?: number;
+  prevExportedInstances?: number;
+  prevExportedSizeBytes?: number;
 }
