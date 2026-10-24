@@ -14,6 +14,7 @@ import {
   SelectChangeEvent,
   Card,
   CardContent,
+  Button,
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { ApiProxy } from '@kinvolk/headlamp-plugin/lib';
@@ -25,6 +26,7 @@ import {
   parseResourceKindStats,
   getLastExportTime,
   isKubexporterReport,
+  getCronJobOwner,
 } from './utils';
 
 // Custom Resource API types for OpenReports
@@ -209,6 +211,21 @@ export default function KubexporterDashboard() {
                     in {selectedReport.metadata.namespace}
                   </Typography>
                 )}
+                {(() => {
+                  const cronJob = getCronJobOwner(selectedReport);
+                  if (cronJob) {
+                    return (
+                      <Typography variant="body2">
+                        <a
+                          href={`#/resources/batch/cronjobs/${selectedReport.metadata.namespace || 'default'}/${cronJob.name}`}
+                        >
+                          CronJob: {cronJob.name}
+                        </a>
+                      </Typography>
+                    );
+                  }
+                  return null;
+                })()}
               </Box>
             </Box>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

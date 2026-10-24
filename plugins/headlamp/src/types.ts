@@ -24,6 +24,14 @@ export interface ReportSummary {
   skip: number;
 }
 
+export interface OwnerReference {
+  apiVersion: string;
+  kind: string;
+  name: string;
+  uid?: string;
+  controller?: boolean;
+}
+
 export interface OpenReport {
   apiVersion: string;
   kind: 'Report';
@@ -34,6 +42,7 @@ export interface OpenReport {
     annotations?: Record<string, string>;
     resourceVersion?: string;
     creationTimestamp?: string;
+    ownerReferences?: OwnerReference[];
   };
   source: string;
   summary: ReportSummary;
