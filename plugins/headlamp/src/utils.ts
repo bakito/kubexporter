@@ -1,4 +1,4 @@
-import { OpenReport, ExportStats, ResourceKindStats, OwnerReference } from './types';
+import { OpenReport, ExportStats, ResourceKindStats, OwnerReference, TrendDirection } from './types';
 
 // Extract the summary-level export stats from a kubexporter report
 export function parseExportStats(report: OpenReport): ExportStats | null {
@@ -19,6 +19,7 @@ export function parseExportStats(report: OpenReport): ExportStats | null {
     }
 
     const value = result.properties?.value;
+    const prevValue = result.properties?.prevValue;
     if (value === undefined) {
       continue;
     }
@@ -26,21 +27,27 @@ export function parseExportStats(report: OpenReport): ExportStats | null {
     switch (result.rule) {
       case 'kinds':
         stats.kinds = parseInt(value, 10) || 0;
+        if (prevValue) stats.prevKinds = parseInt(prevValue, 10) || 0;
         break;
       case 'pages':
         stats.pages = parseInt(value, 10) || 0;
+        if (prevValue) stats.prevPages = parseInt(prevValue, 10) || 0;
         break;
       case 'resources':
         stats.resources = parseInt(value, 10) || 0;
+        if (prevValue) stats.prevResources = parseInt(prevValue, 10) || 0;
         break;
       case 'size':
         stats.size = parseInt(value, 10) || 0;
+        if (prevValue) stats.prevSize = parseInt(prevValue, 10) || 0;
         break;
       case 'namespaces':
         stats.namespaces = parseInt(value, 10) || 0;
+        if (prevValue) stats.prevNamespaces = parseInt(prevValue, 10) || 0;
         break;
       case 'errors':
         stats.errors = parseInt(value, 10) || 0;
+        if (prevValue) stats.prevErrors = parseInt(prevValue, 10) || 0;
         break;
       case 'duration':
         stats.duration = value;
@@ -71,6 +78,9 @@ export function parseResourceKindStats(report: OpenReport): ResourceKindStats[] 
       queryDuration: props.queryDuration || '0s',
       exportDuration: props.exportDuration || '0s',
       error: props.error || undefined,
+      prevInstances: props.prevInstances ? parseInt(props.prevInstances, 10) : undefined,
+      prevExportedInstances: props.prevExportedInstances ? parseInt(props.prevExportedInstances, 10) : undefined,
+      prevExportedSizeBytes: props.prevExportedSizeBytes ? parseInt(props.prevExportedSizeBytes, 10) : undefined,
     };
 
     list.push(stats);
@@ -115,4 +125,18 @@ export function getCronJobOwner(report: OpenReport): OwnerReference | null {
   }
   const cronJob = refs.find((ref) => ref.kind === 'CronJob');
   return cronJob || null;
+}
+
+// Calculate the trend direction between current and previous values
+export function getTrend(current: number, previous?: number): TrendDirection {
+  if (previous === undefined) {
+    return 'none';
+  }
+  if (current > previous) {
+    return 'up';
+  }
+  if (current < previous) {
+    return 'down';
+  }
+  return 'same';
 }

@@ -14,7 +14,6 @@ import {
   SelectChangeEvent,
   Card,
   CardContent,
-  Button,
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { ApiProxy } from '@kinvolk/headlamp-plugin/lib';
