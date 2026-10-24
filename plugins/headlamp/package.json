@@ -1,0 +1,32 @@
+{
+  "name": "kubexporter-headlamp-plugin",
+  "version": "0.1.7",
+  "description": "Headlamp plugin for visualizing kubexporter OpenReports export statistics",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "headlamp-plugin build",
+    "postbuild": "cp package.json dist/package.json",
+    "start": "headlamp-plugin start",
+    "lint": "headlamp-plugin lint",
+    "format": "headlamp-plugin format"
+  },
+  "keywords": [
+    "headlamp",
+    "headlamp-plugin",
+    "kubernetes",
+    "kubexporter",
+    "openreports"
+  ],
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@kinvolk/headlamp-plugin": "0.13.1",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@mui/material": "^5.18.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
+}
