@@ -1,7 +1,7 @@
 {
   "name": "kubexporter-headlamp-plugin",
   "version": "0.1.7",
-  "description": "Headlamp plugin for visualizing kubexporter OpenReports export statistics",
+  "description": "Headlamp plugin for visualizing KubExporter OpenReports export statistics",
   "main": "dist/index.js",
   "scripts": {
     "build": "headlamp-plugin build",
