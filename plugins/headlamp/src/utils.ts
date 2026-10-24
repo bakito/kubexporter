@@ -1,4 +1,4 @@
-import { OpenReport, ExportStats, ResourceKindStats } from './types';
+import { OpenReport, ExportStats, ResourceKindStats, OwnerReference } from './types';
 
 // Extract the summary-level export stats from a kubexporter report
 export function parseExportStats(report: OpenReport): ExportStats | null {
@@ -105,4 +105,14 @@ export function getLastExportTime(report: OpenReport): string | null {
 // Check if a report is from kubexporter
 export function isKubexporterReport(report: OpenReport): boolean {
   return report.source === 'kubexporter';
+}
+
+// Get the CronJob owner reference from a report, if present
+export function getCronJobOwner(report: OpenReport): OwnerReference | null {
+  const refs = report.metadata.ownerReferences;
+  if (!refs) {
+    return null;
+  }
+  const cronJob = refs.find((ref) => ref.kind === 'CronJob');
+  return cronJob || null;
 }
