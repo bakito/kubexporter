@@ -4,7 +4,6 @@ import { OpenReport, ExportStats, ResourceKindStats, OwnerReference, TrendDirect
 export function parseExportStats(report: OpenReport): ExportStats | null {
   const stats: ExportStats = {
     kinds: 0,
-    pages: 0,
     resources: 0,
     size: 0,
     namespaces: 0,
@@ -28,10 +27,6 @@ export function parseExportStats(report: OpenReport): ExportStats | null {
       case 'kinds':
         stats.kinds = parseInt(value, 10) || 0;
         if (prevValue) stats.prevKinds = parseInt(prevValue, 10) || 0;
-        break;
-      case 'pages':
-        stats.pages = parseInt(value, 10) || 0;
-        if (prevValue) stats.prevPages = parseInt(prevValue, 10) || 0;
         break;
       case 'resources':
         stats.resources = parseInt(value, 10) || 0;
@@ -73,7 +68,6 @@ export function parseResourceKindStats(report: OpenReport): ResourceKindStats[] 
       groupKind: result.rule,
       instances: parseInt(props.instances, 10) || 0,
       exportedInstances: parseInt(props.exportedInstances, 10) || 0,
-      pages: parseInt(props.pages, 10) || 0,
       exportedSizeBytes: parseInt(props.exportedSizeBytes, 10) || 0,
       queryDuration: props.queryDuration || '0s',
       exportDuration: props.exportDuration || '0s',

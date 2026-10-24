@@ -7,7 +7,7 @@ A [Headlamp](https://headlamp.dev/) plugin that visualizes kubexporter export st
 This plugin adds a "Kubexporter" dashboard to Headlamp that displays:
 
 - **Export Statistics Cards**: Resources exported, kinds processed, namespaces, export size, duration, and errors
-- **Resource Kinds Table**: Per-resource-kind breakdown with instances, pages, size, and query/export time
+- **Resource Kinds Table**: Per-resource-kind breakdown with instances, size, and query/export time
 
 ## Prerequisites
 
@@ -80,7 +80,6 @@ Sortable, paginated table showing per-resource-kind details:
 - Kind name (group.kind format)
 - Total instances found
 - Exported instances
-- API query pages
 - Exported size
 - Query duration
 - Export duration

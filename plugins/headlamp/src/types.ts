@@ -55,14 +55,12 @@ export type TrendDirection = 'up' | 'down' | 'same' | 'none';
 // Parsed kubexporter export statistics from a report
 export interface ExportStats {
   kinds: number;
-  pages: number;
   resources: number;
   size: number;
   namespaces: number;
   errors: number;
   duration: string;
   prevKinds?: number;
-  prevPages?: number;
   prevResources?: number;
   prevSize?: number;
   prevNamespaces?: number;
@@ -74,7 +72,6 @@ export interface ResourceKindStats {
   groupKind: string;
   instances: number;
   exportedInstances: number;
-  pages: number;
   exportedSizeBytes: number;
   queryDuration: string;
   exportDuration: string;

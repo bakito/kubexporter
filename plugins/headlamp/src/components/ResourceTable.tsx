@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Card,
@@ -14,6 +14,7 @@ import {
   TablePagination,
   Paper,
   Tooltip,
+  TextField,
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { ResourceKindStats } from '../types';
@@ -83,6 +84,7 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
   const [rowsPerPage, setRowsPerPage] = useState(25);
   const [sortField, setSortField] = useState<keyof ResourceKindStats>('groupKind');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [filterText, setFilterText] = useState('');
 
   const handleSort = (field: keyof ResourceKindStats) => {
     if (sortField === field) {
@@ -93,7 +95,15 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
     }
   };
 
-  const sortedResources = [...resources].sort((a, b) => {
+  const filteredResources = useMemo(() => {
+    if (!filterText) {
+      return resources;
+    }
+    const lower = filterText.toLowerCase();
+    return resources.filter((r) => r.groupKind.toLowerCase().includes(lower));
+  }, [resources, filterText]);
+
+  const sortedResources = [...filteredResources].sort((a, b) => {
     if (sortField === 'groupKind') {
       const cmp = compareGroupKind(a.groupKind, b.groupKind);
       return sortDirection === 'asc' ? cmp : -cmp;
@@ -120,6 +130,12 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
     page * rowsPerPage + rowsPerPage,
   );
 
+  // Reset to first page when filter changes
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterText(e.target.value);
+    setPage(0);
+  };
+
   const SortableHeader = (field: keyof ResourceKindStats, label: string) => (
     <TableCell>
       <TableSortLabel
@@ -140,9 +156,18 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
             <Icon icon="mdi:table" width={24} />
           </Box>
           <Typography variant="h6" component="h3">
-            Resource Kinds ({resources.length})
+            Resource Kinds ({filteredResources.length}{filteredResources.length !== resources.length ? ` / ${resources.length}` : ''})
           </Typography>
         </Box>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Filter by kind..."
+          value={filterText}
+          onChange={handleFilterChange}
+          sx={{ mb: 2 }}
+          inputProps={{ 'aria-label': 'Filter by kind' }}
+        />
         <TableContainer component={Paper} sx={{ boxShadow: 'none' }}>
           <Table size="small">
             <TableHead>
@@ -150,7 +175,6 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
                 {SortableHeader('groupKind', 'Kind')}
                 {SortableHeader('instances', 'Instances')}
                 {SortableHeader('exportedInstances', 'Exported')}
-                {SortableHeader('pages', 'Pages')}
                 {SortableHeader('exportedSizeBytes', 'Size')}
                 {SortableHeader('queryDuration', 'Query Time')}
                 {SortableHeader('exportDuration', 'Export Time')}
@@ -183,7 +207,6 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
                       <TrendIcon current={res.exportedInstances} previous={res.prevExportedInstances} />
                     </Box>
                   </TableCell>
-                  <TableCell align="right">{res.pages}</TableCell>
                   <TableCell align="right">
                     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                       {formatBytes(res.exportedSizeBytes)}
@@ -199,7 +222,7 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
         </TableContainer>
         <TablePagination
           component="div"
-          count={resources.length}
+          count={filteredResources.length}
           page={page}
           onPageChange={(_, newPage) => setPage(newPage)}
           rowsPerPage={rowsPerPage}
