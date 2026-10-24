@@ -6,9 +6,15 @@ archiveTarget: .
 # define a single namespace (default all)
 metrics:
   otlp:
-    enabled: true
+    enabled: false
     endpoint: localhost:4317
     insecure: true
+
+# openReports configuration
+openReports:
+  enabled: false
+  namespace: default
+#   clusterReport: false
 
 namespace:
 # namespace: ns1
@@ -90,4 +96,5 @@ excluded:
     # global preserved fields - these will be preserved when their parent field is excluded
     fields:
       - [status, loadBalancer, ingress]  # preserve status.loadBalancer.ingress when status is excluded
+
 

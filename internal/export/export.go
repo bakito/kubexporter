@@ -12,8 +12,10 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/mattn/go-runewidth"
+	openreportsversioned "github.com/openreports/reports-api/pkg/client/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/bakito/kubexporter/internal/client"
 	"github.com/bakito/kubexporter/internal/export/metrics"
@@ -169,6 +171,12 @@ func (e *exporter) Export(ctx context.Context) error {
 		}
 	}
 
+	if e.config.OpenReports != nil && e.config.OpenReports.Enabled {
+		if err := SendOpenReports(ctx, e, e.config.OpenReports, resources); err != nil {
+			return err
+		}
+	}
+
 	if e.config.Archive {
 		err = e.tarGz()
 		if err != nil {
@@ -302,6 +310,13 @@ func (e *exporter) introEntries() []entry {
 	entries = append(entries, e.introArchiveEntries()...)
 	if e.config.Metrics != nil && e.config.Metrics.OTLP.Enabled {
 		entries = append(entries, entry{"📈", "OTLP metrics", e.config.Metrics.OTLP.Endpoint})
+	}
+	if e.config.OpenReports != nil && e.config.OpenReports.Enabled {
+		kind := "Report"
+		if e.config.OpenReports.ClusterReport {
+			kind = "ClusterReport"
+		}
+		entries = append(entries, entry{"📋", "OpenReports", kind})
 	}
 	return entries
 }
@@ -506,4 +521,12 @@ func (e *exporter) ClusterHost() string {
 		return e.ac.RestConfig.Host
 	}
 	return ""
+}
+
+func (e *exporter) Client() dynamic.Interface {
+	return e.ac.Client
+}
+
+func (e *exporter) OpenReportsClient() *openreportsversioned.Clientset {
+	return e.ac.OpenReportsClient
 }

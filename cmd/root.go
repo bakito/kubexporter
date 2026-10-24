@@ -123,6 +123,14 @@ func readConfig(
 			if config.Metrics != nil {
 				config.Metrics.OTLP.Enabled = ed
 			}
+		case "openreports":
+			en, _ := cmd.Flags().GetBool(f.Name)
+			if en {
+				if config.OpenReports == nil {
+					config.OpenReports = &types.OpenReportsConfig{}
+				}
+				config.OpenReports.Enabled = en
+			}
 		default:
 		}
 	})
@@ -132,6 +140,10 @@ func readConfig(
 	}
 
 	if err := config.Encrypted.Setup(); err != nil {
+		return nil, err
+	}
+
+	if err := config.ValidateOpenReports(); err != nil {
 		return nil, err
 	}
 
@@ -190,6 +202,7 @@ func init() {
 	rootCmd.Flags().Bool(cflag("summary", false))
 	rootCmd.Flags().Bool(cflag("size", false))
 	rootCmd.Flags().Bool(cflag("otlp-metrics", false))
+	rootCmd.Flags().Bool(cflag("openreports", false))
 	rootCmd.Flags().BoolP(cflagP("archive", "a", false))
 	rootCmd.Flags().StringP(cflagP("progress", "p", string(types.ProgressBar)))
 	rootCmd.Flags().BoolP(cflagP("lists", "l", false))

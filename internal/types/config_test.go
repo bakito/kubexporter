@@ -348,6 +348,58 @@ func TestConfig_Validate(t *testing.T) {
 				}
 			},
 		},
+		{
+			name: "openreports without namespace and without clusterReport should fail",
+			setup: func(c *types.Config) {
+				c.OpenReports = &types.OpenReportsConfig{
+					Enabled:       true,
+					ClusterReport: false,
+					Namespace:     "",
+				}
+			},
+			wantErr: true,
+			errStr:  "openreports namespace must be set when enabled and clusterReport is false",
+		},
+		{
+			name: "openreports with namespace should pass",
+			setup: func(c *types.Config) {
+				c.OpenReports = &types.OpenReportsConfig{
+					Enabled:       true,
+					ClusterReport: false,
+					Namespace:     "default",
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "openreports clusterReport without namespace should pass",
+			setup: func(c *types.Config) {
+				c.OpenReports = &types.OpenReportsConfig{
+					Enabled:       true,
+					ClusterReport: true,
+					Namespace:     "",
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "openreports disabled should pass",
+			setup: func(c *types.Config) {
+				c.OpenReports = &types.OpenReportsConfig{
+					Enabled:       false,
+					ClusterReport: false,
+					Namespace:     "",
+				}
+			},
+			wantErr: false,
+		},
+		{
+			name: "openreports nil should pass",
+			setup: func(c *types.Config) {
+				c.OpenReports = nil
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -366,6 +418,67 @@ func TestConfig_Validate(t *testing.T) {
 			}
 			if tt.validate != nil {
 				tt.validate(t, config)
+			}
+		})
+	}
+}
+
+func TestConfig_ValidateOpenReports(t *testing.T) {
+	tests := []struct {
+		name    string
+		config  *types.OpenReportsConfig
+		wantErr bool
+	}{
+		{
+			name:    "nil config should pass",
+			config:  nil,
+			wantErr: false,
+		},
+		{
+			name: "enabled without namespace should fail",
+			config: &types.OpenReportsConfig{
+				Enabled:       true,
+				ClusterReport: false,
+				Namespace:     "",
+			},
+			wantErr: true,
+		},
+		{
+			name: "enabled with namespace should pass",
+			config: &types.OpenReportsConfig{
+				Enabled:       true,
+				ClusterReport: false,
+				Namespace:     "default",
+			},
+			wantErr: false,
+		},
+		{
+			name: "clusterReport without namespace should pass",
+			config: &types.OpenReportsConfig{
+				Enabled:       true,
+				ClusterReport: true,
+				Namespace:     "",
+			},
+			wantErr: false,
+		},
+		{
+			name: "disabled without namespace should pass",
+			config: &types.OpenReportsConfig{
+				Enabled:       false,
+				ClusterReport: false,
+				Namespace:     "",
+			},
+			wantErr: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config, _ := setupConfig()
+			config.OpenReports = tt.config
+			err := config.ValidateOpenReports()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ValidateOpenReports() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

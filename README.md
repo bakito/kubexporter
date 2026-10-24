@@ -81,6 +81,7 @@ Flags:
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
   -l, --lists                          Export as lists instead of individual files
   -n, --namespace strings              A single namespace (default all)
+      --openreports                    OpenReports is enabled
       --otlp-metrics                   OTLP Metrics are enabled
   -o, --output string                  Output format. One of: (json, yaml, kyaml). (default "yaml")
   -p, --progress string                Progress mode bar|bubbles|simple|none (default "bar")
@@ -226,6 +227,14 @@ metrics:
     endpoint:
     # OTLP Metrics insecure (bool)
     insecure:
+# OpenReports configuration (struct)
+openReports:
+  # OpenReports is enabled (bool)
+  enabled:
+  # Target namespace for Report (string)
+  namespace:
+  # Create a ClusterReport (bool)
+  clusterReport:
 # Output is prevented (bool)
 quiet:
 # Errors during export are listed in summary (bool)
@@ -342,6 +351,105 @@ A pre-configured Grafana sample dashboard is available at [examples/grafana/dash
 OTLP Authentication headers can be defined via env variables with prefix `KUBEXPORTER_METRICS_OTLP_HEADER_`
 
 E.g: `KUBEXPORTER_METRICS_OTLP_HEADER_Authorization="Bearer <yourToken>`
+
+### OpenReports
+
+kubexporter can create [OpenReports](https://openreports.io/) `Report` or `ClusterReport` resources summarizing export results.
+
+#### Configuration
+
+```yaml
+openReports:
+  enabled: true
+  namespace: default
+  clusterReport: false
+```
+
+* `enabled`: Enable OpenReports integration.
+* `namespace`: Target namespace for the `Report` resource (required when `clusterReport` is `false`).
+* `clusterReport`: Set to `true` to create a `ClusterReport` instead of a namespaced `Report`.
+
+You can also enable OpenReports via CLI flag:
+
+```bash
+kubexporter --openreports
+```
+
+#### Prerequisites
+
+The OpenReports CRDs must be installed in the target cluster before using this feature.
+
+**Install via Helm:**
+
+```bash
+# Using the Helm repository
+helm repo add openreports https://openreports.github.io/reports-api
+helm upgrade --install openreports openreports/openreports
+```
+
+**Install via manifest:**
+
+```bash
+kubectl apply -f https://github.com/openreports/reports-api/releases/latest/download/release.yaml
+```
+
+#### RBAC
+
+The service account or user running kubexporter needs permissions to create and update OpenReports resources.
+
+For a namespaced `Report`:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kubexporter-openreports
+  namespace: default
+rules:
+  - apiGroups: ["openreports.io"]
+    resources: ["reports"]
+    verbs: ["create", "update", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kubexporter-openreports
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kubexporter-openreports
+subjects:
+  - kind: ServiceAccount
+    name: <your-service-account>
+    namespace: default
+```
+
+For a `ClusterReport`:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubexporter-openreports
+rules:
+  - apiGroups: ["openreports.io"]
+    resources: ["clusterreports"]
+    verbs: ["create", "update", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubexporter-openreports
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubexporter-openreports
+subjects:
+  - kind: ServiceAccount
+    name: <your-service-account>
+    namespace: default
+```
 
 ### Update Owner References
 
