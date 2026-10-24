@@ -349,35 +349,22 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "openreports without namespace and without clusterReport should fail",
+			name: "openreports without namespace should fail",
 			setup: func(c *types.Config) {
 				c.OpenReports = &types.OpenReportsConfig{
-					Enabled:       true,
-					ClusterReport: false,
-					Namespace:     "",
+					Enabled:   true,
+					Namespace: "",
 				}
 			},
 			wantErr: true,
-			errStr:  "openreports namespace must be set when enabled and clusterReport is false",
+			errStr:  "openreports namespace must be set when enabled",
 		},
 		{
 			name: "openreports with namespace should pass",
 			setup: func(c *types.Config) {
 				c.OpenReports = &types.OpenReportsConfig{
-					Enabled:       true,
-					ClusterReport: false,
-					Namespace:     "default",
-				}
-			},
-			wantErr: false,
-		},
-		{
-			name: "openreports clusterReport without namespace should pass",
-			setup: func(c *types.Config) {
-				c.OpenReports = &types.OpenReportsConfig{
-					Enabled:       true,
-					ClusterReport: true,
-					Namespace:     "",
+					Enabled:   true,
+					Namespace: "default",
 				}
 			},
 			wantErr: false,
@@ -386,9 +373,8 @@ func TestConfig_Validate(t *testing.T) {
 			name: "openreports disabled should pass",
 			setup: func(c *types.Config) {
 				c.OpenReports = &types.OpenReportsConfig{
-					Enabled:       false,
-					ClusterReport: false,
-					Namespace:     "",
+					Enabled:   false,
+					Namespace: "",
 				}
 			},
 			wantErr: false,
@@ -437,36 +423,24 @@ func TestConfig_ValidateOpenReports(t *testing.T) {
 		{
 			name: "enabled without namespace should fail",
 			config: &types.OpenReportsConfig{
-				Enabled:       true,
-				ClusterReport: false,
-				Namespace:     "",
+				Enabled:   true,
+				Namespace: "",
 			},
 			wantErr: true,
 		},
 		{
 			name: "enabled with namespace should pass",
 			config: &types.OpenReportsConfig{
-				Enabled:       true,
-				ClusterReport: false,
-				Namespace:     "default",
-			},
-			wantErr: false,
-		},
-		{
-			name: "clusterReport without namespace should pass",
-			config: &types.OpenReportsConfig{
-				Enabled:       true,
-				ClusterReport: true,
-				Namespace:     "",
+				Enabled:   true,
+				Namespace: "default",
 			},
 			wantErr: false,
 		},
 		{
 			name: "disabled without namespace should pass",
 			config: &types.OpenReportsConfig{
-				Enabled:       false,
-				ClusterReport: false,
-				Namespace:     "",
+				Enabled:   false,
+				Namespace: "",
 			},
 			wantErr: false,
 		},

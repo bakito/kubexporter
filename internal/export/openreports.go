@@ -3,6 +3,7 @@ package export
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	openreportsversioned "github.com/openreports/reports-api/pkg/client/clientset/versioned"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 
 	"github.com/bakito/kubexporter/internal/export/worker"
 	"github.com/bakito/kubexporter/internal/log"
@@ -41,9 +44,10 @@ type openReportsProvider interface {
 	Start() time.Time
 	Logger() log.YALI
 	OpenReportsClient() *openreportsversioned.Clientset
+	Client() dynamic.Interface
 }
 
-// SendOpenReports creates an OpenReports Report or ClusterReport resource summarizing the export results.
+// SendOpenReports creates an OpenReports Report resource summarizing the export results.
 func SendOpenReports(
 	ctx context.Context,
 	p openReportsProvider,
@@ -53,36 +57,34 @@ func SendOpenReports(
 	stats := p.Stats()
 	l := p.Logger()
 
-	kind := "Report"
-	if cfg.ClusterReport {
-		kind = "ClusterReport"
-	}
-	l.Printf("\n    Creating OpenReports %s...\n", kind)
+	l.Printf("\n    Creating OpenReports Report...\n")
 
 	client := p.OpenReportsClient()
 	target := p.Config().Target
 
-	var (
-		name    string
-		updated bool
-		err     error
-	)
-	if cfg.ClusterReport {
-		name, updated, err = upsertReport(ctx, client.OpenreportsV1alpha1().ClusterReports(),
-			buildClusterReport(stats, p.Start(), resources, target))
-	} else {
-		name, updated, err = upsertReport(ctx, client.OpenreportsV1alpha1().Reports(cfg.Namespace),
-			buildReport(stats, p.Start(), resources, target))
+	report := buildReport(stats, p.Start(), resources, target)
+	reportNS := cfg.Namespace
+	if result := cronJobOwnerReference(ctx, p.Client(), l); result != nil {
+		report.OwnerReferences = []metav1.OwnerReference{*result.ownerRef}
+		if reportNS != result.podNS {
+			return fmt.Errorf(
+				"report namespace %q does not match pod namespace %q when running in a CronJob",
+				reportNS,
+				result.podNS,
+			)
+		}
+		reportNS = result.podNS
 	}
+	name, updated, err := upsertReport(ctx, client.OpenreportsV1alpha1().Reports(reportNS), report)
 	if err != nil {
-		return fmt.Errorf("failed to create OpenReports %s: %w", kind, err)
+		return fmt.Errorf("failed to create OpenReports Report: %w", err)
 	}
 
 	action := "created"
 	if updated {
 		action = "updated"
 	}
-	l.Printf("    OpenReports %s %s: %s\n", kind, action, name)
+	l.Printf("    OpenReports Report %s: %s\n", action, name)
 	return nil
 }
 
@@ -127,25 +129,6 @@ func buildReport(
 	return &openreportsv1alpha1.Report{
 		APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
 		Kind:       "Report",
-		ObjectMeta: reportMeta(now, target),
-		Source:     "kubexporter",
-		Results:    results,
-		Summary:    summary,
-	}
-}
-
-func buildClusterReport(
-	stats *worker.Stats,
-	start time.Time,
-	resources []*types.GroupResource,
-	target string,
-) *openreportsv1alpha1.ClusterReport {
-	now := time.Now()
-	results, summary := buildReportResults(stats, start, resources, now)
-
-	return &openreportsv1alpha1.ClusterReport{
-		APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
-		Kind:       "ClusterReport",
 		ObjectMeta: reportMeta(now, target),
 		Source:     "kubexporter",
 		Results:    results,
@@ -299,4 +282,102 @@ func buildSummary(results []openreportsv1alpha1.ReportResult) openreportsv1alpha
 		}
 	}
 	return summary
+}
+
+// cronJobOwnerResult holds the CronJob owner reference and the pod namespace.
+type cronJobOwnerResult struct {
+	ownerRef *metav1.OwnerReference
+	podNS    string
+}
+
+// cronJobOwnerReference detects whether the current process runs inside a pod owned by a CronJob.
+// It returns the CronJob owner reference and the pod namespace if found, nil otherwise.
+// Errors are logged but not returned, as this is a non-fatal feature.
+func cronJobOwnerReference(
+	ctx context.Context,
+	client dynamic.Interface,
+	l log.YALI,
+) *cronJobOwnerResult {
+	podNS := getPodNamespace()
+	if podNS == "" {
+		return nil
+	}
+
+	podName := getPodName()
+	if podName == "" {
+		return nil
+	}
+
+	podGVR := schema.GroupVersionResource{Group: "", Version: "v1", Resource: "pods"}
+	pod, err := client.Resource(podGVR).Namespace(podNS).Get(ctx, podName, metav1.GetOptions{})
+	if err != nil {
+		l.Printf("    Could not get pod %q: %v\n", podName, err)
+		return nil
+	}
+
+	// Find the Job owner reference
+	var jobOwner *metav1.OwnerReference
+	for _, ref := range pod.GetOwnerReferences() {
+		if ref.Kind == "Job" && ref.APIVersion == "batch/v1" {
+			jobOwner = &ref
+			break
+		}
+	}
+	if jobOwner == nil {
+		return nil
+	}
+
+	// Get the Job to find its CronJob owner
+	jobGVR := schema.GroupVersionResource{Group: "batch", Version: "v1", Resource: "jobs"}
+	job, err := client.Resource(jobGVR).Namespace(podNS).Get(ctx, jobOwner.Name, metav1.GetOptions{})
+	if err != nil {
+		l.Printf("    Could not get job %q: %v\n", jobOwner.Name, err)
+		return nil
+	}
+
+	// Find the CronJob owner reference
+	for _, ref := range job.GetOwnerReferences() {
+		if ref.Kind == "CronJob" && ref.APIVersion == "batch/v1" {
+			ownerRef := metav1.OwnerReference{
+				APIVersion:         ref.APIVersion,
+				Kind:               ref.Kind,
+				Name:               ref.Name,
+				UID:                ref.UID,
+				BlockOwnerDeletion: ref.BlockOwnerDeletion,
+				Controller:         ref.Controller,
+			}
+			l.Printf("    Found CronJob owner reference: %s\n", ref.Name)
+			return &cronJobOwnerResult{
+				ownerRef: &ownerRef,
+				podNS:    podNS,
+			}
+		}
+	}
+	return nil
+}
+
+// getPodNamespace returns the namespace of the current pod.
+func getPodNamespace() string {
+	ns := os.Getenv("POD_NAMESPACE")
+	if ns != "" {
+		return ns
+	}
+	data, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(data))
+}
+
+// getPodName returns the name of the current pod.
+func getPodName() string {
+	name := os.Getenv("POD_NAME")
+	if name != "" {
+		return name
+	}
+	hostname, err := os.Hostname()
+	if err != nil {
+		return ""
+	}
+	return hostname
 }

@@ -227,9 +227,8 @@ type GCSConfig struct {
 }
 
 type OpenReportsConfig struct {
-	Enabled       bool   `docs:"OpenReports is enabled"      docs-cli:"openreports"                json:"enabled"       yaml:"enabled"`
-	Namespace     string `docs:"Target namespace for Report" docs-cli:"openreports-namespace"      json:"namespace"     yaml:"namespace"`
-	ClusterReport bool   `docs:"Create a ClusterReport"      docs-cli:"openreports-cluster-report" json:"clusterReport" yaml:"clusterReport"`
+	Enabled   bool   `docs:"OpenReports is enabled"      docs-cli:"openreports"           json:"enabled"   yaml:"enabled"`
+	Namespace string `docs:"Target namespace for Report" docs-cli:"openreports-namespace" json:"namespace" yaml:"namespace"`
 }
 
 type Metrics struct {
@@ -688,16 +687,16 @@ func (c *Config) Validate() error {
 	if c.Progress != ProgressSimple && c.Progress != ProgressNone && c.Progress != ProgressBarBubbles {
 		c.Progress = ProgressBar
 	}
-	if c.OpenReports != nil && c.OpenReports.Enabled && !c.OpenReports.ClusterReport && c.OpenReports.Namespace == "" {
-		return errors.New("openreports namespace must be set when enabled and clusterReport is false")
+	if c.OpenReports != nil && c.OpenReports.Enabled && c.OpenReports.Namespace == "" {
+		return errors.New("openreports namespace must be set when enabled")
 	}
 	return nil
 }
 
 // ValidateOpenReports checks that OpenReports configuration is valid.
 func (c *Config) ValidateOpenReports() error {
-	if c.OpenReports != nil && c.OpenReports.Enabled && !c.OpenReports.ClusterReport && c.OpenReports.Namespace == "" {
-		return errors.New("openreports namespace must be set when enabled and clusterReport is false")
+	if c.OpenReports != nil && c.OpenReports.Enabled && c.OpenReports.Namespace == "" {
+		return errors.New("openreports namespace must be set when enabled")
 	}
 	return nil
 }
