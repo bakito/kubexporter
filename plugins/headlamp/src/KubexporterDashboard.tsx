@@ -35,19 +35,10 @@ const REPORT_GVK = {
   plural: 'reports',
 };
 
-const CLUSTER_REPORT_GVK = {
-  group: 'openreports.io',
-  version: 'v1alpha1',
-  kind: 'ClusterReport',
-  plural: 'clusterreports',
-};
-
 const LABEL_SELECTOR = 'app.kubernetes.io/managed-by=kubexporter';
 
-// Unique key of a report: names alone are not unique, as a ClusterReport and
-// Reports in different namespaces may share the same name.
 function reportKey(r: OpenReport): string {
-  return `${r.kind}/${r.metadata.namespace || ''}/${r.metadata.name}`;
+  return `${r.metadata.namespace || ''}/${r.metadata.name}`;
 }
 
 // Fetch CRs (cluster-wide / across all namespaces) of the currently selected
@@ -84,16 +75,12 @@ export default function KubexporterDashboard() {
       setLoading(true);
       setError(null);
       try {
-        const [clusterReports, namespacedReports] = await Promise.all([
-          fetchCRs(CLUSTER_REPORT_GVK),
-          fetchCRs(REPORT_GVK),
-        ]);
-        const all = [...clusterReports, ...namespacedReports];
-        setReports(all);
+        const reports = await fetchCRs(REPORT_GVK);
+        setReports(reports);
 
-        if (all.length > 0) {
+        if (reports.length > 0) {
           // Pick the most recent report
-          const sorted = [...all].sort((a, b) => {
+          const sorted = [...reports].sort((a, b) => {
             const aTime = a.metadata.annotations?.['kubexporter.bakito.net/last-export'] || '';
             const bTime = b.metadata.annotations?.['kubexporter.bakito.net/last-export'] || '';
             return bTime.localeCompare(aTime);
@@ -159,8 +146,8 @@ export default function KubexporterDashboard() {
     return (
       <Alert severity="info" sx={{ mb: 2 }}>
         <AlertTitle>No kubexporter reports found</AlertTitle>
-        No OpenReports Report or ClusterReport resources from kubexporter were
-        found in this cluster.
+        No OpenReports Report resources from kubexporter were found in this
+        cluster.
         <Typography variant="body2" sx={{ mt: 1 }}>
           Run kubexporter with the{' '}
           <Typography component="span" sx={{ fontFamily: 'monospace' }}>
@@ -176,7 +163,7 @@ export default function KubexporterDashboard() {
             fontFamily: 'monospace',
           }}
         >
-          kubexporter --openreports --openreports-cluster-report
+          kubexporter --openreports --openreports-namespace=default
         </Paper>
       </Alert>
     );
@@ -247,8 +234,7 @@ export default function KubexporterDashboard() {
                       <MenuItem key={reportKey(r)} value={reportKey(r)}>
                         {r.metadata.namespace
                           ? `${r.metadata.namespace}/${r.metadata.name}`
-                          : r.metadata.name}{' '}
-                        ({r.kind})
+                          : r.metadata.name}
                       </MenuItem>
                     ))}
                   </Select>
