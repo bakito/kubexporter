@@ -62,18 +62,33 @@ func SendOpenReports(
 	client := p.OpenReportsClient()
 	target := p.Config().Target
 
-	report := buildReport(stats, p.Start(), resources, target)
 	reportNS := cfg.Namespace
-	if result := cronJobOwnerReference(ctx, p.Client(), l); result != nil {
-		report.OwnerReferences = []metav1.OwnerReference{*result.ownerRef}
-		if reportNS != result.podNS {
+	cronJobResult := cronJobOwnerReference(ctx, p.Client(), l)
+	if cronJobResult != nil {
+		if reportNS != cronJobResult.podNS {
 			return fmt.Errorf(
 				"report namespace %q does not match pod namespace %q when running in a CronJob",
 				reportNS,
-				result.podNS,
+				cronJobResult.podNS,
 			)
 		}
-		reportNS = result.podNS
+		reportNS = cronJobResult.podNS
+	}
+
+	// Fetch the existing report to get previous values for trend comparison
+	reportName := reportName(target)
+	var prevReport *openreportsv1alpha1.Report
+	existing, err := client.OpenreportsV1alpha1().Reports(reportNS).Get(ctx, reportName, metav1.GetOptions{})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("failed to get existing OpenReports Report: %w", err)
+	}
+	if err == nil {
+		prevReport = existing
+	}
+
+	report := buildReport(stats, p.Start(), resources, target, prevReport)
+	if cronJobResult != nil {
+		report.OwnerReferences = []metav1.OwnerReference{*cronJobResult.ownerRef}
 	}
 	name, updated, err := upsertReport(ctx, client.OpenreportsV1alpha1().Reports(reportNS), report)
 	if err != nil {
@@ -122,9 +137,10 @@ func buildReport(
 	start time.Time,
 	resources []*types.GroupResource,
 	target string,
+	prevReport *openreportsv1alpha1.Report,
 ) *openreportsv1alpha1.Report {
 	now := time.Now()
-	results, summary := buildReportResults(stats, start, resources, now)
+	results, summary := buildReportResults(stats, start, resources, now, prevReport)
 
 	return &openreportsv1alpha1.Report{
 		APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
@@ -181,13 +197,43 @@ func buildReportResults(
 	start time.Time,
 	resources []*types.GroupResource,
 	now time.Time,
+	prevReport *openreportsv1alpha1.Report,
 ) ([]openreportsv1alpha1.ReportResult, openreportsv1alpha1.ReportSummary) {
 	timestamp := metav1.Timestamp{
 		Seconds: now.Unix(),
 		Nanos:   int32(now.Nanosecond()),
 	}
-	results := buildResults(stats, start, timestamp, resources)
+	prevSummary, prevResources := extractPrevValues(prevReport)
+	results := buildResults(stats, start, timestamp, resources, prevSummary, prevResources)
 	return results, buildSummary(results)
+}
+
+// extractPrevValues extracts the previous values from the existing report for trend comparison.
+// It returns maps for summary-level and per-resource-kind previous property values.
+func extractPrevValues(
+	prevReport *openreportsv1alpha1.Report,
+) (summaryPrev map[string]string, resourcePrev map[string]map[string]string) {
+	if prevReport == nil {
+		return nil, nil
+	}
+	summaryPrev = make(map[string]string)
+	resourcePrev = make(map[string]map[string]string)
+	for _, result := range prevReport.Results {
+		if result.Policy == "kubexporter/summary" {
+			if result.Properties != nil {
+				if val, ok := result.Properties["value"]; ok {
+					summaryPrev[result.Rule] = val
+				}
+			}
+		} else if result.Policy == "kubexporter/resource" && result.Properties != nil {
+			props := make(map[string]string)
+			for k, v := range result.Properties {
+				props[k] = v
+			}
+			resourcePrev[result.Rule] = props
+		}
+	}
+	return summaryPrev, resourcePrev
 }
 
 func buildResults(
@@ -195,6 +241,8 @@ func buildResults(
 	start time.Time,
 	ts metav1.Timestamp,
 	resources []*types.GroupResource,
+	prevSummary map[string]string,
+	prevResources map[string]map[string]string,
 ) []openreportsv1alpha1.ReportResult {
 	duration := time.Since(start)
 
@@ -204,7 +252,6 @@ func buildResults(
 		value   string
 	}{
 		{"kinds", "kinds processed", strconv.Itoa(stats.Kinds)},
-		{"pages", "query pages", strconv.Itoa(stats.Pages)},
 		{"resources", "resources exported", strconv.Itoa(stats.Resources)},
 		{"size", "exported size (bytes)", strconv.FormatInt(stats.ExportedSize, 10)},
 		{"namespaces", "namespaces", strconv.Itoa(stats.Namespaces())},
@@ -214,6 +261,14 @@ func buildResults(
 
 	results := make([]openreportsv1alpha1.ReportResult, 0, len(items)+len(resources))
 	for _, item := range items {
+		props := map[string]string{
+			"value": item.value,
+		}
+		if prevSummary != nil {
+			if prevVal, ok := prevSummary[item.rule]; ok {
+				props["prevValue"] = prevVal
+			}
+		}
 		result := openreportsv1alpha1.ReportResult{
 			Source:      "kubexporter",
 			Policy:      "kubexporter/summary",
@@ -221,11 +276,9 @@ func buildResults(
 			Category:    categoryExport,
 			Severity:    severityInfo,
 			Description: item.message,
-			Properties: map[string]string{
-				"value": item.value,
-			},
-			Result:    resultPass,
-			Timestamp: ts,
+			Properties:  props,
+			Result:      resultPass,
+			Timestamp:   ts,
 		}
 		if item.rule == "errors" && stats.HasErrors() {
 			result.Result = resultFail
@@ -237,6 +290,26 @@ func buildResults(
 	// Add a metric for each individual resource kind
 	for _, res := range resources {
 		gk := res.GroupKind()
+		props := map[string]string{
+			"instances":         strconv.Itoa(res.Instances),
+			"exportedInstances": strconv.Itoa(res.ExportedInstances),
+			"exportedSizeBytes": strconv.FormatInt(res.ExportedSize, 10),
+			"queryDuration":     types.FormatDuration(res.QueryDuration),
+			"exportDuration":    types.FormatDuration(res.ExportDuration),
+		}
+		if prevResources != nil {
+			if prevProps, ok := prevResources[gk]; ok {
+				if prevVal, ok := prevProps["instances"]; ok {
+					props["prevInstances"] = prevVal
+				}
+				if prevVal, ok := prevProps["exportedInstances"]; ok {
+					props["prevExportedInstances"] = prevVal
+				}
+				if prevVal, ok := prevProps["exportedSizeBytes"]; ok {
+					props["prevExportedSizeBytes"] = prevVal
+				}
+			}
+		}
 		result := openreportsv1alpha1.ReportResult{
 			Source:      "kubexporter",
 			Policy:      "kubexporter/resource",
@@ -244,16 +317,9 @@ func buildResults(
 			Category:    categoryExport,
 			Severity:    severityInfo,
 			Description: "exported " + gk,
-			Properties: map[string]string{
-				"instances":         strconv.Itoa(res.Instances),
-				"exportedInstances": strconv.Itoa(res.ExportedInstances),
-				"pages":             strconv.Itoa(res.Pages),
-				"exportedSizeBytes": strconv.FormatInt(res.ExportedSize, 10),
-				"queryDuration":     types.FormatDuration(res.QueryDuration),
-				"exportDuration":    types.FormatDuration(res.ExportDuration),
-			},
-			Result:    resultPass,
-			Timestamp: ts,
+			Properties:  props,
+			Result:      resultPass,
+			Timestamp:   ts,
 		}
 		if res.Error != "" {
 			result.Result = resultError

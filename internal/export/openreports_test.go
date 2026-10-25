@@ -54,16 +54,16 @@ func TestBuildResults(t *testing.T) {
 		},
 	}
 
-	results := buildResults(stats, start, ts, resources)
+	results := buildResults(stats, start, ts, resources, nil, nil)
 
-	// 7 summary items + 2 resource items
-	if len(results) != 9 {
-		t.Fatalf("expected 9 results, got %d", len(results))
+	// 6 summary items + 2 resource items
+	if len(results) != 8 {
+		t.Fatalf("expected 8 results, got %d", len(results))
 	}
 
 	// Check summary items
 	summaryRules := make(map[string]bool)
-	for _, r := range results[:7] {
+	for _, r := range results[:6] {
 		if r.Policy != "kubexporter/summary" {
 			t.Errorf("expected summary policy, got %s", r.Policy)
 		}
@@ -78,15 +78,15 @@ func TestBuildResults(t *testing.T) {
 		}
 		summaryRules[r.Rule] = true
 	}
-	if results[3].Description != "exported size (bytes)" {
-		t.Errorf("expected size message to specify bytes, got %q", results[3].Description)
+	if results[2].Description != "exported size (bytes)" {
+		t.Errorf("expected size message to specify bytes, got %q", results[2].Description)
 	}
-	if _, err := time.ParseDuration(results[6].Properties["value"]); err != nil {
-		t.Errorf("summary duration %q is not a Go duration: %v", results[6].Properties["value"], err)
+	if _, err := time.ParseDuration(results[5].Properties["value"]); err != nil {
+		t.Errorf("summary duration %q is not a Go duration: %v", results[5].Properties["value"], err)
 	}
 
 	// Verify all summary rules are present
-	expectedRules := []string{"kinds", "pages", "resources", "size", "namespaces", "errors", "duration"}
+	expectedRules := []string{"kinds", "resources", "size", "namespaces", "errors", "duration"}
 	for _, rule := range expectedRules {
 		if !summaryRules[rule] {
 			t.Errorf("missing summary rule: %s", rule)
@@ -95,7 +95,7 @@ func TestBuildResults(t *testing.T) {
 
 	// Check per-resource items
 	for i, res := range resources {
-		r := results[7+i]
+		r := results[6+i]
 		if r.Policy != "kubexporter/resource" {
 			t.Errorf("expected resource policy, got %s", r.Policy)
 		}
@@ -163,28 +163,28 @@ func TestBuildResults_WithError(t *testing.T) {
 		},
 	}
 
-	results := buildResults(stats, start, ts, resources)
+	results := buildResults(stats, start, ts, resources, nil, nil)
 
-	// 7 summary items + 1 resource item
-	if len(results) != 8 {
-		t.Fatalf("expected 8 results, got %d", len(results))
+	// 6 summary items + 1 resource item
+	if len(results) != 7 {
+		t.Fatalf("expected 7 results, got %d", len(results))
 	}
 
-	if results[5].Rule != "errors" {
-		t.Fatalf("expected result 5 to describe errors, got %s", results[5].Rule)
+	if results[4].Rule != "errors" {
+		t.Fatalf("expected result 4 to describe errors, got %s", results[4].Rule)
 	}
-	if results[5].Result != openreportsv1alpha1.Result("fail") {
-		t.Errorf("expected fail result for errors metric, got %s", results[5].Result)
+	if results[4].Result != openreportsv1alpha1.Result("fail") {
+		t.Errorf("expected fail result for errors metric, got %s", results[4].Result)
 	}
-	if results[5].Severity != severityHigh {
-		t.Errorf("expected high severity for errors metric, got %q", results[5].Severity)
+	if results[4].Severity != severityHigh {
+		t.Errorf("expected high severity for errors metric, got %q", results[4].Severity)
 	}
-	if results[5].Category != categoryExport {
-		t.Errorf("expected export category for errors metric, got %q", results[5].Category)
+	if results[4].Category != categoryExport {
+		t.Errorf("expected export category for errors metric, got %q", results[4].Category)
 	}
 
 	// The resource with error should have error result
-	resourceResult := results[7]
+	resourceResult := results[6]
 	if resourceResult.Policy != "kubexporter/resource" {
 		t.Errorf("expected resource policy, got %s", resourceResult.Policy)
 	}
@@ -216,11 +216,11 @@ func TestBuildResults_NoResources(t *testing.T) {
 		Errors:       0,
 	}
 
-	results := buildResults(stats, start, ts, nil)
+	results := buildResults(stats, start, ts, nil, nil, nil)
 
-	// Only 7 summary items, no resource items
-	if len(results) != 7 {
-		t.Fatalf("expected 7 results, got %d", len(results))
+	// Only 6 summary items, no resource items
+	if len(results) != 6 {
+		t.Fatalf("expected 6 results, got %d", len(results))
 	}
 }
 
@@ -295,7 +295,7 @@ func TestBuildSummary(t *testing.T) {
 }
 
 func TestBuildReport(t *testing.T) {
-	report := buildReport(&worker.Stats{}, time.Now(), nil, "/tmp/My Exports")
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "/tmp/My Exports", nil)
 
 	if report.Name != "kubexporter-my-exports" {
 		t.Errorf("unexpected name: %q", report.Name)
