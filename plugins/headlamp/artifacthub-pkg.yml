@@ -1,0 +1,27 @@
+# For the specification, see https://artifacthub.io/docs/topics/annotations/headlamp/.
+displayName: KubExporter Headlamp Plugin
+version: 0.0.1
+createdAt: 2026-10-26T00:00:00.000Z
+name: kubexporter-headlamp-plugin
+type: headlamp-plugin
+description: Headlamp plugin for visualizing KubExporter OpenReports export statistics
+license: Apache-2.0
+home: https://github.com/bakito/kubexporter
+appVersion: 0.0.1
+digest: kubexporter-headlamp-plugin-0.0.1
+containsTool: true
+readme: |
+  # KubExporter Headlamp Plugin
+  
+  A Headlamp plugin that visualizes kubexporter export statistics from OpenReports CRDs.
+  
+  ## Features
+  
+  - Export Statistics Cards: Resources exported, kinds processed, namespaces, export size, duration, and errors
+  - Resource Kinds Table: Per-resource-kind breakdown with instances, size, and query/export time
+providers:
+  - name: bakito
+    url: https://github.com/bakito
+users:
+  - name: Admin
+    description: Suitable for cluster administrators monitoring export operations

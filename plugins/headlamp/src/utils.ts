@@ -107,7 +107,7 @@ export function getLastExportTime(report: OpenReport): string | null {
 }
 
 // Check if a report is from kubexporter
-export function isKubexporterReport(report: OpenReport): boolean {
+export function isKubExporterReport(report: OpenReport): boolean {
   return report.source === 'kubexporter';
 }
 

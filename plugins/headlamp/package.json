@@ -1,6 +1,6 @@
 {
   "name": "kubexporter-headlamp-plugin",
-  "version": "0.1.8",
+  "version": "0.0.1",
   "description": "Headlamp plugin for visualizing KubExporter OpenReports export statistics",
   "main": "dist/index.js",
   "scripts": {
@@ -8,7 +8,8 @@
     "postbuild": "cp package.json dist/package.json",
     "start": "headlamp-plugin start",
     "lint": "headlamp-plugin lint",
-    "format": "headlamp-plugin format"
+    "format": "headlamp-plugin format",
+    "package": "rm -f *.tar.gz && headlamp-plugin package"
   },
   "keywords": [
     "headlamp",

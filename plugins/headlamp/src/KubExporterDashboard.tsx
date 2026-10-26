@@ -24,7 +24,7 @@ import {
   parseExportStats,
   parseResourceKindStats,
   getLastExportTime,
-  isKubexporterReport,
+  isKubExporterReport,
   getCronJobOwner,
 } from './utils';
 
@@ -65,7 +65,7 @@ async function fetchCRs(gvk: typeof REPORT_GVK): Promise<OpenReport[]> {
     .filter((item: OpenReport) => item.source === 'kubexporter');
 }
 
-export default function KubexporterDashboard() {
+export default function KubExporterDashboard() {
   const [reports, setReports] = useState<OpenReport[]>([]);
   const [selectedReport, setSelectedReport] = useState<OpenReport | null>(null);
   const [loading, setLoading] = useState(true);
@@ -198,7 +198,7 @@ export default function KubexporterDashboard() {
           >
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                Kubexporter Export Dashboard
+                KubExporter Export Dashboard
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Chip
