@@ -27,7 +27,12 @@ release: tb.semver
 	git tag -s $$version -m"Release $$version"; \
 	git push origin $$version
 
-release-ci: tb.goreleaser tb.syft tb.goversioninfo
+# Build the Headlamp plugin
+.PHONY: build-headlamp-plugin
+build-headlamp-plugin:
+	cd plugins/headlamp && npm install && npm run build && npm run package
+
+release-ci: tb.goreleaser tb.syft tb.goversioninfo build-headlamp-plugin
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 4
 
 test-release: tb.goreleaser tb.syft tb.goversioninfo

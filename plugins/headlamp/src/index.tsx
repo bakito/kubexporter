@@ -8,7 +8,7 @@ import {
   Router,
 } from '@kinvolk/headlamp-plugin/lib';
 import { ActionButton } from '@kinvolk/headlamp-plugin/lib/CommonComponents';
-import KubexporterDashboard from './KubexporterDashboard';
+import KubExporterDashboard from './KubExporterDashboard';
 
 // Register a top-level "KubExporter" section in the cluster sidebar
 registerSidebarEntry({
@@ -31,13 +31,13 @@ registerSidebarEntry({
 registerRoute({
   path: '/kubexporter',
   name: 'kubexporter-dashboard',
-  component: KubexporterDashboard,
+  component: KubExporterDashboard,
   sidebar: 'kubexporter-dashboard',
   exact: true,
 });
 
 // Check if a resource is an OpenReports Report created by kubexporter
-function isKubexporterReportResource(resource: any): boolean {
+function isKubExporterReportResource(resource: any): boolean {
   const data = resource?.jsonData ?? resource;
   if (!data || data.kind !== 'Report') {
     return false;
@@ -48,7 +48,7 @@ function isKubexporterReportResource(resource: any): boolean {
 
 function DashboardButton({ item, buttonStyle }: { item: any; buttonStyle?: 'action' | 'menu' }) {
   const history = useHistory();
-  if (!isKubexporterReportResource(item)) {
+  if (!isKubExporterReportResource(item)) {
     return null;
   }
   return (
