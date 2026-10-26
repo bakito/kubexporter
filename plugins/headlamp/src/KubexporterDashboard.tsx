@@ -73,7 +73,6 @@ export default function KubexporterDashboard() {
 
   useEffect(() => {
     const load = async () => {
-      setLoading(true);
       setError(null);
       try {
         const reports = await fetchCRs(REPORT_GVK);
@@ -95,7 +94,12 @@ export default function KubexporterDashboard() {
       }
     };
 
+    // Load immediately on mount
     load();
+
+    // Poll every 30 seconds to pick up cluster changes
+    const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleReportChange = (e: SelectChangeEvent) => {
@@ -266,7 +270,7 @@ export default function KubexporterDashboard() {
 
       {/* Resource Kinds Table */}
       {resourceStats.length > 0 && (
-        <ResourceTable resources={resourceStats} />
+        <ResourceTable key={reportKey(selectedReport)} resources={resourceStats} />
       )}
 
       {/* Info footer */}
