@@ -204,7 +204,8 @@ export default function KubexporterDashboard() {
                 <Chip
                   label={selectedReport.kind}
                   size="small"
-                  sx={{ backgroundColor: '#e3f2fd', color: '#1565c0' }}
+                  color="primary"
+                  sx={{ borderRadius: 1 }}
                 />
                 <Typography variant="body2" color="text.secondary">
                   {selectedReport.metadata.name}
