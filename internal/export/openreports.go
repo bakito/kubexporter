@@ -2,6 +2,7 @@ package export
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,6 +46,19 @@ type openReportsProvider interface {
 	Logger() log.YALI
 	OpenReportsClient() *openreportsversioned.Clientset
 	Client() dynamic.Interface
+}
+
+// ValidateOpenReportsConfig checks that the OpenReports namespace is set when not running
+// inside a Kubernetes pod (CronJob context). When running in a pod, the namespace is
+// auto-detected from the pod metadata, so it is not required.
+func ValidateOpenReportsConfig(cfg *types.OpenReportsConfig) error {
+	if cfg == nil || !cfg.Enabled {
+		return nil
+	}
+	if cfg.Namespace == "" && getPodNamespace() == "" {
+		return errors.New("openreports namespace must be set when not running in a CronJob")
+	}
+	return nil
 }
 
 // SendOpenReports creates an OpenReports Report resource summarizing the export results.

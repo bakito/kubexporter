@@ -349,40 +349,12 @@ func TestConfig_Validate(t *testing.T) {
 			},
 		},
 		{
-			name: "openreports without namespace should fail",
+			name: "openreports config is accepted by Validate",
 			setup: func(c *types.Config) {
 				c.OpenReports = &types.OpenReportsConfig{
 					Enabled:   true,
 					Namespace: "",
 				}
-			},
-			wantErr: true,
-			errStr:  "openreports namespace must be set when enabled",
-		},
-		{
-			name: "openreports with namespace should pass",
-			setup: func(c *types.Config) {
-				c.OpenReports = &types.OpenReportsConfig{
-					Enabled:   true,
-					Namespace: "default",
-				}
-			},
-			wantErr: false,
-		},
-		{
-			name: "openreports disabled should pass",
-			setup: func(c *types.Config) {
-				c.OpenReports = &types.OpenReportsConfig{
-					Enabled:   false,
-					Namespace: "",
-				}
-			},
-			wantErr: false,
-		},
-		{
-			name: "openreports nil should pass",
-			setup: func(c *types.Config) {
-				c.OpenReports = nil
 			},
 			wantErr: false,
 		},
@@ -410,51 +382,16 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 func TestConfig_ValidateOpenReports(t *testing.T) {
-	tests := []struct {
-		name    string
-		config  *types.OpenReportsConfig
-		wantErr bool
-	}{
-		{
-			name:    "nil config should pass",
-			config:  nil,
-			wantErr: false,
-		},
-		{
-			name: "enabled without namespace should fail",
-			config: &types.OpenReportsConfig{
-				Enabled:   true,
-				Namespace: "",
-			},
-			wantErr: true,
-		},
-		{
-			name: "enabled with namespace should pass",
-			config: &types.OpenReportsConfig{
-				Enabled:   true,
-				Namespace: "default",
-			},
-			wantErr: false,
-		},
-		{
-			name: "disabled without namespace should pass",
-			config: &types.OpenReportsConfig{
-				Enabled:   false,
-				Namespace: "",
-			},
-			wantErr: false,
-		},
+	// ValidateOpenReports is deprecated and always returns nil.
+	// Validation is now handled by export.ValidateOpenReportsConfig.
+	config, _ := setupConfig()
+	config.OpenReports = &types.OpenReportsConfig{
+		Enabled:   true,
+		Namespace: "",
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			config, _ := setupConfig()
-			config.OpenReports = tt.config
-			err := config.ValidateOpenReports()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ValidateOpenReports() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	err := config.ValidateOpenReports()
+	if err != nil {
+		t.Errorf("ValidateOpenReports() should always return nil, got %v", err)
 	}
 }
 
