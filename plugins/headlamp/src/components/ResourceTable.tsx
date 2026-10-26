@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -86,6 +86,11 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [filterText, setFilterText] = useState('');
 
+  // Reset to first page when the underlying data changes (e.g. switching reports).
+  useEffect(() => {
+    setPage(0);
+  }, [resources]);
+
   const handleSort = (field: keyof ResourceKindStats) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
@@ -136,8 +141,18 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
     setPage(0);
   };
 
-  const SortableHeader = (field: keyof ResourceKindStats, label: string) => (
-    <TableCell>
+  // Fixed column widths to prevent layout shift when switching reports
+  const columnWidths: Record<keyof ResourceKindStats, number> = {
+    groupKind: 160,
+    instances: 100,
+    exportedInstances: 100,
+    exportedSizeBytes: 110,
+    queryDuration: 110,
+    exportDuration: 110,
+  };
+
+  const SortableHeader = (field: keyof ResourceKindStats, label: string, align: 'left' | 'right' = 'left') => (
+    <TableCell align={align} sx={{ width: columnWidths[field], minWidth: columnWidths[field], maxWidth: columnWidths[field] }}>
       <TableSortLabel
         active={sortField === field}
         direction={sortField === field ? sortDirection : 'asc'}
@@ -173,9 +188,9 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
             <TableHead>
               <TableRow sx={{ backgroundColor: 'action.hover' }}>
                 {SortableHeader('groupKind', 'Kind')}
-                {SortableHeader('instances', 'Instances')}
-                {SortableHeader('exportedInstances', 'Exported')}
-                {SortableHeader('exportedSizeBytes', 'Size')}
+                {SortableHeader('instances', 'Instances', 'right')}
+                {SortableHeader('exportedInstances', 'Exported', 'right')}
+                {SortableHeader('exportedSizeBytes', 'Size', 'right')}
                 {SortableHeader('queryDuration', 'Query Time')}
                 {SortableHeader('exportDuration', 'Export Time')}
               </TableRow>
@@ -190,31 +205,31 @@ export default function ResourceTable({ resources }: ResourceTableProps) {
                       idx % 2 === 0 ? 'background.default' : 'action.hover',
                   }}
                 >
-                  <TableCell>
+                  <TableCell sx={{ width: columnWidths.groupKind, minWidth: columnWidths.groupKind, maxWidth: columnWidths.groupKind }}>
                     <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
                       {res.groupKind}
                     </Typography>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ width: columnWidths.instances, minWidth: columnWidths.instances, maxWidth: columnWidths.instances }}>
                     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                       {formatNumber(res.instances)}
                       <TrendIcon current={res.instances} previous={res.prevInstances} />
                     </Box>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ width: columnWidths.exportedInstances, minWidth: columnWidths.exportedInstances, maxWidth: columnWidths.exportedInstances }}>
                     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                       {formatNumber(res.exportedInstances)}
                       <TrendIcon current={res.exportedInstances} previous={res.prevExportedInstances} />
                     </Box>
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="right" sx={{ width: columnWidths.exportedSizeBytes, minWidth: columnWidths.exportedSizeBytes, maxWidth: columnWidths.exportedSizeBytes }}>
                     <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'flex-end' }}>
                       {formatBytes(res.exportedSizeBytes)}
                       <TrendIcon current={res.exportedSizeBytes} previous={res.prevExportedSizeBytes} />
                     </Box>
                   </TableCell>
-                  <TableCell>{res.queryDuration}</TableCell>
-                  <TableCell>{res.exportDuration}</TableCell>
+                  <TableCell sx={{ width: columnWidths.queryDuration, minWidth: columnWidths.queryDuration, maxWidth: columnWidths.queryDuration }}>{res.queryDuration}</TableCell>
+                  <TableCell sx={{ width: columnWidths.exportDuration, minWidth: columnWidths.exportDuration, maxWidth: columnWidths.exportDuration }}>{res.exportDuration}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
