@@ -687,17 +687,13 @@ func (c *Config) Validate() error {
 	if c.Progress != ProgressSimple && c.Progress != ProgressNone && c.Progress != ProgressBarBubbles {
 		c.Progress = ProgressBar
 	}
-	if c.OpenReports != nil && c.OpenReports.Enabled && c.OpenReports.Namespace == "" {
-		return errors.New("openreports namespace must be set when enabled")
-	}
 	return nil
 }
 
 // ValidateOpenReports checks that OpenReports configuration is valid.
-func (c *Config) ValidateOpenReports() error {
-	if c.OpenReports != nil && c.OpenReports.Enabled && c.OpenReports.Namespace == "" {
-		return errors.New("openreports namespace must be set when enabled")
-	}
+//
+// Deprecated: use export.ValidateOpenReportsConfig instead.
+func (*Config) ValidateOpenReports() error {
 	return nil
 }
 

@@ -143,7 +143,7 @@ func readConfig(
 		return nil, err
 	}
 
-	if err := config.ValidateOpenReports(); err != nil {
+	if err := export.ValidateOpenReportsConfig(config.OpenReports); err != nil {
 		return nil, err
 	}
 
