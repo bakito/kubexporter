@@ -157,8 +157,10 @@ func buildReport(
 	results, summary := buildReportResults(stats, start, resources, now, prevReport)
 
 	return &openreportsv1alpha1.Report{
-		APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
-		Kind:       "Report",
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
+			Kind:       "Report",
+		},
 		ObjectMeta: reportMeta(now, target),
 		Source:     "kubexporter",
 		Results:    results,

@@ -22,8 +22,10 @@ func Test_toSecret(t *testing.T) {
 	ctx := context.TODO()
 
 	s := &corev1.Secret{
-		Name:      "test-secret",
-		Namespace: "test-ns",
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-secret",
+			Namespace: "test-ns",
+		},
 		Data: map[string][]byte{
 			"key": []byte("value"),
 		},
