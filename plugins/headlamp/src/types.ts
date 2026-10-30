@@ -49,6 +49,12 @@ export interface OpenReport {
   results: ReportResult[];
 }
 
+export interface ReportLink {
+  title: string;
+  url: string;
+  icon?: string;
+}
+
 // Trend direction for comparing current vs previous values
 export type TrendDirection = 'up' | 'down' | 'same' | 'none';
 

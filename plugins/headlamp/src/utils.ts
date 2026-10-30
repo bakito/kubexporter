@@ -1,4 +1,4 @@
-import { OpenReport, ExportStats, ResourceKindStats, OwnerReference, TrendDirection } from './types';
+import { OpenReport, ExportStats, ResourceKindStats, OwnerReference, ReportLink, TrendDirection } from './types';
 
 // Extract the summary-level export stats from a kubexporter report
 export function parseExportStats(report: OpenReport): ExportStats | null {
@@ -121,9 +121,81 @@ export function getCronJobOwner(report: OpenReport): OwnerReference | null {
   return cronJob || null;
 }
 
-// Get the Headlamp plugin URL from report annotations, if present
-export function getHeadlampURL(report: OpenReport): string | null {
-  return report.metadata.annotations?.['kubexporter.bakito.ch/headlamp-link'] || null;
+function isHttpURL(value: unknown): value is string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return false;
+  }
+
+  try {
+    const url = new URL(value.trim());
+    return (url.protocol === 'http:' || url.protocol === 'https:') && url.host !== '';
+  } catch {
+    return false;
+  }
+}
+
+function isReportLink(value: unknown): value is ReportLink {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  const link = value as Record<string, unknown>;
+  return (
+    typeof link.title === 'string' &&
+    link.title.trim() !== '' &&
+    isHttpURL(link.url) &&
+    (link.icon === undefined || typeof link.icon === 'string')
+  );
+}
+
+// Get dashboard links from report annotations, accepting the legacy single-URL value.
+export function getReportLinks(report: OpenReport): ReportLink[] {
+  const value = report.metadata.annotations?.['kubexporter.bakito.ch/headlamp-link'];
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(isReportLink).map((link) => ({
+        ...link,
+        title: link.title.trim(),
+        url: link.url.trim(),
+        icon: link.icon?.trim() || undefined,
+      }));
+    }
+  } catch {
+    // A non-JSON annotation may be a legacy single URL.
+  }
+
+  return isHttpURL(value) ? [{ title: 'Open in Headlamp', url: value.trim() }] : [];
+}
+
+// Convert Font Awesome class names to Iconify IDs; existing Iconify IDs pass through.
+export function toIconifyIcon(icon?: string): string {
+  const value = icon?.trim();
+  if (!value) {
+    return 'mdi:open-in-new';
+  }
+  if (value.includes(':')) {
+    return value;
+  }
+
+  const classes = value.split(/\s+/);
+  let collection = 'fa6-solid';
+  if (classes.some((className) => className === 'fa-regular' || className === 'far')) {
+    collection = 'fa6-regular';
+  } else if (classes.some((className) => className === 'fa-brands' || className === 'fab')) {
+    collection = 'fa6-brands';
+  }
+
+  const iconClass = classes.find(
+    (className) => /^fa-[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(className) &&
+      !['fa-solid', 'fa-regular', 'fa-brands'].includes(className),
+  );
+  const iconName = iconClass?.replace(/^fa-/, '');
+  return iconName ? `${collection}:${iconName}` : 'mdi:open-in-new';
 }
 
 // Calculate the trend direction between current and previous values

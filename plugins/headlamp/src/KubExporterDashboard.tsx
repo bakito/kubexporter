@@ -27,7 +27,8 @@ import {
   getLastExportTime,
   isKubExporterReport,
   getCronJobOwner,
-  getHeadlampURL,
+  getReportLinks,
+  toIconifyIcon,
 } from './utils';
 
 // Custom Resource API types for OpenReports
@@ -183,6 +184,7 @@ export default function KubExporterDashboard() {
   const stats = parseExportStats(selectedReport);
   const resourceStats = parseResourceKindStats(selectedReport);
   const lastExport = getLastExportTime(selectedReport);
+  const dashboardLinks = getReportLinks(selectedReport);
 
   return (
     <Box>
@@ -234,7 +236,7 @@ export default function KubExporterDashboard() {
                 })()}
               </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               {lastExport && (
                 <Box sx={{ textAlign: 'right' }}>
                   <Typography variant="caption" color="text.secondary">
@@ -245,17 +247,18 @@ export default function KubExporterDashboard() {
                   </Typography>
                 </Box>
               )}
-              {getHeadlampURL(selectedReport) && (
+              {dashboardLinks.map((link, index) => (
                 <Button
+                  key={`${link.title}-${link.url}-${index}`}
                   variant="outlined"
-                  href={getHeadlampURL(selectedReport)!}
+                  href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  startIcon={<Icon icon="mdi:open-in-new" width={16} />}
+                  startIcon={<Icon icon={toIconifyIcon(link.icon)} width={16} />}
                 >
-                  Open in Headlamp
+                  {link.title}
                 </Button>
-              )}
+              ))}
               {reports.length > 1 && (
                 <FormControl size="small" sx={{ minWidth: 200 }}>
                   <InputLabel>Report</InputLabel>
