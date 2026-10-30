@@ -27,12 +27,22 @@ release: tb.semver
 	git tag -s $$version -m"Release $$version"; \
 	git push origin $$version
 
-# Build the Headlamp plugin
-.PHONY: build-headlamp-plugin
-build-headlamp-plugin:
+# Package the Headlamp plugin (without touching tracked files)
+.PHONY: package-headlamp-plugin
+package-headlamp-plugin:
 	cd plugins/headlamp && npm install && npm run build && npm run package
 
-release-ci: tb.goreleaser tb.syft tb.goversioninfo build-headlamp-plugin
+# Build the Headlamp plugin and update checksum and date in artifacthub-pkg.yml
+.PHONY: build-headlamp-plugin
+build-headlamp-plugin: package-headlamp-plugin
+	@sha=$$(sha256sum plugins/headlamp/kubexporter-headlamp-plugin-*.tar.gz | cut -d' ' -f1); \
+	created=$$(date -u +%Y-%m-%dT%H:%M:%S.000Z); \
+	sed -i -E \
+		-e "s|^(createdAt:).*|\1 $$created|" \
+		-e "s|^([[:space:]]*headlamp/plugin/archive-checksum:).*|\1 sha256:$$sha|" \
+		plugins/headlamp/artifacthub-pkg.yml
+
+release-ci: tb.goreleaser tb.syft tb.goversioninfo package-headlamp-plugin
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 4
 
 test-release: tb.goreleaser tb.syft tb.goversioninfo
