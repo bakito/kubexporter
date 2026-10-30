@@ -99,7 +99,7 @@ jobs:
           fi
 
       - name: Set up Node.js
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
 
@@ -135,6 +135,7 @@ jobs:
       - name: Publish package metadata to Artifact Hub catalog
         env:
           VERSION: ${{ github.ref_name }}
+          HEADLAMP_PLUGINS_TOKEN: ${{ secrets.HEADLAMP_PLUGINS_TOKEN }}
         run: |
           version="${VERSION#headlamp-plugin-v}"
           destination="headlamp-plugins/kubexporter/${version}"
@@ -146,5 +147,5 @@ jobs:
           git -C headlamp-plugins add "kubexporter/${version}/artifacthub-pkg.yml" "kubexporter/${version}/README.md"
           if ! git -C headlamp-plugins diff --cached --quiet; then
             git -C headlamp-plugins commit -m "Publish kubexporter Headlamp plugin ${version}"
-            git -C headlamp-plugins push
+            git -C headlamp-plugins push "https://x-access-token:${HEADLAMP_PLUGINS_TOKEN}@github.com/bakito/headlamp-plugins.git" HEAD
           fi

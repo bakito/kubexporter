@@ -39,7 +39,7 @@ package-headlamp-plugin:
 			cd plugins/headlamp && npm version "$(HEADLAMP_PLUGIN_VERSION)" --no-git-tag-version; \
 		fi; \
 	fi
-	cd plugins/headlamp && npm install && npm run build && npm run package
+	cd plugins/headlamp && npm ci && npm run build && npm run package
 
 # Run Headlamp plugin unit tests
 .PHONY: test-headlamp-plugin
@@ -70,7 +70,7 @@ release-headlamp-plugin: tb.semver
 	git tag -s "$$tag" -m "Headlamp plugin release $${version#v}"; \
 	git push origin "$$tag"
 
-release-ci: tb.goreleaser tb.syft tb.goversioninfo package-headlamp-plugin
+release-ci: tb.goreleaser tb.syft tb.goversioninfo
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 4
 
 test-release: tb.goreleaser tb.syft tb.goversioninfo
