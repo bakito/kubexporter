@@ -9,7 +9,7 @@ $(TB_LOCALBIN):
 	if [ ! -e $(TB_LOCALBIN) ]; then mkdir -p $(TB_LOCALBIN); fi
 
 ## Go Version
-TB_GO_VERSION ?= "1.27.3"
+TB_GO_VERSION ?= 1.27.3
 
 ## Tool Binaries
 TB_GOLANGCI_LINT ?= $(TB_LOCALBIN)/golangci-lint
@@ -73,7 +73,7 @@ tb.reset:
 ## Update Tools
 .PHONY: tb.update
 tb.update: tb.reset
-	toolbox makefile --renovate --toolchain -f $(TB_LOCALDIR)/Makefile \
+	toolbox makefile --renovate --toolchain=1.27.3 -f $(TB_LOCALDIR)/Makefile \
 		github.com/golangci/golangci-lint/v2/cmd/golangci-lint \
 		github.com/goreleaser/goreleaser/v2 \
 		github.com/josephspurrier/goversioninfo/cmd/goversioninfo \

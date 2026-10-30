@@ -59,7 +59,7 @@ To publish a new version, run this from the kubexporter repository root:
 make release-headlamp-plugin
 ```
 
-Enter the semantic version when prompted (for example, `0.0.2`). The target creates and pushes a signed tag named `headlamp-plugin-v0.0.2`. That tag starts the GitHub Actions release workflow, which updates the plugin version, builds the archive, calculates its checksum, and updates this package's `artifacthub-pkg.yml`.
+Run it on the `main` branch. When prompted, accept the proposed next version (derived from the latest `headlamp-plugin-v*` tag) or enter another one (for example, `v0.0.2`). The target creates and pushes a signed tag named `headlamp-plugin-v0.0.2`. That tag starts the GitHub Actions release workflow, which updates the plugin version, builds the archive, calculates its checksum, and updates this package's `artifacthub-pkg.yml`.
 
 The workflow attaches `kubexporter-headlamp-plugin-0.0.2.tar.gz` to the GitHub release, then publishes `artifacthub-pkg.yml` and this README to `bakito/headlamp-plugins` under `kubexporter/0.0.2/`. The repository must have a `HEADLAMP_PLUGINS_TOKEN` secret with permission to push to `bakito/headlamp-plugins`.
 

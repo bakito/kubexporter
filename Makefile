@@ -58,19 +58,11 @@ build-headlamp-plugin: package-headlamp-plugin
 
 # Create and push a signed Headlamp plugin release tag; the workflow builds and publishes it.
 .PHONY: release-headlamp-plugin
-release-headlamp-plugin:
+release-headlamp-plugin: tb.semver
 	@set -eu; \
-	printf 'Headlamp plugin version (X.Y.Z): '; \
-	IFS= read -r version; \
-	if ! printf '%s\n' "$$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$$'; then \
-		echo 'Invalid version: enter a semantic version such as 0.1.0' >&2; exit 1; \
-	fi; \
-	tag="headlamp-plugin-v$$version"; \
-	remote_tag=$$(git ls-remote --tags origin "refs/tags/$$tag"); \
-	if git rev-parse -q --verify "refs/tags/$$tag" >/dev/null || [ -n "$$remote_tag" ]; then \
-		echo "Tag already exists: $$tag" >&2; exit 1; \
-	fi; \
-	git tag -s "$$tag" -m "Headlamp plugin release $$version"; \
+	version=$$($(TB_SEMVER) -prefix "headlamp-plugin"); \
+	tag="headlamp-plugin-$$version"; \
+	git tag -s "$$tag" -m "Headlamp plugin release $${version#v}"; \
 	git push origin "$$tag"
 
 release-ci: tb.goreleaser tb.syft tb.goversioninfo package-headlamp-plugin
