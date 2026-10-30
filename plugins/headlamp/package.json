@@ -9,7 +9,7 @@
     "start": "headlamp-plugin start",
     "lint": "headlamp-plugin lint",
     "format": "headlamp-plugin format",
-    "package": "rm -f *.tar.gz && headlamp-plugin package"
+    "package": "rm -f *.tar.gz && headlamp-plugin package && tar xzf *.tar.gz && mv headlamp kubexporter && tar czf kubexporter-headlamp-plugin-$(node -p \"require('./package.json').version\").tar.gz kubexporter && rm -rf kubexporter && rm -f *.sha256"
   },
   "keywords": [
     "headlamp",
