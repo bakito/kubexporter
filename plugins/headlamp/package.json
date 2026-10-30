@@ -6,6 +6,7 @@
   "scripts": {
     "build": "headlamp-plugin build",
     "postbuild": "cp package.json dist/package.json",
+    "test": "headlamp-plugin test",
     "start": "headlamp-plugin start",
     "lint": "headlamp-plugin lint",
     "format": "headlamp-plugin format",

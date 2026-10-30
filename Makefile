@@ -41,6 +41,11 @@ package-headlamp-plugin:
 	fi
 	cd plugins/headlamp && npm install && npm run build && npm run package
 
+# Run Headlamp plugin unit tests
+.PHONY: test-headlamp-plugin
+test-headlamp-plugin:
+	cd plugins/headlamp && npm test
+
 # Build the Headlamp plugin and update checksum and date in artifacthub-pkg.yml
 .PHONY: build-headlamp-plugin
 build-headlamp-plugin: package-headlamp-plugin
