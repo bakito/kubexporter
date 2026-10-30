@@ -25,6 +25,9 @@ readme: |
   - Resource Kinds Table: Per-resource-kind breakdown with instances, size, and query/export time
 provider:
   name: bakito
+screenshots:
+  - title: KubExporter Headlamp Plugin
+    url: https://github.com/bakito/kubexporter/blob/main/docs/headlamp/screenshot.png?raw=true
 links:
   - name: Source Code
     url: https://github.com/bakito/kubexporter
