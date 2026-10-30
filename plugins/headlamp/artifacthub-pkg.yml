@@ -3,13 +3,17 @@ displayName: KubExporter Headlamp Plugin
 version: 0.0.1
 createdAt: 2026-10-26T00:00:00.000Z
 name: kubexporter-headlamp-plugin
-type: headlamp-plugin
 description: Headlamp plugin for visualizing KubExporter OpenReports export statistics
 license: Apache-2.0
-home: https://github.com/bakito/kubexporter
+homeURL: https://github.com/bakito/kubexporter
+logoURL: https://raw.githubusercontent.com/bakito/kubexporter/refs/heads/main/docs/icons/kubexporter.png
+annotations:
+  headlamp/plugin/version-compat: '>=0.45.0'
+  headlamp/plugin/distro-compat: 'in-cluster,web'
+  headlamp/plugin/archive-url: https://github.com/bakito/kubexporter/releases/download/headlamp-plugin-v0.0.1/kubexporter-headlamp-plugin-0.0.1.tar.gz
+  headlamp/plugin/archive-checksum: sha256:c65ffdf3ba116a62be85daabc4951756496066702f9a3b7b78d2486cf988d654
 appVersion: 0.0.1
 digest: kubexporter-headlamp-plugin-0.0.1
-containsTool: true
 readme: |
   # KubExporter Headlamp Plugin
   
@@ -19,9 +23,8 @@ readme: |
   
   - Export Statistics Cards: Resources exported, kinds processed, namespaces, export size, duration, and errors
   - Resource Kinds Table: Per-resource-kind breakdown with instances, size, and query/export time
-providers:
-  - name: bakito
-    url: https://github.com/bakito
-users:
-  - name: Admin
-    description: Suitable for cluster administrators monitoring export operations
+provider:
+  name: bakito
+links:
+  - name: Source Code
+    url: https://github.com/bakito/kubexporter
