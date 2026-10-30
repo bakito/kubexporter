@@ -9,7 +9,7 @@ $(TB_LOCALBIN):
 	if [ ! -e $(TB_LOCALBIN) ]; then mkdir -p $(TB_LOCALBIN); fi
 
 ## Go Version
-TB_GO_VERSION ?= $(shell grep -E '^go [0-9]+\.[0-9]+' go.mod | awk '{print $$2}')
+TB_GO_VERSION ?= "1.27.3"
 
 ## Tool Binaries
 TB_GOLANGCI_LINT ?= $(TB_LOCALBIN)/golangci-lint
@@ -29,7 +29,7 @@ TB_GOVERSIONINFO_VERSION ?= v1.7.0
 # renovate: packageName=github.com/uber-go/mock
 TB_MOCKGEN_VERSION ?= v0.6.0
 # renovate: packageName=github.com/bakito/semver
-TB_SEMVER_VERSION ?= v1.1.11
+TB_SEMVER_VERSION ?= v1.1.13
 # renovate: packageName=github.com/anchore/syft/cmd/syft
 TB_SYFT_VERSION ?= v1.55.0
 
