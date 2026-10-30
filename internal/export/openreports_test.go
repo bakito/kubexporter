@@ -295,7 +295,7 @@ func TestBuildSummary(t *testing.T) {
 }
 
 func TestBuildReport(t *testing.T) {
-	report := buildReport(&worker.Stats{}, time.Now(), nil, "/tmp/My Exports", nil)
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "/tmp/My Exports", nil, nil)
 
 	if report.Name != "kubexporter-my-exports" {
 		t.Errorf("unexpected name: %q", report.Name)
@@ -326,5 +326,44 @@ func TestBuildReport(t *testing.T) {
 	}
 	if report.Summary != buildSummary(report.Results) {
 		t.Errorf("summary %+v does not match results", report.Summary)
+	}
+}
+
+func TestBuildReportWithAnnotations(t *testing.T) {
+	cfg := &types.OpenReportsConfig{
+		Annotations: map[string]string{
+			"custom.key":           "custom-value",
+			headlampLinkAnnotation: "http://headlamp.local/dashboard",
+		},
+	}
+
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "exports", cfg, nil)
+
+	// Check custom annotation is present
+	if report.Annotations["custom.key"] != "custom-value" {
+		t.Errorf("missing custom annotation, got: %v", report.Annotations)
+	}
+
+	// Check Headlamp link annotation is present
+	if report.Annotations[headlampLinkAnnotation] != "http://headlamp.local/dashboard" {
+		t.Errorf("missing headlamp link annotation, got: %v", report.Annotations)
+	}
+
+	// Check last-export annotation is still present
+	if _, ok := report.Annotations[lastExportAnnotation]; !ok {
+		t.Errorf("expected %s annotation", lastExportAnnotation)
+	}
+}
+
+func TestBuildReportWithNilConfig(t *testing.T) {
+	// Nil config should not panic
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "exports", nil, nil)
+
+	// Should only have the last-export annotation
+	if len(report.Annotations) != 1 {
+		t.Errorf("expected 1 annotation with nil config, got %d: %v", len(report.Annotations), report.Annotations)
+	}
+	if _, ok := report.Annotations[lastExportAnnotation]; !ok {
+		t.Errorf("expected %s annotation", lastExportAnnotation)
 	}
 }

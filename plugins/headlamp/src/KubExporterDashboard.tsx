@@ -14,6 +14,7 @@ import {
   SelectChangeEvent,
   Card,
   CardContent,
+  Button,
 } from '@mui/material';
 import { Icon } from '@iconify/react';
 import { ApiProxy } from '@kinvolk/headlamp-plugin/lib';
@@ -26,6 +27,7 @@ import {
   getLastExportTime,
   isKubExporterReport,
   getCronJobOwner,
+  getHeadlampURL,
 } from './utils';
 
 // Custom Resource API types for OpenReports
@@ -198,7 +200,7 @@ export default function KubExporterDashboard() {
           >
             <Box>
               <Typography variant="h5" sx={{ fontWeight: 'bold', mb: 0.5 }}>
-                KubExporter Export Dashboard
+                KubExporter Dashboard
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Chip
@@ -242,6 +244,17 @@ export default function KubExporterDashboard() {
                     {new Date(lastExport).toLocaleString()}
                   </Typography>
                 </Box>
+              )}
+              {getHeadlampURL(selectedReport) && (
+                <Button
+                  variant="outlined"
+                  href={getHeadlampURL(selectedReport)!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<Icon icon="mdi:open-in-new" width={16} />}
+                >
+                  Open in Headlamp
+                </Button>
               )}
               {reports.length > 1 && (
                 <FormControl size="small" sx={{ minWidth: 200 }}>

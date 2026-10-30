@@ -98,6 +98,19 @@ The plugin will automatically detect and display the most recent kubexporter rep
 
 ## Dashboard Features
 
+### Open in Headlamp Button
+
+If the kubexporter report includes the `kubexporter.bakito.ch/headlamp-link` annotation, an "Open in Headlamp" button appears in the dashboard header. Clicking it opens the linked Headlamp URL in a new browser tab.
+
+Set the annotation via the `annotations` config field:
+
+```yaml
+openReports:
+  enabled: true
+  annotations:
+    kubexporter.bakito.ch/headlamp-link: "http://headlamp.local/plugins/kubexporter"
+```
+
 ### Statistics Cards
 
 Six cards showing the key export metrics:

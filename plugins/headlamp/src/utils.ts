@@ -121,6 +121,11 @@ export function getCronJobOwner(report: OpenReport): OwnerReference | null {
   return cronJob || null;
 }
 
+// Get the Headlamp plugin URL from report annotations, if present
+export function getHeadlampURL(report: OpenReport): string | null {
+  return report.metadata.annotations?.['kubexporter.bakito.ch/headlamp-link'] || null;
+}
+
 // Calculate the trend direction between current and previous values
 export function getTrend(current: number, previous?: number): TrendDirection {
   if (previous === undefined) {

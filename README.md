@@ -360,10 +360,14 @@ kubexporter can create [OpenReports](https://openreports.io/) `Report` resources
 openReports:
   enabled: true
   namespace: default
+  annotations:
+    my.custom.key: "my-value"
+    kubexporter.bakito.ch/headlamp-link: "http://headlamp.local/plugins/kubexporter"
 ```
 
 * `enabled`: Enable OpenReports integration.
 * `namespace`: Target namespace for the `Report` resource (required when enabled, unless running in a CronJob pod, where the pod's namespace is used automatically).
+* `annotations`: Custom key-value pairs added to the `Report` metadata annotations. To enable the "Open in Headlamp" button in the Headlamp plugin, add the `kubexporter.bakito.ch/headlamp-link` annotation with the plugin URL as its value.
 
 You can also enable OpenReports via CLI flag:
 

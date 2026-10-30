@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -34,6 +35,8 @@ const (
 	reportNamePrefix = "kubexporter-"
 	// lastExportAnnotation holds the timestamp of the last export the report was updated with.
 	lastExportAnnotation = "kubexporter.bakito.net/last-export"
+	// headlampLinkAnnotation holds the URL to the Headlamp plugin dashboard.
+	headlampLinkAnnotation = "kubexporter.bakito.ch/headlamp-link"
 	// maxNameSegmentLength is the max length of the target segment within the report name.
 	maxNameSegmentLength = 200
 )
@@ -100,7 +103,7 @@ func SendOpenReports(
 		prevReport = existing
 	}
 
-	report := buildReport(stats, p.Start(), resources, target, prevReport)
+	report := buildReport(stats, p.Start(), resources, target, cfg, prevReport)
 	if cronJobResult != nil {
 		report.OwnerReferences = []metav1.OwnerReference{*cronJobResult.ownerRef}
 	}
@@ -151,6 +154,7 @@ func buildReport(
 	start time.Time,
 	resources []*types.GroupResource,
 	target string,
+	cfg *types.OpenReportsConfig,
 	prevReport *openreportsv1alpha1.Report,
 ) *openreportsv1alpha1.Report {
 	now := time.Now()
@@ -161,23 +165,28 @@ func buildReport(
 			APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
 			Kind:       "Report",
 		},
-		ObjectMeta: reportMeta(now, target),
+		ObjectMeta: reportMeta(now, target, cfg),
 		Source:     "kubexporter",
 		Results:    results,
 		Summary:    summary,
 	}
 }
 
-func reportMeta(now time.Time, target string) metav1.ObjectMeta {
+func reportMeta(now time.Time, target string, cfg *types.OpenReportsConfig) metav1.ObjectMeta {
+	annotations := map[string]string{
+		lastExportAnnotation: now.UTC().Format(time.RFC3339),
+	}
+	// Merge custom annotations from config
+	if cfg != nil {
+		maps.Copy(annotations, cfg.Annotations)
+	}
 	return metav1.ObjectMeta{
 		Name: reportName(target),
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "kubexporter",
 			"app.kubernetes.io/name":       "kubexporter",
 		},
-		Annotations: map[string]string{
-			lastExportAnnotation: now.UTC().Format(time.RFC3339),
-		},
+		Annotations: annotations,
 	}
 }
 
@@ -243,9 +252,7 @@ func extractPrevValues(
 			}
 		} else if result.Policy == "kubexporter/resource" && result.Properties != nil {
 			props := make(map[string]string)
-			for k, v := range result.Properties {
-				props[k] = v
-			}
+			maps.Copy(props, result.Properties)
 			resourcePrev[result.Rule] = props
 		}
 	}
