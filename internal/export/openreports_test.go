@@ -3,6 +3,7 @@ package export
 import (
 	"regexp"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -294,8 +295,158 @@ func TestBuildSummary(t *testing.T) {
 	}
 }
 
+func TestValidateHeadlampLinks(t *testing.T) {
+	tests := []struct {
+		name            string
+		value           string
+		wantErrContains string
+	}{
+		{
+			name:  "valid link array",
+			value: `[{"title":"Dashboard","url":"https://headlamp.local/dashboard","icon":"fa-solid fa-chart-line"},{"title":"Metrics","url":"http://metrics.local"}]`,
+		},
+		{
+			name:  "valid legacy URL",
+			value: "https://headlamp.local/dashboard",
+		},
+		{
+			name:  "valid uppercase URL scheme",
+			value: `[{"title":"Dashboard","url":"HTTPS://headlamp.local/dashboard"}]`,
+		},
+		{
+			name:            "empty value",
+			value:           "  ",
+			wantErrContains: "must not be empty",
+		},
+		{
+			name:            "empty array",
+			value:           "[]",
+			wantErrContains: "at least one link",
+		},
+		{
+			name:            "malformed array",
+			value:           `[{"title":"Dashboard"}`,
+			wantErrContains: "invalid headlamp link array",
+		},
+		{
+			name:            "trailing JSON value",
+			value:           `[{"title":"Dashboard","url":"https://headlamp.local"}] []`,
+			wantErrContains: "trailing data",
+		},
+		{
+			name:            "empty title",
+			value:           `[{"title":" ","url":"https://headlamp.local"}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "relative URL",
+			value:           `[{"title":"Dashboard","url":"/dashboard"}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "unsupported URL scheme",
+			value:           `[{"title":"Dashboard","url":"javascript:alert(1)"}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "URL without host",
+			value:           `[{"title":"Dashboard","url":"https:///dashboard"}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "unknown entry field",
+			value:           `[{"title":"Dashboard","url":"https://headlamp.local","target":"_blank"}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "non-string icon",
+			value:           `[{"title":"Dashboard","url":"https://headlamp.local","icon":3}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "null icon",
+			value:           `[{"title":"Dashboard","url":"https://headlamp.local","icon":null}]`,
+			wantErrContains: "headlamp link 0",
+		},
+		{
+			name:            "invalid legacy URL",
+			value:           "javascript:alert(1)",
+			wantErrContains: "absolute HTTP(S) URL",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateHeadlampLinks(tt.value)
+			if tt.wantErrContains == "" {
+				if err != nil {
+					t.Fatalf("validateHeadlampLinks() error = %v, want nil", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), tt.wantErrContains) {
+				t.Fatalf("validateHeadlampLinks() error = %v, want error containing %q", err, tt.wantErrContains)
+			}
+		})
+	}
+}
+
+func TestValidateOpenReportsConfigHeadlampLinks(t *testing.T) {
+	tests := []struct {
+		name    string
+		value   string
+		enabled bool
+		wantErr bool
+	}{
+		{
+			name:    "valid dashboard link array",
+			value:   `[{"title":"Dashboard","url":"https://headlamp.local/dashboard","icon":"fa-solid fa-chart-line"}]`,
+			enabled: true,
+		},
+		{
+			name:    "valid legacy URL",
+			value:   "https://headlamp.local/dashboard",
+			enabled: true,
+		},
+		{
+			name:    "invalid dashboard link array",
+			value:   `[{"title":"Dashboard","url":"javascript:alert(1)"}]`,
+			enabled: true,
+			wantErr: true,
+		},
+		{
+			name:    "invalid legacy URL",
+			value:   "javascript:alert(1)",
+			enabled: true,
+			wantErr: true,
+		},
+		{
+			name:    "disabled config skips annotation validation",
+			value:   "not a URL",
+			enabled: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := &types.OpenReportsConfig{
+				Enabled:   tt.enabled,
+				Namespace: "default",
+				Annotations: map[string]string{
+					headlampLinkAnnotation: tt.value,
+				},
+			}
+
+			err := ValidateOpenReportsConfig(cfg)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("ValidateOpenReportsConfig() error = %v, wantErr %t", err, tt.wantErr)
+			}
+		})
+	}
+}
+
 func TestBuildReport(t *testing.T) {
-	report := buildReport(&worker.Stats{}, time.Now(), nil, "/tmp/My Exports", nil)
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "/tmp/My Exports", nil, nil)
 
 	if report.Name != "kubexporter-my-exports" {
 		t.Errorf("unexpected name: %q", report.Name)
@@ -326,5 +477,45 @@ func TestBuildReport(t *testing.T) {
 	}
 	if report.Summary != buildSummary(report.Results) {
 		t.Errorf("summary %+v does not match results", report.Summary)
+	}
+}
+
+func TestBuildReportWithAnnotations(t *testing.T) {
+	headlampLinks := `[{"title":"Dashboard","url":"https://headlamp.local/dashboard","icon":"fa-solid fa-chart-line"}]`
+	cfg := &types.OpenReportsConfig{
+		Annotations: map[string]string{
+			"custom.key":           "custom-value",
+			headlampLinkAnnotation: headlampLinks,
+		},
+	}
+
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "exports", cfg, nil)
+
+	// Check custom annotation is present
+	if report.Annotations["custom.key"] != "custom-value" {
+		t.Errorf("missing custom annotation, got: %v", report.Annotations)
+	}
+
+	// Check Headlamp link annotation is present
+	if report.Annotations[headlampLinkAnnotation] != headlampLinks {
+		t.Errorf("missing headlamp link annotation, got: %v", report.Annotations)
+	}
+
+	// Check last-export annotation is still present
+	if _, ok := report.Annotations[lastExportAnnotation]; !ok {
+		t.Errorf("expected %s annotation", lastExportAnnotation)
+	}
+}
+
+func TestBuildReportWithNilConfig(t *testing.T) {
+	// Nil config should not panic
+	report := buildReport(&worker.Stats{}, time.Now(), nil, "exports", nil, nil)
+
+	// Should only have the last-export annotation
+	if len(report.Annotations) != 1 {
+		t.Errorf("expected 1 annotation with nil config, got %d: %v", len(report.Annotations), report.Annotations)
+	}
+	if _, ok := report.Annotations[lastExportAnnotation]; !ok {
+		t.Errorf("expected %s annotation", lastExportAnnotation)
 	}
 }

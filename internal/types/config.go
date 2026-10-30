@@ -227,8 +227,9 @@ type GCSConfig struct {
 }
 
 type OpenReportsConfig struct {
-	Enabled   bool   `docs:"OpenReports is enabled"      docs-cli:"openreports"           json:"enabled"   yaml:"enabled"`
-	Namespace string `docs:"Target namespace for Report" docs-cli:"openreports-namespace" json:"namespace" yaml:"namespace"`
+	Enabled     bool              `docs:"OpenReports is enabled"            docs-cli:"openreports"           json:"enabled"     yaml:"enabled"`
+	Namespace   string            `docs:"Target namespace for Report"       docs-cli:"openreports-namespace" json:"namespace"   yaml:"namespace"`
+	Annotations map[string]string `docs:"Custom annotations for the Report" json:"annotations"               yaml:"annotations"`
 }
 
 type Metrics struct {

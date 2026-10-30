@@ -27,7 +27,50 @@ release: tb.semver
 	git tag -s $$version -m"Release $$version"; \
 	git push origin $$version
 
-release-ci: tb.goreleaser tb.syft tb.goversioninfo
+# Headlamp plugin version to package (for example, 0.0.2).
+HEADLAMP_PLUGIN_VERSION ?=
+
+# Package the Headlamp plugin; optionally set its version before building.
+.PHONY: package-headlamp-plugin
+package-headlamp-plugin:
+	@if [ -n "$(HEADLAMP_PLUGIN_VERSION)" ]; then \
+		current=$$(node -p "require('./plugins/headlamp/package.json').version"); \
+		if [ "$$current" != "$(HEADLAMP_PLUGIN_VERSION)" ]; then \
+			cd plugins/headlamp && npm version "$(HEADLAMP_PLUGIN_VERSION)" --no-git-tag-version; \
+		fi; \
+	fi
+	cd plugins/headlamp && npm install && npm run build && npm run package
+
+# Run Headlamp plugin unit tests
+.PHONY: test-headlamp-plugin
+test-headlamp-plugin:
+	cd plugins/headlamp && npm test
+
+# Build the Headlamp plugin and update checksum and date in artifacthub-pkg.yml
+.PHONY: build-headlamp-plugin
+build-headlamp-plugin: package-headlamp-plugin
+	@version="$(HEADLAMP_PLUGIN_VERSION)"; \
+	if [ -z "$$version" ]; then version=$$(node -p "require('./plugins/headlamp/package.json').version"); fi; \
+	sha=$$(sha256sum "plugins/headlamp/kubexporter-headlamp-plugin-$$version.tar.gz" | cut -d' ' -f1); \
+	created=$$(date -u +%Y-%m-%dT%H:%M:%S.000Z); \
+	sed -i -E \
+		-e "s|^(version:).*|\1 $$version|" \
+		-e "s|^(createdAt:).*|\1 $$created|" \
+		-e "s|^([[:space:]]*headlamp/plugin/archive-url:).*|\1 https://github.com/bakito/kubexporter/releases/download/headlamp-plugin-v$$version/kubexporter-headlamp-plugin-$$version.tar.gz|" \
+		-e "s|^([[:space:]]*headlamp/plugin/archive-checksum:).*|\1 sha256:$$sha|" \
+		plugins/headlamp/artifacthub-pkg.yml; \
+	printf 'Headlamp plugin version: %s\nArchive checksum: sha256:%s\nCreated at: %s\n' "$$version" "$$sha" "$$created"
+
+# Create and push a signed Headlamp plugin release tag; the workflow builds and publishes it.
+.PHONY: release-headlamp-plugin
+release-headlamp-plugin: tb.semver
+	@set -eu; \
+	version=$$($(TB_SEMVER) -prefix "headlamp-plugin"); \
+	tag="headlamp-plugin-$$version"; \
+	git tag -s "$$tag" -m "Headlamp plugin release $${version#v}"; \
+	git push origin "$$tag"
+
+release-ci: tb.goreleaser tb.syft tb.goversioninfo package-headlamp-plugin
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 4
 
 test-release: tb.goreleaser tb.syft tb.goversioninfo

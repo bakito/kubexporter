@@ -7,9 +7,12 @@ on:
   push:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'headlamp-plugin-v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
   release:
+    # only kubexporter semver releases (vX.Y.Z), not headlamp plugin releases (headlamp-plugin-vX.Y.Z)
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,7 +66,7 @@ jobs:
       contents: read
       packages: write
       id-token: write
-    uses: ./.github/workflows/build-images.yml
+    uses: $/.github/workflows/build-images.yml
     with:
       tag_name: ${{ github.ref_name }}
     secrets: inherit
@@ -72,5 +75,76 @@ jobs:
     needs: release
     permissions:
       contents: write
-    uses: ./.github/workflows/virustotal.yaml
+    uses: $/.github/workflows/virustotal.yaml
+    with:
+      release_tag: ${{ github.ref_name }}
     secrets: inherit
+
+  release-headlamp-plugin:
+    if: startsWith(github.ref, 'refs/tags/headlamp-plugin-v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout kubexporter
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate plugin release tag
+        run: |
+          if [[ ! "$GITHUB_REF_NAME" =~ ^headlamp-plugin-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "Invalid Headlamp plugin release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Build Headlamp plugin
+        run: |
+          version="${GITHUB_REF_NAME#headlamp-plugin-v}"
+          make build-headlamp-plugin HEADLAMP_PLUGIN_VERSION="$version"
+
+      - name: Create GitHub release and upload plugin archive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${GITHUB_REF_NAME#headlamp-plugin-v}"
+          archive="plugins/headlamp/kubexporter-headlamp-plugin-${version}.tar.gz"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "$archive" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$archive" \
+              --title "$GITHUB_REF_NAME" \
+              --notes "Headlamp plugin release ${version}." \
+              --verify-tag \
+              --latest=false
+          fi
+
+      - name: Checkout Headlamp plugin catalog
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: bakito/headlamp-plugins
+          token: ${{ secrets.HEADLAMP_PLUGINS_TOKEN }}
+          path: headlamp-plugins
+          persist-credentials: false
+
+      - name: Publish package metadata to Artifact Hub catalog
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          version="${VERSION#headlamp-plugin-v}"
+          destination="headlamp-plugins/kubexporter/${version}"
+          mkdir -p "$destination"
+          cp plugins/headlamp/artifacthub-pkg.yml "$destination/artifacthub-pkg.yml"
+          cp plugins/headlamp/README.md "$destination/README.md"
+          git -C headlamp-plugins config user.name "github-actions[bot]"
+          git -C headlamp-plugins config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C headlamp-plugins add "kubexporter/${version}/artifacthub-pkg.yml" "kubexporter/${version}/README.md"
+          if ! git -C headlamp-plugins diff --cached --quiet; then
+            git -C headlamp-plugins commit -m "Publish kubexporter Headlamp plugin ${version}"
+            git -C headlamp-plugins push
+          fi

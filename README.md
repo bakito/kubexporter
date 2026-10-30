@@ -360,10 +360,16 @@ kubexporter can create [OpenReports](https://openreports.io/) `Report` resources
 openReports:
   enabled: true
   namespace: default
+  annotations:
+    my.custom.key: "my-value"
+    kubexporter.bakito.ch/headlamp-link: '[{"title":"Dashboard","url":"https://headlamp.local/plugins/kubexporter","icon":"fa-solid fa-chart-line"}]'
 ```
 
 * `enabled`: Enable OpenReports integration.
 * `namespace`: Target namespace for the `Report` resource (required when enabled, unless running in a CronJob pod, where the pod's namespace is used automatically).
+* `annotations`: Custom key-value pairs added to the `Report` metadata annotations. Set `kubexporter.bakito.ch/headlamp-link` to a JSON array of links (`title`, `url`, and optional `icon`) to show multiple dashboard links in the Headlamp plugin; a legacy single HTTP(S) URL is also supported. Icons can use Iconify IDs or Font Awesome classes such as `fa-solid fa-chart-line`.
+
+When OpenReports is enabled, kubexporter validates this annotation and rejects malformed JSON, unknown link fields, empty titles, and URLs that are not absolute HTTP(S) URLs with a host.
 
 You can also enable OpenReports via CLI flag:
 

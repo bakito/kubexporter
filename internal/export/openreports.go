@@ -2,8 +2,12 @@ package export
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -34,6 +38,8 @@ const (
 	reportNamePrefix = "kubexporter-"
 	// lastExportAnnotation holds the timestamp of the last export the report was updated with.
 	lastExportAnnotation = "kubexporter.bakito.net/last-export"
+	// headlampLinkAnnotation holds dashboard link data for the Headlamp plugin.
+	headlampLinkAnnotation = "kubexporter.bakito.ch/headlamp-link"
 	// maxNameSegmentLength is the max length of the target segment within the report name.
 	maxNameSegmentLength = 200
 )
@@ -49,8 +55,8 @@ type openReportsProvider interface {
 }
 
 // ValidateOpenReportsConfig checks that the OpenReports namespace is set when not running
-// inside a Kubernetes pod (CronJob context). When running in a pod, the namespace is
-// auto-detected from the pod metadata, so it is not required.
+// inside a Kubernetes pod (CronJob context), and validates the optional Headlamp link
+// annotation. When running in a pod, the namespace is auto-detected from pod metadata.
 func ValidateOpenReportsConfig(cfg *types.OpenReportsConfig) error {
 	if cfg == nil || !cfg.Enabled {
 		return nil
@@ -58,7 +64,84 @@ func ValidateOpenReportsConfig(cfg *types.OpenReportsConfig) error {
 	if cfg.Namespace == "" && getPodNamespace() == "" {
 		return errors.New("openreports namespace must be set when not running in a CronJob")
 	}
+	if value, ok := cfg.Annotations[headlampLinkAnnotation]; ok {
+		if err := validateHeadlampLinks(value); err != nil {
+			return fmt.Errorf("invalid %s annotation: %w", headlampLinkAnnotation, err)
+		}
+	}
 	return nil
+}
+
+type headlampLink struct {
+	Title string          `json:"title"`
+	URL   string          `json:"url"`
+	Icon  json.RawMessage `json:"icon,omitempty"`
+}
+
+func validateHeadlampLinks(value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return errors.New("value must not be empty")
+	}
+
+	if !strings.HasPrefix(value, "[") {
+		if isValidHeadlampURL(value) {
+			return nil
+		}
+		return errors.New("value must be an absolute HTTP(S) URL or a JSON array of links")
+	}
+
+	decoder := json.NewDecoder(strings.NewReader(value))
+	var links []json.RawMessage
+	if err := decoder.Decode(&links); err != nil {
+		return fmt.Errorf("invalid headlamp link array: %w", err)
+	}
+	if len(links) == 0 {
+		return errors.New("headlamp link array must contain at least one link")
+	}
+
+	var trailing json.RawMessage
+	if err := decoder.Decode(&trailing); !errors.Is(err, io.EOF) {
+		if err != nil {
+			return fmt.Errorf("invalid headlamp link array trailing data: %w", err)
+		}
+		return errors.New("invalid headlamp link array: trailing data")
+	}
+
+	for i, rawLink := range links {
+		linkDecoder := json.NewDecoder(strings.NewReader(string(rawLink)))
+		linkDecoder.DisallowUnknownFields()
+
+		var link headlampLink
+		if err := linkDecoder.Decode(&link); err != nil {
+			return fmt.Errorf("headlamp link %d: %w", i, err)
+		}
+		if len(link.Icon) > 0 {
+			var icon string
+			if err := json.Unmarshal(link.Icon, &icon); err != nil {
+				return fmt.Errorf("headlamp link %d icon must be a string: %w", i, err)
+			}
+			if strings.TrimSpace(string(link.Icon)) == "null" {
+				return fmt.Errorf("headlamp link %d icon must be a string", i)
+			}
+		}
+		if strings.TrimSpace(link.Title) == "" {
+			return fmt.Errorf("headlamp link %d title must not be empty", i)
+		}
+		if !isValidHeadlampURL(link.URL) {
+			return fmt.Errorf("headlamp link %d URL must be an absolute HTTP(S) URL with a host", i)
+		}
+	}
+
+	return nil
+}
+
+func isValidHeadlampURL(value string) bool {
+	parsed, err := url.Parse(strings.TrimSpace(value))
+	return err == nil &&
+		parsed.IsAbs() &&
+		(strings.EqualFold(parsed.Scheme, "http") || strings.EqualFold(parsed.Scheme, "https")) &&
+		parsed.Host != ""
 }
 
 // SendOpenReports creates an OpenReports Report resource summarizing the export results.
@@ -100,7 +183,7 @@ func SendOpenReports(
 		prevReport = existing
 	}
 
-	report := buildReport(stats, p.Start(), resources, target, prevReport)
+	report := buildReport(stats, p.Start(), resources, target, cfg, prevReport)
 	if cronJobResult != nil {
 		report.OwnerReferences = []metav1.OwnerReference{*cronJobResult.ownerRef}
 	}
@@ -151,6 +234,7 @@ func buildReport(
 	start time.Time,
 	resources []*types.GroupResource,
 	target string,
+	cfg *types.OpenReportsConfig,
 	prevReport *openreportsv1alpha1.Report,
 ) *openreportsv1alpha1.Report {
 	now := time.Now()
@@ -161,23 +245,28 @@ func buildReport(
 			APIVersion: openreportsv1alpha1.SchemeGroupVersion.String(),
 			Kind:       "Report",
 		},
-		ObjectMeta: reportMeta(now, target),
+		ObjectMeta: reportMeta(now, target, cfg),
 		Source:     "kubexporter",
 		Results:    results,
 		Summary:    summary,
 	}
 }
 
-func reportMeta(now time.Time, target string) metav1.ObjectMeta {
+func reportMeta(now time.Time, target string, cfg *types.OpenReportsConfig) metav1.ObjectMeta {
+	annotations := map[string]string{
+		lastExportAnnotation: now.UTC().Format(time.RFC3339),
+	}
+	// Merge custom annotations from config
+	if cfg != nil {
+		maps.Copy(annotations, cfg.Annotations)
+	}
 	return metav1.ObjectMeta{
 		Name: reportName(target),
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "kubexporter",
 			"app.kubernetes.io/name":       "kubexporter",
 		},
-		Annotations: map[string]string{
-			lastExportAnnotation: now.UTC().Format(time.RFC3339),
-		},
+		Annotations: annotations,
 	}
 }
 
@@ -243,9 +332,7 @@ func extractPrevValues(
 			}
 		} else if result.Policy == "kubexporter/resource" && result.Properties != nil {
 			props := make(map[string]string)
-			for k, v := range result.Properties {
-				props[k] = v
-			}
+			maps.Copy(props, result.Properties)
 			resourcePrev[result.Rule] = props
 		}
 	}

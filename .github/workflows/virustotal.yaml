@@ -28,19 +28,29 @@ jobs:
       - name: Get Latest Release Tag
         id: latest_release
         run: |
+          SEMVER_REGEX='^v[0-9]+[.][0-9]+[.][0-9]+$'
           RELEASE_TAG=${INPUTS_RELEASE_TAG}
           if [ -z "$RELEASE_TAG" ]; then
             RELEASE_TAG=${GITHUB_EVENT_INPUTS_RELEASE_TAG}
           fi
           if [ -z "$RELEASE_TAG" ]; then
-            RELEASE_TAG=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
+            # latest published semver release (ignores e.g. headlamp-plugin-v* releases)
+            RELEASE_TAG=$(gh api "repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+              --jq "[.[] | select((.draft | not) and (.prerelease | not) and (.tag_name | test(\"${SEMVER_REGEX}\")))][0].tag_name // empty")
+          fi
+          if [[ ! "$RELEASE_TAG" =~ $SEMVER_REGEX ]]; then
+            echo "::notice::Skipping VirusTotal scan: '${RELEASE_TAG}' is not a semver release tag"
+            echo "skip=true" >> $GITHUB_OUTPUT
+            exit 0
           fi
           echo "tag_name=$RELEASE_TAG" >> $GITHUB_OUTPUT
         env:
+          GH_TOKEN: ${{ github.token }}
           INPUTS_RELEASE_TAG: ${{ inputs.release_tag }}
           GITHUB_EVENT_INPUTS_RELEASE_TAG: ${{ github.event.inputs.release_tag }}
 
       - name: Analyze Build Assets
+        if: steps.latest_release.outputs.skip != 'true'
         uses: bakito/virustotal-action@336abda806a77344443c4411d653b3f947c1349e # v2.0.2
         with:
           release_name: ${{ steps.latest_release.outputs.tag_name }}
