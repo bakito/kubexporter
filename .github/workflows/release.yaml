@@ -85,6 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     steps:
       - name: Checkout kubexporter
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -149,3 +150,17 @@ jobs:
             git -C headlamp-plugins commit -m "Publish kubexporter Headlamp plugin ${version}"
             git -C headlamp-plugins push "https://x-access-token:${HEADLAMP_PLUGINS_TOKEN}@github.com/bakito/headlamp-plugins.git" HEAD
           fi
+  
+      - uses: oras-project/setup-oras@v1
+
+      - name: Login to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | oras login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Push
+        run: |
+          version="${GITHUB_REF_NAME#headlamp-plugin-v}"
+          archive="plugins/headlamp/kubexporter-headlamp-plugin-${version}.tar.gz"
+          image="ghcr.io/bakito/kubexporter-headlamp-plugin"
+          oras push "${image}:${{ github.sha }}" \
+            --annotation "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
+            ${archive}:application/gzip
