@@ -29,7 +29,7 @@ TB_GOVERSIONINFO_VERSION ?= v1.7.0
 # renovate: packageName=github.com/uber-go/mock
 TB_MOCKGEN_VERSION ?= v0.6.0
 # renovate: packageName=github.com/bakito/semver
-TB_SEMVER_VERSION ?= v1.1.10
+TB_SEMVER_VERSION ?= v1.1.11
 # renovate: packageName=github.com/anchore/syft/cmd/syft
 TB_SYFT_VERSION ?= v1.55.0
 

@@ -27,20 +27,51 @@ release: tb.semver
 	git tag -s $$version -m"Release $$version"; \
 	git push origin $$version
 
-# Package the Headlamp plugin (without touching tracked files)
+# Headlamp plugin version to package (for example, 0.0.2).
+HEADLAMP_PLUGIN_VERSION ?=
+
+# Package the Headlamp plugin; optionally set its version before building.
 .PHONY: package-headlamp-plugin
 package-headlamp-plugin:
+	@if [ -n "$(HEADLAMP_PLUGIN_VERSION)" ]; then \
+		current=$$(node -p "require('./plugins/headlamp/package.json').version"); \
+		if [ "$$current" != "$(HEADLAMP_PLUGIN_VERSION)" ]; then \
+			cd plugins/headlamp && npm version "$(HEADLAMP_PLUGIN_VERSION)" --no-git-tag-version; \
+		fi; \
+	fi
 	cd plugins/headlamp && npm install && npm run build && npm run package
 
 # Build the Headlamp plugin and update checksum and date in artifacthub-pkg.yml
 .PHONY: build-headlamp-plugin
 build-headlamp-plugin: package-headlamp-plugin
-	@sha=$$(sha256sum plugins/headlamp/kubexporter-headlamp-plugin-*.tar.gz | cut -d' ' -f1); \
+	@version="$(HEADLAMP_PLUGIN_VERSION)"; \
+	if [ -z "$$version" ]; then version=$$(node -p "require('./plugins/headlamp/package.json').version"); fi; \
+	sha=$$(sha256sum "plugins/headlamp/kubexporter-headlamp-plugin-$$version.tar.gz" | cut -d' ' -f1); \
 	created=$$(date -u +%Y-%m-%dT%H:%M:%S.000Z); \
 	sed -i -E \
+		-e "s|^(version:).*|\1 $$version|" \
 		-e "s|^(createdAt:).*|\1 $$created|" \
+		-e "s|^([[:space:]]*headlamp/plugin/archive-url:).*|\1 https://github.com/bakito/kubexporter/releases/download/headlamp-plugin-v$$version/kubexporter-headlamp-plugin-$$version.tar.gz|" \
 		-e "s|^([[:space:]]*headlamp/plugin/archive-checksum:).*|\1 sha256:$$sha|" \
-		plugins/headlamp/artifacthub-pkg.yml
+		plugins/headlamp/artifacthub-pkg.yml; \
+	printf 'Headlamp plugin version: %s\nArchive checksum: sha256:%s\nCreated at: %s\n' "$$version" "$$sha" "$$created"
+
+# Create and push a signed Headlamp plugin release tag; the workflow builds and publishes it.
+.PHONY: release-headlamp-plugin
+release-headlamp-plugin:
+	@set -eu; \
+	printf 'Headlamp plugin version (X.Y.Z): '; \
+	IFS= read -r version; \
+	if ! printf '%s\n' "$$version" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$$'; then \
+		echo 'Invalid version: enter a semantic version such as 0.1.0' >&2; exit 1; \
+	fi; \
+	tag="headlamp-plugin-v$$version"; \
+	remote_tag=$$(git ls-remote --tags origin "refs/tags/$$tag"); \
+	if git rev-parse -q --verify "refs/tags/$$tag" >/dev/null || [ -n "$$remote_tag" ]; then \
+		echo "Tag already exists: $$tag" >&2; exit 1; \
+	fi; \
+	git tag -s "$$tag" -m "Headlamp plugin release $$version"; \
+	git push origin "$$tag"
 
 release-ci: tb.goreleaser tb.syft tb.goversioninfo package-headlamp-plugin
 	PATH=$(TB_LOCALBIN):$${PATH} $(TB_GORELEASER) --clean --parallelism 4

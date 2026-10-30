@@ -53,36 +53,17 @@ The plugin is published to [Artifact Hub](https://artifacthub.io/) and can be in
 
 ## Releasing
 
-To publish a new version of the plugin to Artifact Hub:
-
-1. **Update the version** in `package.json`:
+To publish a new version, run this from the kubexporter repository root:
 
 ```bash
-npm version patch  # or minor/major
+make release-headlamp-plugin
 ```
 
-2. **Build and package the plugin**:
+Enter the semantic version when prompted (for example, `0.0.2`). The target creates and pushes a signed tag named `headlamp-plugin-v0.0.2`. That tag starts the GitHub Actions release workflow, which updates the plugin version, builds the archive, calculates its checksum, and updates this package's `artifacthub-pkg.yml`.
 
-```bash
-npm install
-npm run build
-npm run package
-```
+The workflow attaches `kubexporter-headlamp-plugin-0.0.2.tar.gz` to the GitHub release, then publishes `artifacthub-pkg.yml` and this README to `bakito/headlamp-plugins` under `kubexporter/0.0.2/`. The repository must have a `HEADLAMP_PLUGINS_TOKEN` secret with permission to push to `bakito/headlamp-plugins`.
 
-This creates a tarball (e.g., `kubexporter-headlamp-plugin-0.0.1.tar.gz`) and prints its checksum.
-
-3. **Create a GitHub release**:
-
-- Tag the release with the semantic version (e.g., `v0.0.1`).
-- Upload the generated tarball as a release asset.
-
-4. **Register with Artifact Hub**:
-
-Ensure both `artifacthub-repo.yml` and `artifacthub-pkg.yml` exist at the plugin root:
-- `artifacthub-repo.yml` contains your owner information for repository verification.
-- `artifacthub-pkg.yml` contains the package metadata that Artifact Hub uses to display your plugin.
-
-Artifact Hub will discover the release automatically from the GitHub repository.
+The version in `package.json` is updated in the workflow; no manual version edit or archive upload is needed. The normal kubexporter `vX.Y.Z` release process is unchanged.
 
 For more details, see the [Headlamp Publishing Plugins guide](https://headlamp.dev/docs/latest/development/plugins/publishing/).
 
