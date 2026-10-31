@@ -88,6 +88,7 @@ jobs:
           version="${GITHUB_REF_NAME#headlamp-plugin-v}"
           archive="plugins/headlamp/kubexporter-headlamp-plugin-${version}.tar.gz"
           image="ghcr.io/bakito/kubexporter-headlamp-plugin"
+            tar xzf ${archive}
           oras push "${image}:${version}" \
             --annotation "org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}" \
-            ${archive}:application/gzip
+            kubexporter/
