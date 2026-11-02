@@ -1,3 +1,6 @@
+# Default base image used by ko
+defaultBaseImage: gcr.io/distroless/static:nonroot
+
 # Build configuration
 builds:
   - id: kubexporter
