@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	wp "github.com/vardius/worker-pool/v2"
+	wp "github.com/vardius/worker-pool/v3"
 
 	"github.com/bakito/kubexporter/internal/types"
 )
