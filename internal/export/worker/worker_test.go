@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sync"
 	"testing"
 
 	"github.com/ghodss/yaml"
@@ -217,16 +216,9 @@ func TestWorker_GenerateWorkCanceled(t *testing.T) {
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
 
-	var wg sync.WaitGroup
-	out := make(chan *types.GroupResource, 1)
-	wg.Add(1)
-	w.GenerateWork(ctx, &wg, out)(res)
-	wg.Wait()
-	close(out)
+	w.ctx = ctx
+	w.GenerateWork()(res)
 
-	if got := <-out; got != res {
-		t.Error("expected the resource to be reported")
-	}
 	if res.Error != canceled {
 		t.Errorf("expected the resource to be %q, but got %q", canceled, res.Error)
 	}

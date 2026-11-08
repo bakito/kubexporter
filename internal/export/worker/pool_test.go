@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"sync"
 	"testing"
 
 	"github.com/bakito/kubexporter/internal/types"
@@ -15,14 +14,8 @@ type mockWorker struct {
 	stats   Stats
 }
 
-func (*mockWorker) GenerateWork(
-	_ context.Context,
-	s *sync.WaitGroup,
-	out chan *types.GroupResource,
-) func(resource *types.GroupResource) {
-	return func(resource *types.GroupResource) {
-		defer s.Done()
-		out <- resource
+func (*mockWorker) GenerateWork() func(resource *types.GroupResource) {
+	return func(_ *types.GroupResource) {
 	}
 }
 
@@ -165,11 +158,8 @@ func TestRunExport_canceled_context(t *testing.T) {
 		{APIGroup: "apps", APIVersion: "v1"},
 	}
 
-	st, err := RunExport(ctx, workers, resources)
-	if err != nil {
-		t.Errorf("expected no error, got %v", err)
-	}
-	if st == nil {
-		t.Fatal("expected stats to be non-nil")
+	_, err := RunExport(ctx, workers, resources)
+	if err == nil {
+		t.Error("expected context canceled error, got nil")
 	}
 }

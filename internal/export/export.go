@@ -119,7 +119,7 @@ func (e *exporter) Export(ctx context.Context) error {
 
 	var workers []worker.Worker
 	for i := range e.config.Worker {
-		workers = append(workers, worker.New(i, e.config, e.ac, prog))
+		workers = append(workers, worker.New(ctx, i, e.config, e.ac, prog))
 	}
 
 	var exportErr error
