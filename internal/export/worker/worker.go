@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -28,16 +27,13 @@ const canceled = "Canceled"
 
 // Worker interface.
 type Worker interface {
-	GenerateWork(
-		ctx context.Context,
-		s *sync.WaitGroup,
-		out chan *types.GroupResource,
-	) func(resource *types.GroupResource)
+	GenerateWork() func(resource *types.GroupResource)
 	Stop() Stats
 }
 
 type worker struct {
 	id          int
+	ctx         context.Context //nolint:containedctx // v3 worker-pool does not pass context to worker funcs, so it must be stored
 	config      *types.Config
 	prog        progress.Progress
 	currentKind string
@@ -93,9 +89,10 @@ func (s *Stats) HasErrors() bool {
 }
 
 // New create a new worker.
-func New(id int, config *types.Config, ac *client.APIClient, prog progress.Progress) Worker {
+func New(ctx context.Context, id int, config *types.Config, ac *client.APIClient, prog progress.Progress) Worker {
 	w := &worker{
 		id:     id + 1,
+		ctx:    ctx,
 		config: config,
 		ac:     ac,
 		prog:   prog.NewWorker(),
@@ -138,18 +135,12 @@ func (w *worker) list(
 }
 
 // GenerateWork generate the work function.
-func (w *worker) GenerateWork(
-	ctx context.Context,
-	wg *sync.WaitGroup,
-	out chan *types.GroupResource,
-) func(resource *types.GroupResource) {
+func (w *worker) GenerateWork() func(resource *types.GroupResource) {
 	return func(res *types.GroupResource) {
-		defer wg.Done()
-		if ctx.Err() != nil {
+		if w.ctx.Err() != nil {
 			// the export was canceled, skip the remaining resources
 			res.Error = canceled
 			w.prog.IncrementMainBar()
-			out <- res
 			return
 		}
 		w.stats.Kinds++
@@ -158,13 +149,13 @@ func (w *worker) GenerateWork(
 		w.prog.Reset()
 
 		for _, namespace := range w.namespacesForResource(res) {
-			if ctx.Err() != nil {
+			if w.ctx.Err() != nil {
 				break
 			}
 			hasMorePages := ""
 			for {
-				hasMorePages = w.listResources(ctx, res, namespace, hasMorePages)
-				if hasMorePages == "" || ctx.Err() != nil {
+				hasMorePages = w.listResources(w.ctx, res, namespace, hasMorePages)
+				if hasMorePages == "" || w.ctx.Err() != nil {
 					break
 				}
 			}
@@ -178,7 +169,6 @@ func (w *worker) GenerateWork(
 		}
 
 		w.prog.IncrementMainBar()
-		out <- res
 	}
 }
 
