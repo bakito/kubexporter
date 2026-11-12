@@ -9,7 +9,7 @@ $(TB_LOCALBIN):
 	if [ ! -e $(TB_LOCALBIN) ]; then mkdir -p $(TB_LOCALBIN); fi
 
 ## Go Version
-TB_GO_VERSION ?= 1.27.3
+TB_GO_VERSION ?= 1.27.4
 
 ## Tool Binaries
 TB_GOLANGCI_LINT ?= $(TB_LOCALBIN)/golangci-lint
