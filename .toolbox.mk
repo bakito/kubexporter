@@ -9,7 +9,7 @@ $(TB_LOCALBIN):
 	if [ ! -e $(TB_LOCALBIN) ]; then mkdir -p $(TB_LOCALBIN); fi
 
 ## Go Version
-TB_GO_VERSION ?= 1.27.3
+TB_GO_VERSION ?= 1.27.4
 
 ## Tool Binaries
 TB_GOLANGCI_LINT ?= $(TB_LOCALBIN)/golangci-lint
@@ -23,7 +23,7 @@ TB_SYFT ?= $(TB_LOCALBIN)/syft
 # renovate: packageName=github.com/golangci/golangci-lint/v2
 TB_GOLANGCI_LINT_VERSION ?= v2.15.0
 # renovate: packageName=github.com/goreleaser/goreleaser/v2
-TB_GORELEASER_VERSION ?= v2.20.1
+TB_GORELEASER_VERSION ?= v2.20.2
 # renovate: packageName=github.com/josephspurrier/goversioninfo/cmd/goversioninfo
 TB_GOVERSIONINFO_VERSION ?= v1.7.0
 # renovate: packageName=github.com/uber-go/mock
