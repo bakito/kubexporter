@@ -19,7 +19,7 @@ require (
 	github.com/minio/minio-go/v7 v7.4.1
 	github.com/openreports/reports-api v0.2.1
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	github.com/vardius/worker-pool/v3 v3.0.0
 	github.com/vbauerster/mpb/v8 v8.16.3
 	go.opentelemetry.io/otel v1.47.0
