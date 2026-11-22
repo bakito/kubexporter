@@ -188,8 +188,6 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    paths:
-      - node_modules
     rules:
       - linters:
           - err113
